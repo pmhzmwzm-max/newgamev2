@@ -70,7 +70,8 @@ export default function App() {
     setGameData(prev => {
       const currentData = prev[currentGrade];
       const oldPuzzlePieces = currentData.puzzlePieces;
-      const newPuzzlePieces = oldPuzzlePieces + 1;
+      const expGained = (levelStats as any).expGained ?? 1;
+      const newPuzzlePieces = oldPuzzlePieces + expGained;
       const newUnlocked = [...currentData.unlockedLevels];
 
       // 解锁下一关（最多50关）
@@ -105,8 +106,8 @@ export default function App() {
   const currentGradeData = gameData[currentGrade];
 
   return (
-    <div className="w-full h-screen bg-gray-100 flex justify-center items-center overflow-hidden font-sans">
-      <div className="w-[1024px] h-[768px] bg-white relative shadow-xl overflow-hidden rounded-2xl">
+    <div className="w-full h-screen bg-gray-100 flex justify-center items-center overflow-hidden font-sans p-4">
+      <div className="w-[768px] h-[1024px] max-w-full max-h-full bg-white relative shadow-xl overflow-hidden rounded-[2rem]">
         {currentScreen === 'map' && (
           <MapScreen
             gradeId={currentGrade}

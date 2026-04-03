@@ -3,6 +3,26 @@ import { ChevronLeft, Delete, Check, Flame, Zap, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { allLevelsData } from '../data/questions';
 
+const TOTAL_BATTLE_BLOCKS = 35;
+
+type ShotTier = 'idle' | 'normal' | 'boost' | 'super' | 'final' | 'break';
+
+const getShotTier = (combo: number): ShotTier => {
+  if (combo >= 10) return 'final';
+  if (combo >= 6) return 'super';
+  if (combo >= 3) return 'boost';
+  if (combo >= 1) return 'normal';
+  return 'idle';
+};
+
+const getRemovalCount = (combo: number, remainingBlocks: number) => {
+  if (remainingBlocks <= 0) return 0;
+  if (combo >= 10) return remainingBlocks;
+  if (combo >= 6) return Math.min(4, remainingBlocks);
+  if (combo >= 3) return Math.min(3, remainingBlocks);
+  return Math.min(1, remainingBlocks);
+};
+
 const ParticleBurst = ({ tier = 1 }: { tier?: number }) => {
   const outerCount = tier === 3 ? 48 : tier === 2 ? 36 : 24;
   const innerCount = tier === 3 ? 24 : tier === 2 ? 18 : 12;
@@ -57,6 +77,204 @@ const ParticleBurst = ({ tier = 1 }: { tier?: number }) => {
   );
 };
 
+const BattleStage = ({
+  selectedPet,
+  combo,
+  shotTier,
+  clearedBlocks,
+  lastRemoval,
+  bannerText,
+  feedback,
+}: {
+  selectedPet: any;
+  combo: number;
+  shotTier: ShotTier;
+  clearedBlocks: number;
+  lastRemoval: number;
+  bannerText: string | null;
+  feedback: 'correct' | 'wrong' | null;
+}) => {
+  const comboLabel = bannerText ?? (combo >= 10 ? `${combo} 连击!` : combo >= 3 ? `${combo} 连击` : '');
+  const beamWidthClass = shotTier === 'final'
+    ? 'w-36 h-4'
+    : shotTier === 'super'
+    ? 'w-28 h-3.5'
+    : shotTier === 'boost'
+    ? 'w-22 h-3'
+    : shotTier === 'normal'
+    ? 'w-14 h-2.5'
+    : 'w-0 h-2.5';
+
+  const beamGlowClass = shotTier === 'final'
+    ? 'from-yellow-200 via-pink-400 to-purple-500 shadow-[0_0_50px_rgba(236,72,153,0.75)]'
+    : shotTier === 'super'
+    ? 'from-yellow-100 via-orange-400 to-pink-500 shadow-[0_0_40px_rgba(249,115,22,0.75)]'
+    : shotTier === 'boost'
+    ? 'from-yellow-100 via-yellow-300 to-orange-400 shadow-[0_0_28px_rgba(251,191,36,0.65)]'
+    : 'from-white/0 via-yellow-200 to-orange-300 shadow-[0_0_20px_rgba(255,255,255,0.3)]';
+
+  const recentClearStart = Math.max(0, clearedBlocks - lastRemoval);
+
+  return (
+    <div className={`relative w-full h-full overflow-hidden transition-all ${
+      feedback === 'wrong'
+        ? 'border border-red-300/70'
+        : ''
+    }`}>
+      <div className="relative z-10 grid h-full grid-cols-[minmax(0,7fr)_minmax(178px,3fr)] gap-3 px-3 pb-2 pt-2">
+        <div className="relative flex min-w-0 items-center justify-start rounded-[1.8rem] px-3 py-2">
+          <motion.div
+            animate={
+              shotTier === 'idle' || shotTier === 'break'
+                ? { width: 0, opacity: 0 }
+                : shotTier === 'normal'
+                ? { width: 56, opacity: 0.9 }
+                : shotTier === 'boost'
+                ? { width: 88, opacity: 1 }
+                : shotTier === 'super'
+                ? { width: 112, opacity: 1 }
+                : { width: 148, opacity: 1 }
+            }
+            transition={{ duration: 0.25 }}
+            className={`absolute right-[8%] top-1/2 z-0 -translate-y-1/2 rounded-full bg-gradient-to-r ${beamWidthClass} ${beamGlowClass} pointer-events-none`}
+          />
+
+          <motion.div
+            animate={
+              shotTier === 'idle' || shotTier === 'break'
+                ? { opacity: 0, scale: 0.7 }
+                : shotTier === 'final'
+                ? { opacity: [0.4, 1, 0.75], scale: [0.8, 1.2, 1] }
+                : { opacity: [0.3, 0.8, 0.55], scale: [0.8, 1.05, 1] }
+            }
+            transition={{ duration: 0.35 }}
+            className="absolute right-[6%] top-1/2 z-0 h-16 w-16 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,236,153,0.95),rgba(251,146,60,0.22)_42%,transparent_72%)] pointer-events-none"
+          />
+
+          <div className="relative z-10 flex h-full w-full items-center justify-start">
+            <div className="h-full w-full max-w-[468px]">
+              <div className="grid h-full w-full grid-cols-5 grid-rows-7 gap-2">
+              {Array.from({ length: TOTAL_BATTLE_BLOCKS }).map((_, index) => {
+                const cleared = index < clearedBlocks;
+                const justCleared = cleared && index >= recentClearStart;
+                return (
+                  <motion.div
+                    key={index}
+                    initial={false}
+                    animate={
+                      cleared
+                        ? justCleared
+                          ? { scale: [1, 1.12, 0.15], opacity: [1, 1, 0], rotate: [0, -8, 10] }
+                          : { scale: 0.15, opacity: 0 }
+                        : { scale: 1, opacity: 1, rotate: 0 }
+                    }
+                    transition={{
+                      duration: justCleared ? 0.42 : 0.2,
+                      delay: justCleared ? (index - recentClearStart) * 0.05 : 0,
+                      ease: 'easeOut',
+                    }}
+                    className={`rounded-[1rem] ${
+                      cleared
+                        ? 'bg-transparent shadow-none'
+                        : 'bg-gradient-to-b from-yellow-100 via-yellow-300 to-orange-300 shadow-[inset_0_-4px_0_rgba(234,88,12,0.28),0_6px_12px_rgba(133,96,32,0.16)]'
+                    }`}
+                  />
+                );
+              })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative min-w-0">
+          <div className="grid h-full grid-rows-[0.38fr_0.62fr] gap-3">
+            <div className="flex items-stretch">
+              <div className="flex h-full w-full items-center justify-center rounded-[1.8rem] px-2 py-2">
+                <AnimatePresence mode="wait">
+                  {comboLabel ? (
+                    <motion.div
+                      key={`${combo}-${comboLabel}`}
+                      initial={{ opacity: 0, y: -10, scale: 0.86, rotate: -8 }}
+                      animate={
+                        combo >= 10
+                          ? { opacity: 1, y: 0, scale: 1.06, rotate: 0 }
+                          : combo >= 5
+                          ? { opacity: 1, y: 0, scale: 1.02, rotate: 0 }
+                          : { opacity: 1, y: 0, scale: 1, rotate: 0 }
+                      }
+                      exit={{ opacity: 0, y: -10, scale: 0.86 }}
+                      transition={{ duration: 0.32, type: 'spring', bounce: 0.45 }}
+                      className={`relative flex min-h-[112px] w-full items-center justify-center gap-2 rounded-[1.6rem] px-3 py-3 text-center shadow-xl border-4 ${
+                        bannerText && combo < 3
+                          ? 'bg-red-500 border-red-300 shadow-[0_0_20px_rgba(239,68,68,0.28)]'
+                          : combo >= 10
+                          ? 'bg-white/96 border-purple-400 shadow-[0_0_28px_rgba(168,85,247,0.35)]'
+                          : combo >= 5
+                          ? 'bg-white/96 border-pink-400 shadow-[0_0_22px_rgba(236,72,153,0.28)]'
+                          : 'bg-white/96 border-orange-300 shadow-[0_0_18px_rgba(251,146,60,0.25)]'
+                      }`}
+                    >
+                      {!(bannerText && combo < 3) && <ParticleBurst tier={combo >= 10 ? 3 : combo >= 5 ? 2 : 1} />}
+                      <div className="relative z-10 flex items-center gap-2">
+                        {bannerText && combo < 3 ? null : combo >= 10 ? (
+                          <Crown className="h-9 w-9 text-purple-500 animate-bounce" fill="currentColor" />
+                        ) : combo >= 5 ? (
+                          <Zap className="h-8 w-8 text-pink-500 animate-bounce" fill="currentColor" />
+                        ) : (
+                          <Flame className="h-7 w-7 text-orange-500 animate-bounce" fill="currentColor" />
+                        )}
+                        <span
+                          className={`font-black italic drop-shadow-sm ${
+                            bannerText && combo < 3
+                              ? 'text-[1.45rem] text-white'
+                              : combo >= 10
+                              ? 'text-[1.65rem] text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-red-500'
+                              : combo >= 5
+                              ? 'text-[1.35rem] text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-orange-500'
+                              : 'text-[1.1rem] text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600'
+                          }`}
+                        >
+                          {comboLabel}
+                        </span>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <div className="h-full w-full rounded-[1.6rem]" />
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            <div className="flex items-end justify-end rounded-[1.8rem] px-2 pb-3">
+              <motion.div
+                animate={
+                  shotTier === 'final'
+                    ? { scale: [1, 1.16, 1.04], y: [0, -10, 0] }
+                    : shotTier === 'super'
+                    ? { scale: [1, 1.1, 1.02], y: [0, -7, 0] }
+                    : shotTier === 'boost'
+                    ? { scale: [1, 1.06, 1.02], y: [0, -4, 0] }
+                    : shotTier === 'normal'
+                    ? { scale: [1, 1.03, 1], y: [0, -2, 0] }
+                    : shotTier === 'break'
+                    ? { x: [-3, 3, -3, 0], scale: [1, 0.98, 1] }
+                    : { scale: 1, y: 0, x: 0 }
+                }
+                transition={{ duration: 0.45 }}
+                className={`relative flex h-36 w-36 items-center justify-center rounded-[2.6rem] border-4 border-white/75 text-7xl shadow-2xl ${selectedPet?.color ?? 'bg-yellow-300'} ${selectedPet?.shadow ?? 'shadow-yellow-300/50'}`}
+              >
+                <div className="absolute -top-3 left-7 h-12 w-10 rotate-[-12deg] rounded-t-full rounded-b-lg bg-white/25" />
+                <div className="absolute -top-3 right-7 h-12 w-10 rotate-[12deg] rounded-t-full rounded-b-lg bg-white/25" />
+                <span className="relative z-10">{selectedPet?.emoji ?? '🍮'}</span>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function QuizScreen({
   gradeId = '1',
   levelId,
@@ -81,6 +299,10 @@ export default function QuizScreen({
   const [startTime] = useState(Date.now());
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [multiVerticalStep, setMultiVerticalStep] = useState(1); // 多重竖式当前步骤
+  const [clearedBlocks, setClearedBlocks] = useState(0);
+  const [lastRemoval, setLastRemoval] = useState(0);
+  const [shotTier, setShotTier] = useState<ShotTier>('idle');
+  const [battleBanner, setBattleBanner] = useState<string | null>(null);
 
   // 从新的数据源获取关卡数据
   const gradeLevels = allLevelsData[gradeId as keyof typeof allLevelsData];
@@ -90,6 +312,22 @@ export default function QuizScreen({
 
   // 添加日志
   console.log('Current question:', currentIndex, question);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+    setAnswers([]);
+    setFeedback(null);
+    setCombo(0);
+    setShowPetCombo(false);
+    setMaxCombo(0);
+    setCorrectCount(0);
+    setSelectedChoice(null);
+    setMultiVerticalStep(1);
+    setClearedBlocks(0);
+    setLastRemoval(0);
+    setShotTier('idle');
+    setBattleBanner(null);
+  }, [gradeId, levelId]);
 
   useEffect(() => {
     if (question && question.answerLength) {
@@ -106,6 +344,78 @@ export default function QuizScreen({
     }
   }, [currentIndex]);
 
+  useEffect(() => {
+    if (!battleBanner) return;
+    const timeout = setTimeout(() => setBattleBanner(null), 1200);
+    return () => clearTimeout(timeout);
+  }, [battleBanner]);
+
+  const triggerPetComboMessage = (newCombo: number) => {
+    if (newCombo > 0 && newCombo % 3 === 0) {
+      setShowPetCombo(true);
+      if (petComboTimeout) clearTimeout(petComboTimeout);
+      const timeout = setTimeout(() => setShowPetCombo(false), 2000);
+      setPetComboTimeout(timeout);
+    }
+  };
+
+  const finishLevel = (newCorrectCount: number, newCombo: number) => {
+    const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+    onFinish({
+      accuracy: Math.round((newCorrectCount / questions.length) * 100),
+      time: timeTaken,
+      maxCombo: Math.max(maxCombo, newCombo),
+      expGained: Math.max(1, Math.ceil(newCorrectCount / 4)),
+    });
+  };
+
+  const scheduleAdvance = (newCorrectCount: number, newCombo: number) => {
+    setTimeout(() => {
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex((i: number) => i + 1);
+      } else {
+        finishLevel(newCorrectCount, newCombo);
+      }
+    }, 1000);
+  };
+
+  const registerCorrectAnswer = (newCombo: number) => {
+    const tier = getShotTier(newCombo);
+    const remainingBlocks = Math.max(0, TOTAL_BATTLE_BLOCKS - clearedBlocks);
+    const removal = getRemovalCount(newCombo, remainingBlocks);
+    const newCorrectCount = correctCount + 1;
+
+    setFeedback('correct');
+    setCombo(newCombo);
+    setMaxCombo((m: number) => Math.max(m, newCombo));
+    setCorrectCount(newCorrectCount);
+    setShotTier(tier);
+    setLastRemoval(removal);
+    setClearedBlocks((prev) => Math.min(TOTAL_BATTLE_BLOCKS, prev + removal));
+
+    if (newCombo === 3) setBattleBanner('强化发射开启');
+    if (newCombo === 6) setBattleBanner('超级发射开启');
+    if (newCombo === 10) setBattleBanner('终极清屏');
+
+    triggerPetComboMessage(newCombo);
+    scheduleAdvance(newCorrectCount, newCombo);
+  };
+
+  const registerWrongAnswer = (resetAnswers: () => void) => {
+    setFeedback('wrong');
+    setCombo(0);
+    setShotTier('break');
+    setLastRemoval(0);
+    setBattleBanner('连击中断');
+
+    setTimeout(() => {
+      resetAnswers();
+      setSelectedChoice(null);
+      setFeedback(null);
+      setShotTier('idle');
+    }, 500);
+  };
+
   // 选择题答案处理
   const handleChoiceSelect = (option: string) => {
     if (feedback === 'correct' || feedback === 'wrong') return;
@@ -113,37 +423,10 @@ export default function QuizScreen({
     setSelectedChoice(option);
 
     if (option === question.answer) {
-      setFeedback('correct');
       const newCombo = combo + 1;
-      setCombo(newCombo);
-      setMaxCombo((m: number) => Math.max(m, newCombo));
-      if (newCombo > 0 && newCombo % 3 === 0) {
-        setShowPetCombo(true);
-        if (petComboTimeout) clearTimeout(petComboTimeout);
-        const timeout = setTimeout(() => setShowPetCombo(false), 2000);
-        setPetComboTimeout(timeout);
-      }
-      setCorrectCount((c: number) => c + 1);
-
-      setTimeout(() => {
-        if (currentIndex < questions.length - 1) {
-          setCurrentIndex((i: number) => i + 1);
-        } else {
-          const timeTaken = Math.floor((Date.now() - startTime) / 1000);
-          onFinish({
-            accuracy: Math.round(((correctCount + 1) / questions.length) * 100),
-            time: timeTaken,
-            maxCombo: Math.max(maxCombo, newCombo)
-          });
-        }
-      }, 1000);
+      registerCorrectAnswer(newCombo);
     } else {
-      setFeedback('wrong');
-      setCombo(0);
-      setTimeout(() => {
-        setSelectedChoice(null);
-        setFeedback(null);
-      }, 500);
+      registerWrongAnswer(() => {});
     }
   };
 
@@ -233,11 +516,9 @@ export default function QuizScreen({
             setAnswers(['', '', '', '']);
           }, 600);
         } else {
-          setFeedback('wrong');
-          setTimeout(() => {
+          registerWrongAnswer(() => {
             setAnswers(['', '', '', '']);
-            setFeedback(null);
-          }, 500);
+          });
         }
         return;
       } else {
@@ -246,37 +527,17 @@ export default function QuizScreen({
         if (answers[2] === '' || answers[3] === '') return; // 未填完
 
         if (step2Answer === finalResult) {
-          setFeedback('correct');
           const newCombo = combo + 1;
-          setCombo(newCombo);
-          setMaxCombo((m: number) => Math.max(m, newCombo));
-          if (newCombo > 0 && newCombo % 3 === 0) {
-            setShowPetCombo(true);
-            if (petComboTimeout) clearTimeout(petComboTimeout);
-            const timeout = setTimeout(() => setShowPetCombo(false), 2000);
-            setPetComboTimeout(timeout);
-          }
-          setCorrectCount((c: number) => c + 1);
-
-          setTimeout(() => {
-            if (currentIndex < questions.length - 1) {
-              setCurrentIndex((i: number) => i + 1);
-            } else {
-              const timeTaken = Math.floor((Date.now() - startTime) / 1000);
-              onFinish({
-                accuracy: Math.round(((correctCount + 1) / questions.length) * 100),
-                time: timeTaken,
-                maxCombo: Math.max(maxCombo, newCombo)
-              });
-            }
-          }, 1000);
+          registerCorrectAnswer(newCombo);
         } else {
-          setFeedback('wrong');
-          setCombo(0);
-          setTimeout(() => {
-            setAnswers((prev: string[]) => { prev[2] = ''; prev[3] = ''; return [...prev]; });
-            setFeedback(null);
-          }, 500);
+          registerWrongAnswer(() => {
+            setAnswers((prev: string[]) => {
+              const next = [...prev];
+              next[2] = '';
+              next[3] = '';
+              return next;
+            });
+          });
         }
         return;
       }
@@ -292,38 +553,12 @@ export default function QuizScreen({
     }
 
     if (userAnswerStr === question.answer) {
-      setFeedback('correct');
       const newCombo = combo + 1;
-      setCombo(newCombo);
-      setMaxCombo((m: number) => Math.max(m, newCombo));
-      if (newCombo > 0 && newCombo % 3 === 0) {
-        setShowPetCombo(true);
-        if (petComboTimeout) clearTimeout(petComboTimeout);
-        // 2秒后开始消失
-        const timeout = setTimeout(() => setShowPetCombo(false), 2000);
-        setPetComboTimeout(timeout);
-      }
-      setCorrectCount((c: number) => c + 1);
-
-      setTimeout(() => {
-        if (currentIndex < questions.length - 1) {
-          setCurrentIndex((i: number) => i + 1);
-        } else {
-          const timeTaken = Math.floor((Date.now() - startTime) / 1000);
-          onFinish({
-            accuracy: Math.round(((correctCount + 1) / questions.length) * 100),
-            time: timeTaken,
-            maxCombo: Math.max(maxCombo, newCombo)
-          });
-        }
-      }, 1000);
+      registerCorrectAnswer(newCombo);
     } else {
-      setFeedback('wrong');
-      setCombo(0);
-      setTimeout(() => {
+      registerWrongAnswer(() => {
         setAnswers(Array(question.answerLength).fill(''));
-        setFeedback(null);
-      }, 500);
+      });
     }
   };
 
@@ -655,12 +890,11 @@ export default function QuizScreen({
 
   // 选择题渲染
   const renderChoice = () => {
-    const options = question.options || [];
     return (
       <div className="text-center w-full">
         <div className="text-2xl font-bold text-gray-500 mb-6 tracking-wider">选择正确答案</div>
         <div className="flex items-center justify-center gap-4 mb-8">
-          <span className="text-4xl font-black text-gray-800">{question.question}</span>
+          <span className="text-4xl font-black text-gray-800">{question.question.replace('?', '')}</span>
           <motion.div
             animate={
               feedback === 'wrong' && selectedChoice !== question.answer
@@ -670,50 +904,60 @@ export default function QuizScreen({
                   : { scale: 1.1, boxShadow: "0 0 30px rgba(253,224,71,0.8)" }
             }
             transition={
-              feedback === 'wrong' ? { duration: 0.4 } : { repeat: Infinity, duration: 1.2, ease: "easeInOut", repeatType: "reverse" }
+              feedback === 'wrong'
+                ? { duration: 0.4 }
+                : selectedChoice
+                ? { duration: 0.2 }
+                : { repeat: Infinity, duration: 1.2, ease: "easeInOut", repeatType: "reverse" }
             }
-            className={`min-w-[80px] px-6 h-16 rounded-xl flex items-center justify-center text-3xl font-bold transition-colors
-              ${selectedChoice ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-400'}
-              ${feedback === 'correct' ? 'bg-green-100 text-green-500' : ''}
-              ${feedback === 'wrong' ? 'bg-red-100 text-red-500' : ''}
+            className={`min-w-[96px] px-6 h-20 rounded-2xl flex items-center justify-center text-4xl font-black transition-colors border-4 shadow-[0_4px_0_#9ca3af]
+              ${selectedChoice ? 'bg-blue-100 text-blue-700 border-blue-500' : 'bg-gray-100 text-gray-400 border-gray-300'}
+              ${feedback === 'correct' ? '!bg-green-100 !text-green-600 !border-green-500 shadow-[0_4px_0_#16a34a]' : ''}
+              ${feedback === 'wrong' ? '!bg-red-100 !text-red-600 !border-red-500 shadow-[0_4px_0_#dc2626]' : ''}
               ${!selectedChoice ? 'ring-4 ring-yellow-300 bg-yellow-50' : ''}
             `}
           >
             {selectedChoice || '?'}
           </motion.div>
         </div>
-        <div className="grid grid-cols-4 gap-3">
-          {options.map((option, i) => (
-            <motion.button
-              key={i}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleChoiceSelect(option)}
-              disabled={feedback !== null}
-              className={`py-4 px-6 text-2xl font-bold rounded-2xl transition-all border-4 ${
-                feedback === 'correct' && option === question.answer
-                  ? 'bg-green-500 text-white border-green-600 shadow-[0_4px_0_#16a34a]'
-                  : feedback === 'wrong' && option === question.answer
-                  ? 'bg-green-500 text-white border-green-600 shadow-[0_4px_0_#16a34a]'
-                  : feedback === 'wrong' && selectedChoice === option
-                  ? 'bg-red-500 text-white border-red-600 shadow-[0_4px_0_#dc2626]'
-                  : selectedChoice === option
-                  ? 'bg-blue-500 text-white border-blue-600 shadow-[0_4px_0_#1d4ed8]'
-                  : 'bg-white text-gray-700 border-gray-200 shadow-[0_4px_0_#d1d5db] hover:border-blue-300'
-              }`}
-            >
-              {option}
-            </motion.button>
-          ))}
-        </div>
+      </div>
+    );
+  };
+
+  const renderChoiceButtons = () => {
+    const options = question.options || [];
+    return (
+      <div className="grid grid-cols-4 gap-4">
+        {options.map((option, i) => (
+          <motion.button
+            key={i}
+            whileHover={feedback === null ? { scale: 1.02, y: -2 } : {}}
+            whileTap={feedback === null ? { y: 6, scale: 0.98 } : {}}
+            onClick={() => handleChoiceSelect(option)}
+            disabled={feedback !== null}
+            className={`h-24 rounded-2xl border-4 text-3xl font-black transition-all ${
+              feedback === 'correct' && option === question.answer
+                ? 'bg-green-500 text-white border-green-600 shadow-[0_6px_0_#15803d]'
+                : feedback === 'wrong' && option === question.answer
+                ? 'bg-green-500 text-white border-green-600 shadow-[0_6px_0_#15803d]'
+                : feedback === 'wrong' && selectedChoice === option
+                ? 'bg-red-500 text-white border-red-600 shadow-[0_6px_0_#b91c1c]'
+                : selectedChoice === option
+                ? 'bg-white text-gray-700 border-blue-500 shadow-[0_0_0_#9ca3af]'
+                : 'bg-white text-gray-700 border-gray-200 shadow-[0_6px_0_#9ca3af]'
+            }`}
+          >
+            {option}
+          </motion.button>
+        ))}
       </div>
     );
   };
 
   return (
-    <div className="w-full h-full bg-gradient-to-br from-[#4facfe] to-[#00f2fe] flex flex-col relative">
+    <div className="w-full h-full bg-gradient-to-br from-[#4facfe] to-[#00f2fe] flex flex-col relative overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-5 text-white">
+      <div className="flex items-center justify-between p-4 text-white shrink-0">
         <button onClick={onBack} className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-white/30">
           <ChevronLeft size={28} />
         </button>
@@ -729,197 +973,139 @@ export default function QuizScreen({
         <div className="font-bold text-lg bg-white/20 px-4 py-2 rounded-full border border-white/20">{currentIndex + 1}/{questions.length}</div>
       </div>
 
-      {/* Combo Display */}
-      <AnimatePresence>
-        {combo >= 3 && (
-          <motion.div
-            key={combo}
-            initial={{ opacity: 0, y: -20, scale: 0.5, rotate: -15 }}
-            animate={
-              combo >= 10
-                ? { opacity: 1, y: 0, scale: 1.2, rotate: 0 }
-                : combo >= 5
-                  ? { opacity: 1, y: 0, scale: 1.1, rotate: 0 }
-                  : { opacity: 1, y: 0, scale: 1, rotate: 0 }
-            }
-            exit={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
-            transition={{ duration: 0.6, type: 'spring', bounce: 0.7 }}
-            className={`absolute top-16 right-4 flex items-center gap-2 z-20 bg-white/95 backdrop-blur-sm px-6 py-3 rounded-full shadow-2xl border-4 ${
-              combo >= 10 ? 'border-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.6)]' :
-              combo >= 5 ? 'border-pink-400 shadow-[0_0_20px_rgba(236,72,153,0.5)]' :
-              'border-orange-300 shadow-[0_0_15px_rgba(253,186,116,0.5)]'
-            }`}
-          >
-            <ParticleBurst tier={combo >= 10 ? 3 : combo >= 5 ? 2 : 1} />
-            <div className="relative z-10 flex items-center gap-2">
-              {combo >= 10 ? <Crown className="text-purple-500 w-12 h-12 animate-bounce" fill="currentColor" /> :
-               combo >= 5 ? <Zap className="text-pink-500 w-10 h-10 animate-bounce" fill="currentColor" /> :
-               <Flame className="text-orange-500 w-8 h-8 animate-bounce" fill="currentColor" />}
-              <span className={`font-black italic drop-shadow-md ${
-                combo >= 10 ? 'text-5xl text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-red-500' :
-                combo >= 5 ? 'text-4xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-orange-500' :
-                'text-3xl text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600'
-              }`}>
-                {combo} 连击!
-              </span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Question Area */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8 relative z-10">
-        {/* Pet Combo Animation */}
-        <AnimatePresence mode="wait">
-          {showPetCombo && selectedPet && (
-            <motion.div
-              key={`pet-${combo}`}
-              initial={{ x: 200, opacity: 0, scale: 0.5, rotate: 30 }}
-              animate={{ x: 0, opacity: 1, scale: 0.8, rotate: -5 }}
-              exit={{ x: 200, opacity: 0, scale: 0.5, rotate: 30 }}
-              transition={{ type: 'spring', bounce: 0.6, duration: 0.8, exit: { duration: 0.5 } }}
-              className="absolute bottom-24 right-8 z-50 flex flex-col items-end pointer-events-none"
-            >
-              {/* Speech Bubble */}
-              <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.5, rotate: -10 }}
-                animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
-                transition={{ delay: 0.3, type: 'spring', bounce: 0.6 }}
-                className="relative bg-white text-orange-500 font-black px-5 py-2.5 rounded-[2rem] rounded-br-sm shadow-2xl mb-3 text-lg border-4 border-orange-200"
-              >
-                {combo >= 12 ? "你简直是天才！" : combo >= 9 ? "太不可思议了！" : combo >= 6 ? "哇！手速太快了！" : "干得漂亮！"}
-                {/* Tail */}
-                <div className="absolute -bottom-4 right-6 w-0 h-0 border-l-[10px] border-l-transparent border-t-[16px] border-t-white border-r-[10px] border-r-transparent drop-shadow-md"></div>
-              </motion.div>
-
-              {/* Pet - 放大图标 */}
-              <motion.div
-                animate={{ y: -10 }}
-                transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut", repeatType: "reverse" }}
-                className={`w-28 h-28 rounded-full ${selectedPet.color} flex items-center justify-center text-6xl shadow-[0_10px_20px_rgba(0,0,0,0.3)] border-4 border-white`}
-              >
-                {selectedPet.emoji}
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
+      {/* Main Area */}
+      <div className="flex-1 min-h-0 flex flex-col px-4 pb-0 pt-1 relative z-10">
         <motion.div
-          key={currentIndex}
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="w-full max-w-lg bg-white/95 rounded-[2rem] p-10 shadow-2xl min-h-[280px] flex flex-col items-center justify-center relative border-4 border-white/50"
+          key={`battle-${currentIndex}-${combo}-${clearedBlocks}`}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex-1 min-h-0 mb-0"
         >
+          <BattleStage
+            selectedPet={selectedPet}
+            combo={combo}
+            shotTier={shotTier}
+            clearedBlocks={clearedBlocks}
+            lastRemoval={lastRemoval}
+            bannerText={battleBanner}
+            feedback={feedback}
+          />
+        </motion.div>
+
+        <div className="shrink-0 bg-white/20 backdrop-blur-md rounded-t-[2rem] px-4 pt-4 pb-5">
+          <motion.div
+            key={currentIndex}
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="w-full max-w-3xl mx-auto bg-white/95 rounded-[2rem] px-6 py-5 shadow-2xl h-[170px] flex flex-col items-center justify-center relative border-4 border-white/50 mb-4"
+          >
             {question.type === 'text_to_number' ? (
               <div className="text-center w-full">
-              <div className="text-2xl font-bold text-gray-500 mb-6 tracking-wider">{question.text}</div>
-              <div className="flex items-center justify-center gap-4">
-                <span className="text-xl font-bold text-gray-600">{question.label}</span>
+                <div className="text-2xl font-bold text-gray-500 mb-6 tracking-wider">{question.text}</div>
+                <div className="flex items-center justify-center gap-4">
+                  <span className="text-xl font-bold text-gray-600">{question.label}</span>
+                  <motion.div
+                    animate={
+                      feedback === 'wrong' && answers[0] !== question.answer
+                        ? { x: [-5, 5, -5, 5, 0] }
+                        : answers[0] && answers[0].length > 0
+                          ? { scale: 1, boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)" }
+                          : { scale: 1.15, boxShadow: "0 0 35px rgba(253,224,71,1)" }
+                    }
+                    transition={
+                      feedback === 'wrong' && answers[0] !== question.answer
+                        ? { duration: 0.4 }
+                        : answers[0] && answers[0].length > 0
+                          ? { duration: 0.2 }
+                          : { repeat: Infinity, duration: 1.2, ease: "easeInOut", repeatType: "reverse" }
+                    }
+                    className={`min-w-[80px] px-4 h-16 rounded-xl flex items-center justify-center text-3xl font-bold transition-colors
+                      ${answers[0] ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-400'}
+                      ${feedback === 'wrong' && answers[0] !== question.answer ? 'bg-red-100 text-red-500' : ''}
+                      ${!answers[0] || answers[0].length === 0 ? 'ring-4 ring-yellow-300 bg-yellow-50' : ''}
+                    `}
+                  >
+                    {answers[0] || '?'}
+                  </motion.div>
+                </div>
+              </div>
+              ) : question.type === 'number_comparison' ? (
+                renderNumberComparison()
+              ) : question.type === 'input' ? (
+                renderInput()
+              ) : question.type === 'counting' ? (
+                renderCounting()
+              ) : question.type === 'choice' ? (
+                renderChoice()
+              ) : question.type === 'multi_vertical' ? (
+                renderMultiVertical()
+              ) : (
+                renderVerticalMath()
+              )}
+
+              {/* Correct Checkmark */}
+              {feedback === 'correct' && (
                 <motion.div
-                  animate={
-                    feedback === 'wrong' && answers[0] !== question.answer
-                      ? { x: [-5, 5, -5, 5, 0] }
-                      : answers[0] && answers[0].length > 0
-                        ? { scale: 1, boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)" }
-                        : { scale: 1.15, boxShadow: "0 0 35px rgba(253,224,71,1)" }
-                  }
-                  transition={
-                    feedback === 'wrong' && answers[0] !== question.answer
-                      ? { duration: 0.4 }
-                      : answers[0] && answers[0].length > 0
-                        ? { duration: 0.2 }
-                        : { repeat: Infinity, duration: 1.2, ease: "easeInOut", repeatType: "reverse" }
-                  }
-                  className={`min-w-[80px] px-4 h-16 rounded-xl flex items-center justify-center text-3xl font-bold transition-colors
-                    ${answers[0] ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-400'}
-                    ${feedback === 'wrong' && answers[0] !== question.answer ? 'bg-red-100 text-red-500' : ''}
-                    ${!answers[0] || answers[0].length === 0 ? 'ring-4 ring-yellow-300 bg-yellow-50' : ''}
-                  `}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="absolute bottom-4"
                 >
-                  {answers[0] || '?'}
+                  <div className="bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-sm">
+                    <Check className="w-8 h-8 text-green-500" strokeWidth={4} />
+                  </div>
                 </motion.div>
-              </div>
-            </div>
-          ) : question.type === 'number_comparison' ? (
-            renderNumberComparison()
-          ) : question.type === 'input' ? (
-            renderInput()
-          ) : question.type === 'counting' ? (
-            renderCounting()
-          ) : question.type === 'choice' ? (
-            renderChoice()
-          ) : question.type === 'multi_vertical' ? (
-            renderMultiVertical()
-          ) : (
-            renderVerticalMath()
-          )}
-
-          {/* Correct Checkmark */}
-          {feedback === 'correct' && (
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="absolute bottom-4"
-            >
-              <div className="bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-sm">
-                <Check className="w-8 h-8 text-green-500" strokeWidth={4} />
-              </div>
+              )}
             </motion.div>
-          )}
-        </motion.div>
-      </div>
 
-      {/* Numpad */}
-      <div className="bg-white/20 backdrop-blur-md rounded-t-[2rem] p-6 pb-10">
-        {question.type === 'number_comparison' ? (
-          <div className="grid grid-cols-3 gap-5 px-4 py-2">
-            {['>', '=', '<'].map((sym) => (
+          {question.type === 'number_comparison' ? (
+            <div className="grid grid-cols-3 gap-4 px-2 py-1 max-w-md mx-auto">
+              {['>', '=', '<'].map((sym) => (
+                <button
+                  key={sym}
+                  onClick={() => handleKeyPress(sym)}
+                  className="bg-white rounded-[1.5rem] h-20 flex items-center justify-center text-blue-500 shadow-[0_8px_0_#e5e7eb] active:shadow-none active:translate-y-2 transition-all"
+                >
+                  <span className="text-6xl font-bold">{sym}</span>
+                </button>
+              ))}
+            </div>
+          ) : question.type === 'choice' ? (
+            <div className="max-w-3xl mx-auto">
+              {renderChoiceButtons()}
+            </div>
+          ) : (
+            <div className="w-full max-w-3xl mx-auto flex flex-col gap-4 items-center">
+              <div className="grid w-full grid-cols-5 gap-4">
+                {[1, 2, 3, 4, 5].map(num => (
+                  <button
+                    key={num}
+                    onClick={() => handleKeyPress(num.toString())}
+                    className="bg-white rounded-2xl h-14 w-full text-3xl font-bold text-gray-700 shadow-[0_5px_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all"
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+              <div className="grid w-full grid-cols-5 gap-4">
+                {[6, 7, 8, 9, 0].map(num => (
+                  <button
+                    key={num}
+                    onClick={() => handleKeyPress(num.toString())}
+                    className="bg-white rounded-2xl h-14 w-full text-3xl font-bold text-gray-700 shadow-[0_5px_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all"
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
               <button
-                key={sym}
-                onClick={() => handleKeyPress(sym)}
-                className="bg-white rounded-[1.5rem] h-24 flex items-center justify-center text-blue-500 shadow-[0_8px_0_#e5e7eb] active:shadow-none active:translate-y-2 transition-all"
+                onClick={() => handleKeyPress('delete')}
+                className="bg-white rounded-2xl h-14 w-full flex items-center justify-center text-red-400 shadow-[0_5px_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all"
               >
-                <span className="text-6xl font-bold">{sym}</span>
+                <Delete size={32} />
               </button>
-            ))}
-          </div>
-        ) : question.type === 'choice' ? (
-          <div className="text-center text-white/80 py-8">
-            <span className="text-xl font-bold">👆 点击上方选项作答</span>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4 items-center">
-            <div className="grid grid-cols-5 gap-4">
-              {[1, 2, 3, 4, 5].map(num => (
-                <button
-                  key={num}
-                  onClick={() => handleKeyPress(num.toString())}
-                  className="bg-white rounded-2xl h-16 w-20 text-3xl font-bold text-gray-700 shadow-[0_5px_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all"
-                >
-                  {num}
-                </button>
-              ))}
             </div>
-            <div className="grid grid-cols-5 gap-4">
-              {[6, 7, 8, 9, 0].map(num => (
-                <button
-                  key={num}
-                  onClick={() => handleKeyPress(num.toString())}
-                  className="bg-white rounded-2xl h-16 w-20 text-3xl font-bold text-gray-700 shadow-[0_5px_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all"
-                >
-                  {num}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => handleKeyPress('delete')}
-              className="bg-white rounded-2xl h-16 flex items-center justify-center text-red-400 shadow-[0_5px_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all"
-              style={{ width: 'calc(5 * 80px + 4 * 16px)' }}
-            >
-              <Delete size={32} />
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

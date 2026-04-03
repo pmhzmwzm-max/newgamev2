@@ -83,13 +83,13 @@ export default function PokedexScreen({
           {isUnlocked ? pet.name : '未知伙伴'}
         </div>
         <div className="text-[10px] font-bold text-slate-500">
-          {isUnlocked ? '已解锁' : `${pet.requiredPieces} 碎片解锁`}
+          {isUnlocked ? '已成长解锁' : `${pet.requiredPieces} 点经验成长`}
         </div>
 
         {!isUnlocked && (
           <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-slate-200/80 px-2 py-1 text-[10px] font-black text-slate-600">
             <Lock size={11} />
-            {remainingPieces > 0 ? `还差 ${remainingPieces} 块` : '尚未解锁'}
+            {remainingPieces > 0 ? `还差 ${remainingPieces} 点经验` : '等待成长激活'}
           </div>
         )}
       </motion.button>

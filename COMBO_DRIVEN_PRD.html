@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>连击驱动答题关卡 PRD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4facfe;
+      --primary-2: #00f2fe;
+      --accent-orange: #f97316;
+      --accent-gold: #fbbf24;
+      --accent-pink: #ec4899;
+      --success: #14b8a6;
+      --danger: #ef4444;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: rgba(31, 41, 55, 0.09);
+      --panel: rgba(255, 255, 255, 0.86);
+      --bg: #f4f8ff;
+      --font-display: 'Fredoka', sans-serif;
+      --font-body: 'Nunito', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      background:
+        radial-gradient(circle at top left, rgba(79, 172, 254, 0.14), transparent 24%),
+        linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+      color: var(--ink);
+    }
+
+    .page {
+      max-width: 1560px;
+      margin: 0 auto;
+      padding: 28px 24px 40px;
+    }
+
+    .hero {
+      margin-bottom: 20px;
+      padding: 26px 28px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(79, 172, 254, 0.12), rgba(0, 242, 254, 0.08));
+      border: 1px solid rgba(79, 172, 254, 0.14);
+      box-shadow: 0 20px 50px rgba(79, 172, 254, 0.08);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(79, 172, 254, 0.12);
+      color: #1775cf;
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-family: var(--font-display);
+      font-size: 42px;
+      line-height: 1.06;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 76ch;
+      color: #4b5563;
+      font-size: 16px;
+      line-height: 1.75;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 520px minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      box-shadow: 0 24px 70px rgba(17, 24, 39, 0.08);
+      overflow: hidden;
+    }
+
+    .card-head {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .card-head strong {
+      display: block;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .card-head span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .spec {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      max-height: calc(100vh - 120px);
+      overflow: auto;
+    }
+
+    .section {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,255,0.9));
+    }
+
+    .section h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .section p,
+    .section li,
+    .state-copy p {
+      margin: 0;
+      color: #4b5563;
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .section ul,
+    .section ol {
+      margin: 10px 0 0;
+      padding-left: 20px;
+    }
+
+    .pill-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .pill-box {
+      padding: 12px;
+      border-radius: 18px;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.5;
+      color: #374151;
+      background: rgba(79, 172, 254, 0.08);
+      border: 1px solid rgba(79, 172, 254, 0.12);
+    }
+
+    .threshold-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .threshold {
+      display: grid;
+      grid-template-columns: 114px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    .threshold strong {
+      display: inline-flex;
+      justify-content: center;
+      padding: 9px 12px;
+      border-radius: 999px;
+      color: white;
+      font-size: 13px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .tier-normal { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+    .tier-boost { background: linear-gradient(135deg, #fbbf24, #f97316); }
+    .tier-super { background: linear-gradient(135deg, #f97316, #ec4899); }
+    .tier-final { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .metric {
+      padding: 14px 10px;
+      text-align: center;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .metric b {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 28px;
+      line-height: 1;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+
+    .prototype {
+      padding: 18px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .state-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .state-tab {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      color: #4b5563;
+      background: rgba(31, 41, 55, 0.06);
+      cursor: pointer;
+      transition: 160ms ease;
+    }
+
+    .state-tab.active {
+      color: white;
+      background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink));
+      box-shadow: 0 10px 22px rgba(236, 72, 153, 0.24);
+    }
+
+    .mode-tab {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      color: #4b5563;
+      background: rgba(31, 41, 55, 0.06);
+      cursor: pointer;
+      transition: 160ms ease;
+    }
+
+    .mode-tab.active {
+      color: white;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      box-shadow: 0 10px 22px rgba(59, 130, 246, 0.24);
+    }
+
+    .legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.8);
+      border: 1px solid var(--line);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .portrait-shell {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .phone-wrap {
+      display: flex;
+      justify-content: center;
+    }
+
+    .phone {
+      width: 760px;
+      max-width: 100%;
+      min-height: 1120px;
+      border-radius: 34px;
+      padding: 0;
+      overflow: hidden;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+      box-shadow: 0 34px 80px rgba(0, 0, 0, 0.14);
+      position: relative;
+    }
+
+    .quiz-header {
+      padding: 36px 34px 16px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .quiz-back-btn {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.18);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 400;
+    }
+
+    .quiz-progress-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .quiz-progress-bar {
+      flex: 1;
+      height: 28px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.28);
+      border: 1px solid rgba(255,255,255,0.14);
+      position: relative;
+    }
+
+    .quiz-progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #fbbf24 0%, #f97316 100%);
+      transition: width 260ms ease;
+    }
+
+    .quiz-counter {
+      min-width: 126px;
+      padding: 16px 14px;
+      border-radius: 999px;
+      text-align: center;
+      color: white;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.16);
+      font-family: var(--font-display);
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .combo-badge {
+      position: absolute;
+      right: 26px;
+      top: 146px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      color: white;
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-pink) 100%);
+      box-shadow: 0 10px 24px rgba(249, 115, 22, 0.32);
+    }
+
+    .combo-badge.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .battle-zone {
+      position: relative;
+      margin: 14px 28px 18px;
+      min-height: 472px;
+      border-radius: 36px;
+      background:
+        radial-gradient(circle at 18% 20%, rgba(255,255,255,0.18), transparent 24%),
+        radial-gradient(circle at 74% 18%, rgba(255,255,255,0.16), transparent 22%),
+        linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%);
+      border: 1px solid rgba(255,255,255,0.18);
+      overflow: hidden;
+    }
+
+    .battle-zone::before {
+      content: "";
+      position: absolute;
+      inset: auto 26px 20px 26px;
+      height: 82px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.07);
+      filter: blur(12px);
+    }
+
+    .battle-copy {
+      position: absolute;
+      left: 28px;
+      top: 24px;
+      padding: 12px 16px;
+      border-radius: 18px;
+      color: white;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.16);
+      font-size: 14px;
+      font-weight: 800;
+      backdrop-filter: blur(8px);
+    }
+
+    .pet-stage {
+      position: absolute;
+      left: 22px;
+      bottom: 32px;
+      width: 258px;
+      height: 248px;
+    }
+
+    .pet-shadow {
+      position: absolute;
+      left: 34px;
+      right: 24px;
+      bottom: 6px;
+      height: 36px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.1);
+      filter: blur(8px);
+    }
+
+    .pet {
+      position: absolute;
+      left: 48px;
+      bottom: 28px;
+      width: 150px;
+      height: 150px;
+      border-radius: 48px;
+      background:
+        radial-gradient(circle at 34% 24%, rgba(255,255,255,0.42), transparent 18%),
+        linear-gradient(180deg, #ffbe62 0%, #ff9248 48%, #f46a3b 100%);
+      box-shadow:
+        0 22px 44px rgba(244, 106, 59, 0.28),
+        0 0 0 16px rgba(255,255,255,0.08);
+      transition: transform 220ms ease, box-shadow 220ms ease;
+    }
+
+    .pet::before,
+    .pet::after {
+      content: "";
+      position: absolute;
+      top: -18px;
+      width: 36px;
+      height: 50px;
+      background: linear-gradient(180deg, #ffbc60, #ff9650);
+      border-radius: 24px 24px 8px 8px;
+    }
+
+    .pet::before { left: 22px; transform: rotate(-12deg); }
+    .pet::after { right: 22px; transform: rotate(12deg); }
+
+    .pet-face {
+      position: absolute;
+      inset: 46px 28px auto;
+      height: 54px;
+    }
+
+    .eye {
+      position: absolute;
+      top: 8px;
+      width: 16px;
+      height: 22px;
+      border-radius: 999px;
+      background: #3f2d20;
+    }
+
+    .eye.left { left: 28px; }
+    .eye.right { right: 28px; }
+
+    .mouth {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 42px;
+      height: 18px;
+      margin-left: -21px;
+      border-bottom: 4px solid #7a4127;
+      border-radius: 0 0 24px 24px;
+    }
+
+    .beam {
+      position: absolute;
+      left: 182px;
+      bottom: 118px;
+      width: 0;
+      height: 20px;
+      border-radius: 999px;
+      transform: rotate(-7deg);
+      opacity: 0;
+      transition: width 240ms ease, opacity 180ms ease, height 240ms ease;
+      background: linear-gradient(90deg, rgba(255,255,255,0), #fff8d7 8%, #ffb24d 38%, #ff7d46 68%, rgba(255,255,255,0));
+      box-shadow: 0 0 34px rgba(255, 178, 77, 0.6);
+    }
+
+    .impact {
+      position: absolute;
+      left: 328px;
+      bottom: 76px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 215, 103, 0.78), rgba(255, 132, 76, 0.12) 44%, transparent 68%);
+      opacity: 0;
+      transform: scale(0.7);
+      transition: 220ms ease;
+    }
+
+    .matrix-wrap {
+      position: absolute;
+      right: 28px;
+      top: 62px;
+      width: 330px;
+    }
+
+    .matrix-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    .block {
+      aspect-ratio: 1;
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 30% 24%, rgba(255,255,255,0.5), transparent 18%),
+        linear-gradient(180deg, #fff8d2 0%, #ffd86a 52%, #ffb157 100%);
+      box-shadow:
+        inset 0 -6px 0 rgba(216, 140, 40, 0.46),
+        0 10px 16px rgba(133, 96, 32, 0.16);
+      transition: transform 180ms ease, opacity 180ms ease, filter 180ms ease;
+    }
+
+    .block.cleared {
+      opacity: 0.18;
+      transform: scale(0.8);
+      filter: grayscale(0.3);
+      box-shadow: none;
+    }
+
+    .floating-banner {
+      position: absolute;
+      left: 50%;
+      top: 26px;
+      transform: translateX(-50%);
+      padding: 12px 18px;
+      border-radius: 999px;
+      color: white;
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, rgba(249,115,22,0.96), rgba(236,72,153,0.96));
+      box-shadow: 0 14px 28px rgba(236, 72, 153, 0.22);
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .floating-banner.show {
+      opacity: 1;
+    }
+
+    .battle-note {
+      position: absolute;
+      left: 28px;
+      right: 28px;
+      bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .battle-note span {
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .quiz-main-bottom {
+      padding: 0 28px 30px;
+    }
+
+    .question-panel {
+      border-radius: 34px;
+      padding: 22px 22px 26px;
+      background: rgba(255,255,255,0.18);
+      backdrop-filter: blur(8px);
+    }
+
+    .question-label {
+      text-align: center;
+      color: rgba(255,255,255,0.82);
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      letter-spacing: 0.04em;
+    }
+
+    .question-card {
+      width: 100%;
+      margin: 0 auto 16px;
+      max-width: 470px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 32px;
+      padding: 34px 24px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .equation {
+      font-family: var(--font-display);
+      font-size: 82px;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .answer-box {
+      width: 128px;
+      height: 128px;
+      border-radius: 26px;
+      background: linear-gradient(180deg, #fffdf4 0%, #fff4c6 100%);
+      color: #9ca3af;
+      box-shadow: 0 0 28px rgba(251, 191, 36, 0.48);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 64px;
+      font-weight: 700;
+    }
+
+    .quiz-numpad {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: center;
+      padding-top: 8px;
+    }
+
+    .numpad-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 18px;
+      width: 100%;
+      max-width: 470px;
+    }
+
+    .numpad-key {
+      height: 118px;
+      border: none;
+      border-radius: 26px;
+      background: linear-gradient(180deg, #ffffff 0%, #f6f7fb 100%);
+      color: #374151;
+      font-family: var(--font-display);
+      font-size: 58px;
+      font-weight: 700;
+      box-shadow: 0 8px 0 #dfe3ea, 0 12px 24px rgba(0,0,0,0.06);
+    }
+
+    .numpad-key.delete {
+      grid-column: 1 / -1;
+      height: 116px;
+      color: #ff6b6b;
+      font-size: 54px;
+    }
+
+    .choice-grid {
+      display: none;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      width: 100%;
+      max-width: 470px;
+      margin: 0 auto;
+    }
+
+    .choice-grid.show {
+      display: grid;
+    }
+
+    .choice-btn {
+      min-height: 96px;
+      border-radius: 20px;
+      border: 4px solid #e5e7eb;
+      background: white;
+      color: #374151;
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      box-shadow: 0 6px 0 #9ca3af;
+      transition: all 0.1s ease;
+    }
+
+    .choice-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 #9ca3af;
+      border-color: #3b82f6;
+    }
+
+    .choice-btn.selected,
+    .choice-btn:active {
+      transform: translateY(6px);
+      box-shadow: 0 0 0 #9ca3af;
+    }
+
+    .choice-btn.correct {
+      background: #22c55e;
+      border-color: #16a34a;
+      color: white;
+      box-shadow: 0 6px 0 #15803d;
+    }
+
+    .choice-btn.wrong {
+      background: #ef4444;
+      border-color: #dc2626;
+      color: white;
+      box-shadow: 0 6px 0 #b91c1c;
+    }
+
+    .answer-box.choice-slot {
+      min-width: 96px;
+      height: 76px;
+      border-radius: 16px;
+      border-width: 4px;
+      font-size: 34px;
+      box-shadow: 0 4px 0 #9ca3af;
+    }
+
+    .answer-box.choice-slot.empty {
+      background: #f9fafb;
+      border-color: #d1d5db;
+      color: #9ca3af;
+    }
+
+    .answer-box.choice-slot.empty::before {
+      content: '?';
+    }
+
+    .answer-box.choice-slot.active {
+      background: #fffbeb;
+      border-color: #fbbf24;
+      color: #f59e0b;
+      box-shadow: 0 4px 0 #f59e0b, 0 0 18px rgba(251,191,36,0.42);
+    }
+
+    .answer-box.choice-slot.active::before {
+      content: '?';
+    }
+
+    .answer-box.choice-slot.filled {
+      background: #eff6ff;
+      border-color: #3b82f6;
+      color: #1d4ed8;
+      box-shadow: 0 4px 0 #1d4ed8;
+    }
+
+    .answer-box.choice-slot.correct {
+      background: #dcfce7;
+      border-color: #22c55e;
+      color: #16a34a;
+      box-shadow: 0 4px 0 #16a34a;
+    }
+
+    .answer-box.choice-slot.wrong {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #dc2626;
+      box-shadow: 0 4px 0 #dc2626;
+    }
+
+    .side-panel {
+      display: grid;
+      gap: 14px;
+    }
+
+    .state-copy {
+      padding: 16px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.92);
+    }
+
+    .state-copy h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    .mini-table th,
+    .mini-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 0;
+      text-align: left;
+    }
+
+    .mini-table th {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6b7280;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .tag {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(79, 172, 254, 0.1);
+      color: #2563eb;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    @media (max-width: 1380px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .spec {
+        max-height: none;
+      }
+
+      .portrait-shell {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="eyebrow">Execution-Ready HTML PRD</div>
+      <h1>一关 10 题 · 连击驱动发射版答题关卡</h1>
+      <p>
+        这份成品页不是概念稿，而是可直接给后续 AI / 开发使用的工作台。顶部返回键、进度条、题号计数保持现有代码的视觉语言，
+        底部题目与数字键盘保持原有样式，中间区域替换为“左宠物、右矩阵方块”的战斗舞台。奖励主语义切换为经验升级宠物。
+      </p>
+    </div>
+
+    <div class="layout">
+      <section class="card">
+        <div class="card-head">
+          <strong>左栏：可执行 PRD</strong>
+          <span>给 vibe coding 直接用，不需要再次脑补页面规则</span>
+        </div>
+        <div class="spec">
+          <div class="section">
+            <h2>1. 功能一句话定义</h2>
+            <p>每答对一题，宠物向右发射一次；发射强度由连续答对次数决定，随着连击上升逐步增强，并在第 10 连击触发终极清屏。</p>
+            <div class="pill-grid">
+              <div class="pill-box">顶部不改：返回键、进度条、题号计数沿用现有 Quiz 页视觉。</div>
+              <div class="pill-box">底部不改：题目输入区与数字键盘样式保持原有骨架。</div>
+              <div class="pill-box">中部重做：原大白卡替换成战斗舞台。</div>
+              <div class="pill-box">奖励改语义：从碎片切到经验升级宠物。</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>2. 页面不变区与改造区</h2>
+            <ul>
+              <li>上区固定为导航区，只负责返回和关内进度，不承载战斗反馈。</li>
+              <li>中区固定为战斗区，左侧宠物、右侧方块矩阵，发射方向从左向右。</li>
+              <li>下区固定为答题区，保留现有题目与数字键盘的圆角、白卡、阴影和按钮语言。</li>
+            </ul>
+          </div>
+
+          <div class="section">
+            <h2>3. 固定连击阈值</h2>
+            <div class="threshold-list">
+              <div class="threshold">
+                <strong class="tier-normal">1-2 连击</strong>
+                <p>普通发射。短光束，单格消除，建立“答对就有反馈”的基础感。</p>
+              </div>
+              <div class="threshold">
+                <strong class="tier-boost">3-5 连击</strong>
+                <p>强化发射。光束变粗并带强化光效，每次消除 3 格，页面要明确提示已升级。</p>
+              </div>
+              <div class="threshold">
+                <strong class="tier-super">6-9 连击</strong>
+                <p>超级发射。命中更亮、范围更大，每次消除 4 格，重点体现“我现在越来越强”。</p>
+              </div>
+              <div class="threshold">
+                <strong class="tier-final">10 连击</strong>
+                <p>终极清屏发射。独立于超级发射，必须清空剩余全部方块并形成完整结束感。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>4. 方块矩阵与消除节奏</h2>
+            <p>中区矩阵初始固定为 <strong>5 列 × 7 行 = 35 块</strong>。这是“全对通关”时能够被完整清空的最大展示量。</p>
+            <div class="metrics">
+              <div class="metric"><b>35</b><span>初始总方块</span></div>
+              <div class="metric"><b>5×7</b><span>矩阵规格</span></div>
+              <div class="metric"><b>10</b><span>关内总题数</span></div>
+            </div>
+            <ol>
+              <li>第 1-2 连击：各消 1 块</li>
+              <li>第 3-5 连击：各消 3 块</li>
+              <li>第 6-9 连击：各消 4 块</li>
+              <li>第 10 连击：清空剩余 8 块</li>
+            </ol>
+          </div>
+
+          <div class="section">
+            <h2>5. 中部战斗区组件拆分</h2>
+            <ul>
+              <li><strong>宠物组件</strong>：固定在左侧偏下，支持待机、普通、强化、超级、终极 5 类表现。</li>
+              <li><strong>发射轨迹组件</strong>：沿主攻击路径表现长度、粗细、亮度和命中感变化。</li>
+              <li><strong>矩阵方块组件</strong>：固定 35 块，支持局部消除、范围消除、最终清空。</li>
+              <li><strong>状态提示组件</strong>：用于“强化开启”“超级开启”“连击中断”“终极清屏”等关键提示。</li>
+            </ul>
+          </div>
+
+          <div class="section">
+            <h2>6. 六个关键状态</h2>
+            <ol>
+              <li>关前准备：矩阵满格，建立“我要开始清场了”的预备感。</li>
+              <li>单题作答中：默认主状态，等待本次输入命中。</li>
+              <li>强化发射开启：第一次跨进 3 连击时，显式告知已升级。</li>
+              <li>超级发射中：6-9 连击的高压爽感阶段。</li>
+              <li>答错打断：连击归零，战斗区轻量失败反馈并回到普通档。</li>
+              <li>第 10 连击终极清屏：剩余方块全部清空，形成整关收束。</li>
+            </ol>
+          </div>
+
+          <div class="section">
+            <h2>7. 经验升级语义</h2>
+            <p>本版本不再以碎片为主奖励叙事。顶部进度条仍表示本关答题进度，而宠物成长改由经验值表达。经验条可以作为中区或结算页的辅助信息存在，但不能取代顶部进度条的职责。</p>
+            <div class="tag-list">
+              <span class="tag">答题进度 ≠ 宠物经验</span>
+              <span class="tag">经验用于成长承接</span>
+              <span class="tag">奖励主语义切换完成</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>8. 交互变体：选择答案</h2>
+            <p>除数字输入外，同一套关卡骨架还应支持“选择答案”型题目。顶部与中部战斗区规则完全复用，仅替换底部作答区域。</p>
+            <ul>
+              <li>顶部返回键、进度条、题号计数保持不变。</li>
+              <li>中部宠物与矩阵方块逻辑保持不变，发射仍由连击驱动。</li>
+              <li>选择题交互必须沿用 [QUIZ_TYPE_DEMO.html] 中“题目 + choiceSlot + choice-btn”的原始模式。</li>
+              <li>点击选项后，先把答案写入大号 choiceSlot，再进入 selected / correct / wrong 状态反馈。</li>
+              <li>选择题不再展示数字键盘，但按钮形态、按压阴影和反馈层级必须保持 demo 原样逻辑。</li>
+            </ul>
+          </div>
+
+          <div class="section">
+            <h2>9. 完整关卡链路</h2>
+            <ol>
+              <li>关前准备：满矩阵进入关卡。</li>
+              <li>题目 1-9：按数字输入或选择答案完成作答，连击按规则推进或中断。</li>
+              <li>题目 10：触发终极清屏。</li>
+              <li>清屏结束：进入经验结算承接，展示本关完成与成长结果。</li>
+            </ol>
+            <p style="margin-top:10px;">正式验收标准不再是“某个状态能展示”，而是新布局 + 新交互下，用户能从进入关卡一路完整走到结算承接。</p>
+          </div>
+
+          <div class="section">
+            <h2>10. 动效规则</h2>
+            <ul>
+              <li>连击提升必须同步拉升光束强度、命中反馈和单次清除数量。</li>
+              <li>强化和超级不允许静默切换，至少要有一次显式升级提示。</li>
+              <li>第 10 连击必须强于 6-9 连击，不得只是简单放大版。</li>
+              <li>答错反馈只说明断连，不做重惩罚，不影响顶部和底部结构。</li>
+            </ul>
+          </div>
+
+          <div class="section">
+            <h2>11. 验收标准</h2>
+            <ul>
+              <li>顶部返回键、进度条、题号计数视觉样式保持原有 Quiz 页语言。</li>
+              <li>底部题目与数字键盘样式保持原有设计语言。</li>
+              <li>中部初始展示 35 个方块，站位固定为左宠物右矩阵。</li>
+              <li>发射强度严格按 `1-2 / 3-5 / 6-9 / 10` 连击档位切换。</li>
+              <li>答错后连击归零，发射档位恢复普通。</li>
+              <li>全对通关时第 10 连击清空剩余全部方块。</li>
+              <li>选择答案交互模式下，必须沿用 QUIZ_TYPE_DEMO 的 choiceSlot + choice-btn 原始交互。</li>
+              <li>基于新交互与新布局，页面必须能完整走完一整个关卡并进入经验结算承接。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <strong>右栏：同一竖屏骨架下的高保真状态原型</strong>
+          <span>只切换中部战斗区，顶部和底部保持一致，便于开发直接对照</span>
+        </div>
+        <div class="prototype">
+          <div class="mode-tabs" id="modeTabs"></div>
+          <div class="toolbar">
+            <div class="state-tabs" id="stateTabs"></div>
+            <div class="legend">
+              <span><i class="dot" style="background:#ffb157"></i>被清除方块</span>
+              <span><i class="dot" style="background:#f97316"></i>当前发射强度</span>
+              <span><i class="dot" style="background:#ec4899"></i>关键状态提示</span>
+            </div>
+          </div>
+
+          <div class="portrait-shell">
+            <div class="phone-wrap">
+              <div class="phone">
+                <div class="quiz-header">
+                  <div class="quiz-back-btn">‹</div>
+                  <div class="quiz-progress-container">
+                    <div class="quiz-progress-bar">
+                      <div class="quiz-progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="quiz-counter" id="quizCounter">1/10</div>
+                  </div>
+                </div>
+
+                <div class="combo-badge hidden" id="comboBadge">🔥 1 连击</div>
+
+                <div class="battle-zone" id="battleZone">
+                  <div class="battle-copy" id="battleCopy">中区是唯一改造区：左宠物右矩阵，横向发射。</div>
+                  <div class="floating-banner" id="floatingBanner">强化发射开启</div>
+
+                  <div class="pet-stage">
+                    <div class="pet-shadow"></div>
+                    <div class="pet" id="pet">
+                      <div class="pet-face">
+                        <div class="eye left"></div>
+                        <div class="eye right"></div>
+                        <div class="mouth"></div>
+                      </div>
+                    </div>
+                    <div class="beam" id="beam"></div>
+                    <div class="impact" id="impact"></div>
+                  </div>
+
+                  <div class="matrix-wrap">
+                    <div class="matrix-head">
+                      <span>矩阵方块</span>
+                      <span id="matrixCount">35 / 35</span>
+                    </div>
+                    <div class="matrix-grid" id="matrixGrid"></div>
+                  </div>
+
+                  <div class="battle-note">
+                    <span id="noteLeft">固定初始量：35 块</span>
+                    <span id="noteRight">奖励主语义：经验升级宠物</span>
+                  </div>
+                </div>
+
+                <div class="quiz-main-bottom">
+                  <div class="question-panel">
+                    <div class="question-label" id="questionLabel">下区样式保持原样，仅沿用现有题目与键盘语言</div>
+                    <div class="question-card" id="inputQuestionCard">
+                      <div class="equation" id="equationText">125×4 =</div>
+                      <div class="answer-box" id="answerBox">?</div>
+                    </div>
+
+                    <div class="quiz-numpad" id="numpadWrap">
+                      <div class="numpad-row">
+                        <button class="numpad-key">1</button>
+                        <button class="numpad-key">2</button>
+                        <button class="numpad-key">3</button>
+                        <button class="numpad-key">4</button>
+                        <button class="numpad-key">5</button>
+                      </div>
+                      <div class="numpad-row">
+                        <button class="numpad-key">6</button>
+                        <button class="numpad-key">7</button>
+                        <button class="numpad-key">8</button>
+                        <button class="numpad-key">9</button>
+                        <button class="numpad-key">0</button>
+                      </div>
+                      <div class="numpad-row">
+                        <button class="numpad-key delete">⌫</button>
+                      </div>
+                    </div>
+
+                    <div class="question-card" id="choiceQuestionCard" style="display:none;">
+                      <div class="equation" id="choiceQuestionText" style="font-size:54px;">5 + 3 =</div>
+                      <div class="answer-box choice-slot active" id="choiceSlot"></div>
+                    </div>
+
+                    <div class="choice-grid" id="choiceGrid">
+                      <button class="choice-btn" data-choice-index="0" id="choiceBtn0">6</button>
+                      <button class="choice-btn" data-choice-index="1" id="choiceBtn1">7</button>
+                      <button class="choice-btn" data-choice-index="2" id="choiceBtn2">8</button>
+                      <button class="choice-btn" data-choice-index="3" id="choiceBtn3">9</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="side-panel">
+              <div class="state-copy">
+                <h3 id="stateTitle">状态标题</h3>
+                <p id="stateDescription">状态说明</p>
+              </div>
+
+              <div class="state-copy">
+                <h3>本状态开发关注点</h3>
+                <table class="mini-table">
+                  <thead>
+                    <tr>
+                      <th>字段</th>
+                      <th>当前值</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>当前连击</td><td id="sideCombo">1</td></tr>
+                    <tr><td>发射档位</td><td id="sideTier">普通</td></tr>
+                    <tr><td>本次消除</td><td id="sideRemoval">0</td></tr>
+                    <tr><td>剩余方块</td><td id="sideRemain">35</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="state-copy">
+                <h3>当前状态验收句</h3>
+                <p id="acceptanceText">验收说明</p>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const states = [
+      {
+        id: 'prepare',
+        label: '关前准备',
+        combo: 0,
+        progress: 0,
+        counter: '1/10',
+        tier: '预备',
+        removal: 0,
+        cleared: 0,
+        beamWidth: 0,
+        beamHeight: 20,
+        beamOpacity: 0,
+        banner: '',
+        badge: '',
+        petScale: 1,
+        impactOpacity: 0,
+        answer: '?',
+        equation: '125×4 =',
+        questionLabel: '下区保持原有题目与键盘样式，中区准备开始清场',
+        battleCopy: '初始展示 35 块，用户进入关卡时一眼看到完整矩阵。',
+        description: '预备状态里，顶部和底部已经就位，中区矩阵满格，传达“这一关要开始清场了”的预期。',
+        noteLeft: '矩阵初始总量：35 块',
+        noteRight: '宠物待机，尚未发射',
+        acceptance: '打开关卡时，中区默认展示完整 5×7 方块矩阵，顶部与底部维持现有 Quiz 页样式。',
+        choicePrompt: '下区可切换为选择题答案卡片，顶部与中部仍保持一致。',
+        choices: ['125', '250', '500', '625'],
+        correctChoice: 2,
+        wrongChoice: null
+      },
+      {
+        id: 'answer',
+        label: '单题作答中',
+        combo: 1,
+        progress: 10,
+        counter: '1/10',
+        tier: '普通',
+        removal: 1,
+        cleared: 1,
+        beamWidth: 92,
+        beamHeight: 18,
+        beamOpacity: 1,
+        banner: '',
+        badge: '🔥 1 连击',
+        petScale: 1,
+        impactOpacity: 0.54,
+        answer: '?',
+        equation: '125×4 =',
+        questionLabel: '普通发射：建立“答对就有反馈”的基础感',
+        battleCopy: '宠物从左向右短距离发射，消除 1 格，用户明确知道是自己答对触发了命中。',
+        description: '默认作答态。发射距离短、单次清除少，但必须稳定、明确，避免用户不知道自己做对后发生了什么。',
+        noteLeft: '当前档位：普通发射',
+        noteRight: '本次命中：1 块',
+        acceptance: '用户答对后，能明显看到一次从左到右的命中反馈，并同步消除 1 个方块。',
+        choicePrompt: '选择题模式下，用户直接点击答案卡片触发同样的普通发射。',
+        choices: ['9', '11', '13', '15'],
+        correctChoice: 1,
+        wrongChoice: null
+      },
+      {
+        id: 'boost',
+        label: '强化发射开启',
+        combo: 3,
+        progress: 30,
+        counter: '3/10',
+        tier: '强化',
+        removal: 3,
+        cleared: 5,
+        beamWidth: 150,
+        beamHeight: 22,
+        beamOpacity: 1,
+        banner: '强化发射开启',
+        badge: '🔥 3 连击',
+        petScale: 1.06,
+        impactOpacity: 0.72,
+        answer: '5',
+        equation: '72+13 =',
+        questionLabel: '首次跨入 3 连击时，必须显式告诉用户自己升级了',
+        battleCopy: '这一档开始进入稳定爽感区。光束变粗，多格清除，并出现强化提示。',
+        description: '强化发射是玩家第一次明确感知自己变强的节点。页面不能静默切过去，必须给升级感。',
+        noteLeft: '当前档位：强化发射',
+        noteRight: '本次命中：3 块',
+        acceptance: '跨进 3 连击时，至少出现一次可见升级提示，同时发射表现和清除数量提升到 3 格。',
+        choicePrompt: '选择题模式下，正确卡片命中后仍然触发“强化发射开启”提示。',
+        choices: ['75', '85', '95', '105'],
+        correctChoice: 1,
+        wrongChoice: null
+      },
+      {
+        id: 'super',
+        label: '超级发射中',
+        combo: 7,
+        progress: 70,
+        counter: '7/10',
+        tier: '超级',
+        removal: 4,
+        cleared: 21,
+        beamWidth: 210,
+        beamHeight: 26,
+        beamOpacity: 1,
+        banner: '超级发射中',
+        badge: '⚡ 7 连击',
+        petScale: 1.12,
+        impactOpacity: 0.9,
+        answer: '11',
+        equation: '18-7 =',
+        questionLabel: '中段高潮：更亮的命中爆点 + 更大范围清除',
+        battleCopy: '6-9 连击进入超级发射区，用户应明显感觉自己处在高压爽感阶段。',
+        description: '超级发射阶段的重点不是再加更多 UI，而是让命中爆点和方块消除范围显著强于强化档。',
+        noteLeft: '当前档位：超级发射',
+        noteRight: '本次命中：4 块',
+        acceptance: '6-9 连击的战斗反馈必须显著强于强化档，且单次清除固定为 4 格。',
+        choicePrompt: '选择题模式下，中区爽感完全复用，仅下区变成可点击答案卡片。',
+        choices: ['8', '10', '11', '12'],
+        correctChoice: 2,
+        wrongChoice: null
+      },
+      {
+        id: 'break',
+        label: '答错打断',
+        combo: 0,
+        progress: 50,
+        counter: '5/10',
+        tier: '断连',
+        removal: 0,
+        cleared: 13,
+        beamWidth: 0,
+        beamHeight: 18,
+        beamOpacity: 0,
+        banner: '连击中断',
+        badge: '',
+        petScale: 0.96,
+        impactOpacity: 0,
+        answer: '9',
+        equation: '63÷7 =',
+        questionLabel: '答错时不重罚，只清晰告知断连并回到普通档位',
+        battleCopy: '失败反馈只发生在中区：矩阵停留现状、连击归零、下一次重新从普通发射开始。',
+        description: '断连反馈要清楚，但不能重。顶部和底部不乱动，只在中部告诉用户“刚才断了”。',
+        noteLeft: '连击归零：恢复普通发射',
+        noteRight: '不清除方块',
+        acceptance: '答错时连击清零，页面明确提示“连击中断”，且后续发射档位恢复普通。',
+        choicePrompt: '选择题模式下，错误卡片进入轻量红色反馈，中区提示断连。',
+        choices: ['7', '8', '9', '10'],
+        correctChoice: 2,
+        wrongChoice: 1
+      },
+      {
+        id: 'final',
+        label: '第 10 连击终极清屏',
+        combo: 10,
+        progress: 100,
+        counter: '10/10',
+        tier: '终极',
+        removal: 8,
+        cleared: 35,
+        beamWidth: 270,
+        beamHeight: 30,
+        beamOpacity: 1,
+        banner: '终极清屏发射',
+        badge: '👑 10 连击',
+        petScale: 1.18,
+        impactOpacity: 1,
+        answer: '500',
+        equation: '125×4 =',
+        questionLabel: '终局爆点：最后一题清空剩余全部方块',
+        battleCopy: '第 10 连击是独立终局档，不是超级发射的简单放大版，必须有完整结束感。',
+        description: '最终状态负责收束整关节奏。剩余 8 块一次性清空，形成最强的爽点与完成感。',
+        noteLeft: '本次命中：剩余 8 块全部清空',
+        noteRight: '奖励承接：进入经验结算',
+        acceptance: '当玩家 10 题全对时，第 10 连击必须清掉所有剩余方块，并形成明显的关卡完成感。',
+        choicePrompt: '选择题模式下，最后一次正确点击仍然要触发终极清屏，不得因为交互类型不同而削弱爆发感。',
+        choices: ['250', '375', '500', '625'],
+        correctChoice: 2,
+        wrongChoice: null
+      },
+      {
+        id: 'settlement',
+        label: '经验结算承接',
+        combo: 10,
+        progress: 100,
+        counter: '10/10',
+        tier: '结算',
+        removal: 0,
+        cleared: 35,
+        beamWidth: 0,
+        beamHeight: 20,
+        beamOpacity: 0,
+        banner: '关卡完成',
+        badge: '✨ Perfect Clear',
+        petScale: 1.08,
+        impactOpacity: 0,
+        answer: '500',
+        equation: '125×4 =',
+        questionLabel: '完整关卡闭环：清屏后必须进入经验结算承接',
+        battleCopy: '这一页不再是战斗，而是把“清屏完成”顺滑承接到经验增长和下一关入口。',
+        description: '完整产品链路必须包含结算承接。清屏结束不是终点，经验增长、宠物成长和继续下一关才是完整闭环。',
+        noteLeft: '经验 +30 · 宠物成长推进',
+        noteRight: '下一关入口已可用',
+        acceptance: '新交互和新布局下，用户能从进入关卡一路走到结算承接页，完整跑完一关而不掉链子。',
+        choicePrompt: '选择题模式同样必须完整进入经验结算承接，而不是只停在最后一次点击正确。',
+        choices: ['250', '375', '500', '625'],
+        correctChoice: 2,
+        wrongChoice: null
+      }
+    ];
+
+    const modes = [
+      { id: 'input', label: '数字输入' },
+      { id: 'choice', label: '选择答案' }
+    ];
+    let currentMode = 'input';
+
+    const matrixGrid = document.getElementById('matrixGrid');
+    for (let i = 0; i < 35; i += 1) {
+      const block = document.createElement('div');
+      block.className = 'block';
+      matrixGrid.appendChild(block);
+    }
+
+    const tabRoot = document.getElementById('stateTabs');
+    states.forEach((state, index) => {
+      const button = document.createElement('button');
+      button.className = 'state-tab' + (index === 0 ? ' active' : '');
+      button.textContent = state.label;
+      button.addEventListener('click', () => setState(state.id));
+      tabRoot.appendChild(button);
+    });
+
+    const modeRoot = document.getElementById('modeTabs');
+    modes.forEach((mode, index) => {
+      const button = document.createElement('button');
+      button.className = 'mode-tab' + (index === 0 ? ' active' : '');
+      button.textContent = mode.label;
+      button.addEventListener('click', () => {
+        currentMode = mode.id;
+        document.querySelectorAll('.mode-tab').forEach((tab) => tab.classList.remove('active'));
+        button.classList.add('active');
+        const activeState = document.querySelector('.state-tab.active');
+        const state = states[Array.from(document.querySelectorAll('.state-tab')).indexOf(activeState)];
+        setState(state.id);
+      });
+      modeRoot.appendChild(button);
+    });
+
+    function setState(id) {
+      const state = states.find((item) => item.id === id);
+      const stateIndex = states.findIndex((item) => item.id === id);
+      const blocks = [...matrixGrid.children];
+
+      document.querySelectorAll('.state-tab').forEach((tab, idx) => {
+        tab.classList.toggle('active', idx === stateIndex);
+      });
+
+      document.getElementById('progressFill').style.width = `${state.progress}%`;
+      document.getElementById('quizCounter').textContent = state.counter;
+      document.getElementById('comboBadge').textContent = state.badge || '';
+      document.getElementById('comboBadge').classList.toggle('hidden', !state.badge);
+      document.getElementById('battleCopy').textContent = state.battleCopy;
+      document.getElementById('floatingBanner').textContent = state.banner;
+      document.getElementById('floatingBanner').classList.toggle('show', Boolean(state.banner));
+      document.getElementById('matrixCount').textContent = `${35 - state.cleared} / 35`;
+      document.getElementById('noteLeft').textContent = state.noteLeft;
+      document.getElementById('noteRight').textContent = state.noteRight;
+      document.getElementById('questionLabel').textContent = currentMode === 'choice' ? state.choicePrompt : state.questionLabel;
+      document.getElementById('equationText').textContent = state.equation;
+      document.getElementById('answerBox').textContent = state.answer;
+      document.getElementById('stateTitle').textContent = state.label;
+      document.getElementById('stateDescription').textContent = state.description;
+      document.getElementById('sideCombo').textContent = state.combo;
+      document.getElementById('sideTier').textContent = state.tier;
+      document.getElementById('sideRemoval').textContent = state.removal;
+      document.getElementById('sideRemain').textContent = 35 - state.cleared;
+      document.getElementById('acceptanceText').textContent = state.acceptance;
+
+      const pet = document.getElementById('pet');
+      pet.style.transform = `scale(${state.petScale})`;
+      pet.style.boxShadow = state.combo >= 10
+        ? '0 24px 48px rgba(244,106,59,0.32), 0 0 0 18px rgba(255,255,255,0.08), 0 0 0 34px rgba(236,72,153,0.12)'
+        : state.combo >= 6
+          ? '0 22px 44px rgba(244,106,59,0.28), 0 0 0 16px rgba(255,255,255,0.08), 0 0 0 26px rgba(249,115,22,0.12)'
+          : '0 22px 44px rgba(244,106,59,0.28), 0 0 0 16px rgba(255,255,255,0.08)';
+
+      const beam = document.getElementById('beam');
+      beam.style.width = `${state.beamWidth}px`;
+      beam.style.height = `${state.beamHeight}px`;
+      beam.style.opacity = state.beamOpacity;
+      beam.style.boxShadow = state.combo >= 10
+        ? '0 0 48px rgba(236,72,153,0.7)'
+        : state.combo >= 6
+          ? '0 0 40px rgba(249,115,22,0.7)'
+          : '0 0 34px rgba(255,178,77,0.6)';
+
+      const impact = document.getElementById('impact');
+      impact.style.opacity = state.impactOpacity;
+      impact.style.transform = state.impactOpacity ? 'scale(1)' : 'scale(0.7)';
+
+      blocks.forEach((block, index) => {
+        block.classList.toggle('cleared', index < state.cleared);
+      });
+
+      const numpadWrap = document.getElementById('numpadWrap');
+      const choiceGrid = document.getElementById('choiceGrid');
+      const answerBox = document.getElementById('answerBox');
+      const inputQuestionCard = document.getElementById('inputQuestionCard');
+      const choiceQuestionCard = document.getElementById('choiceQuestionCard');
+      const choiceQuestionText = document.getElementById('choiceQuestionText');
+      const choiceSlot = document.getElementById('choiceSlot');
+
+      if (currentMode === 'choice') {
+        numpadWrap.style.display = 'none';
+        inputQuestionCard.style.display = 'none';
+        choiceGrid.classList.add('show');
+        answerBox.style.display = 'none';
+        choiceQuestionCard.style.display = 'flex';
+        choiceQuestionText.textContent = `${state.equation.replace(/\s*\?$/, '').replace(/\s*=\s*$/, '')} =`;
+        choiceSlot.textContent = '';
+        choiceSlot.className = 'answer-box choice-slot active';
+        if (state.id !== 'prepare') {
+          choiceSlot.textContent = state.choices[state.correctChoice];
+          choiceSlot.className = `answer-box choice-slot ${state.id === 'break' ? 'wrong' : 'filled'}`;
+          if (state.id === 'final' || state.id === 'boost' || state.id === 'super') {
+            choiceSlot.className = 'answer-box choice-slot correct';
+          }
+        }
+        document.querySelectorAll('.choice-btn').forEach((card, index) => {
+          card.classList.remove('selected', 'correct', 'wrong');
+          card.textContent = state.choices[index];
+          if (state.id !== 'prepare') {
+            if (state.id === 'break' && index === state.wrongChoice) {
+              card.classList.add('wrong', 'selected');
+            } else if (index === state.correctChoice) {
+              card.classList.add(state.id === 'answer' ? 'selected' : 'correct');
+            }
+          }
+        });
+      } else {
+        numpadWrap.style.display = 'flex';
+        inputQuestionCard.style.display = 'flex';
+        choiceGrid.classList.remove('show');
+        answerBox.style.display = 'flex';
+        choiceQuestionCard.style.display = 'none';
+      }
+
+      document.getElementById('battleZone').style.boxShadow = state.id === 'break'
+        ? 'inset 0 0 0 2px rgba(239,68,68,0.18)'
+        : state.id === 'final' || state.id === 'settlement'
+          ? 'inset 0 0 0 2px rgba(236,72,153,0.18)'
+          : 'none';
+
+      if (state.id === 'settlement') {
+        document.getElementById('battleCopy').textContent = '经验结算页承接清屏结果，验证“完整一关”已经走通。';
+      }
+    }
+
+    setState('prepare');
+  </script>
+</body>
+</html>

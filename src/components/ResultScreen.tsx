@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { CheckCircle, Clock, Zap, Puzzle, BookOpen, Lock } from 'lucide-react';
+import { CheckCircle, Clock, Zap, Sparkles, BookOpen, Lock } from 'lucide-react';
 import { petsData } from '../data/pets';
 
 export default function ResultScreen({ stats, puzzlePieces, onBack, onNextLevel, onOpenPokedex, hasNextLevel }: { stats: any, puzzlePieces: number, onBack: () => void, onNextLevel: () => void, onOpenPokedex: () => void, hasNextLevel: boolean }) {
@@ -17,20 +17,21 @@ export default function ResultScreen({ stats, puzzlePieces, onBack, onNextLevel,
     return '闯关成功！';
   };
 
-  // 计算下一个可解锁的宠物
+  // 计算下一个可成长的宠物
   const getNextPet = () => {
     return petsData.find(pet => pet.requiredPieces > puzzlePieces);
   };
 
-  // 计算已解锁的宠物
+  // 计算已成长解锁的宠物
   const getUnlockedPets = () => {
     return petsData.filter(pet => pet.requiredPieces <= puzzlePieces);
   };
 
   const nextPet = getNextPet();
   const unlockedPets = getUnlockedPets();
-  const currentProgress = puzzlePieces % 5; // 当前关卡的碎片进度
+  const currentProgress = puzzlePieces % 5; // 当前成长阶段的经验进度
   const progressToNext = nextPet ? nextPet.requiredPieces - puzzlePieces : 0;
+  const expGained = stats.expGained ?? 1;
 
   return (
     <div className="w-full h-full bg-[#a881f3] flex flex-col items-center py-10 px-16 relative overflow-hidden">
@@ -50,20 +51,20 @@ export default function ResultScreen({ stats, puzzlePieces, onBack, onNextLevel,
         {getEmotionalText()}
       </motion.div>
 
-      {/* Core Reward: Puzzle Piece with Pet Preview */}
+      {/* Core Reward: Experience with Pet Growth Preview */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', bounce: 0.5, delay: 0.2 }}
         className="flex items-center gap-6 mb-6 z-10"
       >
-        {/* 碎片图标 */}
+        {/* 经验奖励图标 */}
         <div className="relative">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-300 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg border-3 border-white relative z-10 transform rotate-12">
-            <Puzzle size={32} className="text-white" fill="currentColor" />
+            <Sparkles size={32} className="text-white" fill="currentColor" />
           </div>
           <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 font-black text-sm px-2 py-1 rounded-full border-2 border-white z-20 shadow-md">
-            +1
+            +{expGained}
           </div>
         </div>
 
@@ -85,7 +86,7 @@ export default function ResultScreen({ stats, puzzlePieces, onBack, onNextLevel,
             </div>
             <div className="flex flex-col">
               <div className="text-white font-bold text-lg">{nextPet.name}</div>
-              <div className="text-white/70 text-sm">剩 {progressToNext} 个碎片解锁</div>
+              <div className="text-white/70 text-sm">再获得 {progressToNext} 点经验可成长</div>
               <div className="flex gap-1.5 mt-1.5">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className={`w-2.5 h-2.5 rounded-full ${i < currentProgress ? 'bg-yellow-300' : 'bg-white/30'}`} />
@@ -105,17 +106,12 @@ export default function ResultScreen({ stats, puzzlePieces, onBack, onNextLevel,
       >
         <div className="bg-white/90 backdrop-blur rounded-2xl p-5 flex items-center justify-between shadow-lg relative">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-500 text-2xl">
-              <CheckCircle />
+            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-500 text-2xl">
+              <Sparkles />
             </div>
-            <span className="text-gray-600 font-bold text-xl">正确率</span>
+            <span className="text-gray-600 font-bold text-xl">获得经验</span>
           </div>
-          <span className="text-4xl font-black text-orange-500">{stats.accuracy}%</span>
-          {stats.accuracy === 100 && (
-            <div className="absolute -top-4 -right-4 bg-yellow-400 text-white text-sm font-black px-4 py-1.5 rounded-full transform rotate-12 border-2 border-white shadow-md">
-              Perfect!
-            </div>
-          )}
+          <span className="text-4xl font-black text-emerald-500">+{expGained}</span>
         </div>
 
         <div className="bg-white/90 backdrop-blur rounded-2xl p-5 flex items-center justify-between shadow-lg relative">
@@ -129,6 +125,21 @@ export default function ResultScreen({ stats, puzzlePieces, onBack, onNextLevel,
           {stats.time < 30 && (
             <div className="absolute -top-4 -right-4 bg-red-400 text-white text-sm font-black px-4 py-1.5 rounded-full transform rotate-12 border-2 border-white shadow-md">
               快如闪电
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white/90 backdrop-blur rounded-2xl p-5 flex items-center justify-between shadow-lg relative">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-500 text-2xl">
+              <CheckCircle />
+            </div>
+            <span className="text-gray-600 font-bold text-xl">正确率</span>
+          </div>
+          <span className="text-4xl font-black text-orange-500">{stats.accuracy}%</span>
+          {stats.accuracy === 100 && (
+            <div className="absolute -top-4 -right-4 bg-yellow-400 text-white text-sm font-black px-4 py-1.5 rounded-full transform rotate-12 border-2 border-white shadow-md">
+              Perfect!
             </div>
           )}
         </div>

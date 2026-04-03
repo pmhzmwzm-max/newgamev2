@@ -106,7 +106,7 @@ export default function PetUnlockModal({
                 textShadow: '0 0 20px rgba(255,255,255,0.5), 0 4px 0 rgba(0,0,0,0.3)'
               }}
             >
-              恭喜获得新伙伴！
+              伙伴成长完成！
             </motion.h1>
           </motion.div>
 
@@ -231,7 +231,7 @@ export default function PetUnlockModal({
                       #{pet.id + 1} 号伙伴
                     </span>
                     <span className="px-3 py-1 bg-yellow-400/80 rounded-full text-yellow-900 text-sm font-bold">
-                      收集 {pet.requiredPieces} 碎片
+                      累计 {pet.requiredPieces} 点经验
                     </span>
                   </motion.div>
                 </div>
