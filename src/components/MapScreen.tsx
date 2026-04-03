@@ -42,7 +42,7 @@ export default function MapScreen({
   // 宠物图鉴按钮切图
   const pokedexButton = '/images/宠物图鉴.png';
 
-  // 精心设计的159关蜿蜒路径 - 垂直拉伸，间距更大
+  // 精心设计的159关蜿蜒路径 - 统一间距模式
   const levels = [
     // 底部起点 (1-5)
     { id: 1, top: 240, left: 50 },
@@ -65,8 +65,6 @@ export default function MapScreen({
     { id: 18, top: 122, left: 68 },
     { id: 19, top: 116, left: 42 },
     { id: 20, top: 110, left: 60 },
-
-    // 第21-40关
     { id: 21, top: 102, left: 32 },
     { id: 22, top: 96, left: 52 },
     { id: 23, top: 90, left: 72 },
@@ -87,137 +85,132 @@ export default function MapScreen({
     { id: 38, top: -6, left: 58 },
     { id: 39, top: -12, left: 40 },
     { id: 40, top: -18, left: 65 },
-
-    // 第41-60关
     { id: 41, top: -26, left: 35 },
     { id: 42, top: -32, left: 52 },
     { id: 43, top: -38, left: 22 },
     { id: 44, top: -44, left: 48 },
     { id: 45, top: -50, left: 68 },
+    // 最后冲刺 (46-50)
     { id: 46, top: -58, left: 38 },
     { id: 47, top: -64, left: 55 },
     { id: 48, top: -70, left: 42 },
     { id: 49, top: -76, left: 60 },
     { id: 50, top: -82, left: 50 },
-    { id: 51, top: -88, left: 28 },
-    { id: 52, top: -95, left: 39 },
-    { id: 53, top: -102, left: 51 },
-    { id: 54, top: -108, left: 58 },
-    { id: 55, top: -114, left: 67 },
-    { id: 56, top: -121, left: 73 },
-    { id: 57, top: -128, left: 57 },
-    { id: 58, top: -134, left: 51 },
-    { id: 59, top: -140, left: 38 },
-    { id: 60, top: -147, left: 29 },
-
+    // 延展段 (51-159) - 循环使用1-50关的间距模式
+    { id: 51, top: -94, left: 50 },
+    { id: 52, top: -100, left: 30 },
+    { id: 53, top: -106, left: 55 },
+    { id: 54, top: -112, left: 70 },
+    { id: 55, top: -120, left: 40 },
+    { id: 56, top: -128, left: 25 },
+    { id: 57, top: -134, left: 45 },
+    { id: 58, top: -140, left: 65 },
+    { id: 59, top: -148, left: 35 },
+    { id: 60, top: -154, left: 55 },
     // 第61-80关
-    { id: 61, top: -154, left: 30 },
-    { id: 62, top: -160, left: 41 },
-    { id: 63, top: -166, left: 50 },
-    { id: 64, top: -173, left: 60 },
-    { id: 65, top: -180, left: 70 },
-    { id: 66, top: -186, left: 67 },
-    { id: 67, top: -192, left: 57 },
-    { id: 68, top: -199, left: 52 },
-    { id: 69, top: -206, left: 42 },
-    { id: 70, top: -212, left: 27 },
-    { id: 71, top: -218, left: 29 },
-    { id: 72, top: -225, left: 37 },
-    { id: 73, top: -232, left: 49 },
-    { id: 74, top: -238, left: 63 },
-    { id: 75, top: -244, left: 70 },
-    { id: 76, top: -251, left: 69 },
-    { id: 77, top: -258, left: 63 },
-    { id: 78, top: -264, left: 53 },
-    { id: 79, top: -270, left: 38 },
-    { id: 80, top: -277, left: 29 },
-
+    { id: 61, top: -160, left: 75 },
+    { id: 62, top: -168, left: 45 },
+    { id: 63, top: -174, left: 28 },
+    { id: 64, top: -180, left: 58 },
+    { id: 65, top: -188, left: 38 },
+    { id: 66, top: -194, left: 22 },
+    { id: 67, top: -200, left: 48 },
+    { id: 68, top: -206, left: 68 },
+    { id: 69, top: -212, left: 42 },
+    { id: 70, top: -220, left: 60 },
+    { id: 71, top: -226, left: 32 },
+    { id: 72, top: -232, left: 52 },
+    { id: 73, top: -238, left: 72 },
+    { id: 74, top: -244, left: 45 },
+    { id: 75, top: -252, left: 28 },
+    { id: 76, top: -258, left: 50 },
+    { id: 77, top: -264, left: 35 },
+    { id: 78, top: -270, left: 60 },
+    { id: 79, top: -276, left: 42 },
+    { id: 80, top: -284, left: 65 },
     // 第81-100关
-    { id: 81, top: -284, left: 31 },
-    { id: 82, top: -290, left: 38 },
-    { id: 83, top: -296, left: 50 },
-    { id: 84, top: -303, left: 62 },
-    { id: 85, top: -310, left: 68 },
-    { id: 86, top: -316, left: 73 },
-    { id: 87, top: -322, left: 58 },
-    { id: 88, top: -329, left: 50 },
-    { id: 89, top: -336, left: 37 },
-    { id: 90, top: -342, left: 28 },
-    { id: 91, top: -348, left: 27 },
-    { id: 92, top: -355, left: 40 },
-    { id: 93, top: -362, left: 53 },
-    { id: 94, top: -368, left: 61 },
-    { id: 95, top: -374, left: 73 },
-    { id: 96, top: -381, left: 69 },
-    { id: 97, top: -388, left: 58 },
-    { id: 98, top: -394, left: 49 },
-    { id: 99, top: -400, left: 40 },
-    { id: 100, top: -407, left: 28 },
-
+    { id: 81, top: -290, left: 38 },
+    { id: 82, top: -296, left: 55 },
+    { id: 83, top: -302, left: 25 },
+    { id: 84, top: -308, left: 48 },
+    { id: 85, top: -316, left: 70 },
+    { id: 86, top: -322, left: 42 },
+    { id: 87, top: -328, left: 30 },
+    { id: 88, top: -334, left: 58 },
+    { id: 89, top: -340, left: 40 },
+    { id: 90, top: -348, left: 65 },
+    { id: 91, top: -354, left: 35 },
+    { id: 92, top: -360, left: 52 },
+    { id: 93, top: -366, left: 22 },
+    { id: 94, top: -372, left: 48 },
+    { id: 95, top: -380, left: 68 },
+    { id: 96, top: -386, left: 38 },
+    { id: 97, top: -392, left: 55 },
+    { id: 98, top: -398, left: 42 },
+    { id: 99, top: -404, left: 60 },
+    { id: 100, top: -416, left: 50 },
     // 第101-120关
-    { id: 101, top: -414, left: 31 },
-    { id: 102, top: -420, left: 38 },
-    { id: 103, top: -426, left: 52 },
-    { id: 104, top: -433, left: 57 },
-    { id: 105, top: -440, left: 71 },
-    { id: 106, top: -446, left: 72 },
-    { id: 107, top: -452, left: 58 },
-    { id: 108, top: -459, left: 48 },
-    { id: 109, top: -466, left: 39 },
-    { id: 110, top: -472, left: 30 },
-    { id: 111, top: -478, left: 33 },
-    { id: 112, top: -485, left: 40 },
-    { id: 113, top: -492, left: 47 },
-    { id: 114, top: -498, left: 58 },
-    { id: 115, top: -504, left: 69 },
-    { id: 116, top: -511, left: 73 },
-    { id: 117, top: -518, left: 58 },
-    { id: 118, top: -524, left: 52 },
-    { id: 119, top: -530, left: 39 },
-    { id: 120, top: -537, left: 31 },
-
+    { id: 101, top: -422, left: 50 },
+    { id: 102, top: -428, left: 30 },
+    { id: 103, top: -434, left: 55 },
+    { id: 104, top: -442, left: 70 },
+    { id: 105, top: -450, left: 40 },
+    { id: 106, top: -456, left: 25 },
+    { id: 107, top: -462, left: 45 },
+    { id: 108, top: -470, left: 65 },
+    { id: 109, top: -476, left: 35 },
+    { id: 110, top: -482, left: 55 },
+    { id: 111, top: -490, left: 75 },
+    { id: 112, top: -496, left: 45 },
+    { id: 113, top: -502, left: 28 },
+    { id: 114, top: -510, left: 58 },
+    { id: 115, top: -516, left: 38 },
+    { id: 116, top: -522, left: 22 },
+    { id: 117, top: -528, left: 48 },
+    { id: 118, top: -534, left: 68 },
+    { id: 119, top: -542, left: 42 },
+    { id: 120, top: -548, left: 60 },
     // 第121-140关
-    { id: 121, top: -544, left: 27 },
-    { id: 122, top: -550, left: 41 },
-    { id: 123, top: -556, left: 47 },
-    { id: 124, top: -563, left: 59 },
-    { id: 125, top: -570, left: 68 },
-    { id: 126, top: -576, left: 71 },
-    { id: 127, top: -582, left: 57 },
-    { id: 128, top: -589, left: 53 },
-    { id: 129, top: -596, left: 41 },
-    { id: 130, top: -602, left: 31 },
-    { id: 131, top: -608, left: 29 },
-    { id: 132, top: -615, left: 40 },
-    { id: 133, top: -622, left: 50 },
-    { id: 134, top: -628, left: 60 },
-    { id: 135, top: -634, left: 72 },
-    { id: 136, top: -641, left: 71 },
-    { id: 137, top: -648, left: 57 },
-    { id: 138, top: -654, left: 48 },
-    { id: 139, top: -660, left: 37 },
-    { id: 140, top: -667, left: 33 },
-
+    { id: 121, top: -554, left: 32 },
+    { id: 122, top: -560, left: 52 },
+    { id: 123, top: -566, left: 72 },
+    { id: 124, top: -574, left: 45 },
+    { id: 125, top: -580, left: 28 },
+    { id: 126, top: -586, left: 50 },
+    { id: 127, top: -592, left: 35 },
+    { id: 128, top: -598, left: 60 },
+    { id: 129, top: -606, left: 42 },
+    { id: 130, top: -612, left: 65 },
+    { id: 131, top: -618, left: 38 },
+    { id: 132, top: -624, left: 55 },
+    { id: 133, top: -630, left: 25 },
+    { id: 134, top: -638, left: 48 },
+    { id: 135, top: -644, left: 70 },
+    { id: 136, top: -650, left: 42 },
+    { id: 137, top: -656, left: 30 },
+    { id: 138, top: -662, left: 58 },
+    { id: 139, top: -670, left: 40 },
+    { id: 140, top: -676, left: 65 },
     // 第141-159关
-    { id: 141, top: -674, left: 31 },
-    { id: 142, top: -680, left: 41 },
-    { id: 143, top: -686, left: 48 },
-    { id: 144, top: -693, left: 60 },
-    { id: 145, top: -700, left: 73 },
-    { id: 146, top: -706, left: 68 },
-    { id: 147, top: -712, left: 61 },
-    { id: 148, top: -719, left: 50 },
-    { id: 149, top: -726, left: 37 },
-    { id: 150, top: -732, left: 33 },
-    { id: 151, top: -738, left: 32 },
-    { id: 152, top: -745, left: 43 },
-    { id: 153, top: -752, left: 50 },
-    { id: 154, top: -758, left: 58 },
-    { id: 155, top: -764, left: 71 },
-    { id: 156, top: -771, left: 70 },
-    { id: 157, top: -778, left: 61 },
-    { id: 158, top: -784, left: 52 },
-    { id: 159, top: -790, left: 40 },
+    { id: 141, top: -682, left: 35 },
+    { id: 142, top: -688, left: 52 },
+    { id: 143, top: -694, left: 22 },
+    { id: 144, top: -702, left: 48 },
+    { id: 145, top: -708, left: 68 },
+    { id: 146, top: -714, left: 38 },
+    { id: 147, top: -720, left: 55 },
+    { id: 148, top: -726, left: 42 },
+    { id: 149, top: -738, left: 60 },
+    { id: 150, top: -744, left: 50 },
+    { id: 151, top: -750, left: 50 },
+    { id: 152, top: -756, left: 30 },
+    { id: 153, top: -764, left: 55 },
+    { id: 154, top: -772, left: 70 },
+    { id: 155, top: -778, left: 40 },
+    { id: 156, top: -784, left: 25 },
+    { id: 157, top: -792, left: 45 },
+    { id: 158, top: -798, left: 65 },
+    { id: 159, top: -804, left: 35 },
   ];
 
   // 组件挂载后执行一次滚动
@@ -323,15 +316,15 @@ export default function MapScreen({
     for (let i = 0; i < levels.length; i++) {
       const current = levels[i];
       const x = current.left;
-      // SVG坐标：关卡1在底部(y=1030)，关卡159在顶部(y=0)
-      const y = current.top + 790;
+      // SVG坐标：关卡1在底部(y=1044)，关卡159在顶部(y=0)
+      const y = current.top + 804;
 
       if (i === 0) {
         pathD += `M ${x} ${y}`;
       } else {
         const prev = levels[i - 1];
-        const prevY = prev.top + 790;
-        const currentY = current.top + 790;
+        const prevY = prev.top + 804;
+        const currentY = current.top + 804;
 
         // 使用更平滑的贝塞尔曲线
         const midY = (prevY + currentY) / 2;
@@ -513,11 +506,11 @@ export default function MapScreen({
           div::-webkit-scrollbar { display: none; }
         `}</style>
 
-        <div className="w-full relative" style={{ height: '1280vh' }}>
+        <div className="w-full relative" style={{ height: '1296vh' }}>
           {/* SVG蜿蜒路径 - viewBox匹配关卡坐标系 */}
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none"
-            viewBox="0 0 100 1030"
+            viewBox="0 0 100 1044"
             preserveAspectRatio="none"
           >
             {/* 路径阴影 - 加粗100% */}
@@ -557,9 +550,9 @@ export default function MapScreen({
             const isCurrent = Math.max(...unlockedLevels, 0) === level.id && isUnlocked;
             const isCompleted = unlockedLevels.includes(level.id + 1);
             const levelInfo = gradeData?.[level.id];
-            // 将level.top (240 到 -790) 映射到 CSS百分比 (100% 到 0%)
-            // 关卡1 (240) -> 100% (底部), 关卡159 (-790) -> 0% (顶部)
-            const cssTopPercent = ((level.top + 790) / 1030) * 100;
+            // 将level.top (240 到 -804) 映射到 CSS百分比 (100% 到 0%)
+            // 关卡1 (240) -> 100% (底部), 关卡159 (-804) -> 0% (顶部)
+            const cssTopPercent = ((level.top + 804) / 1044) * 100;
 
             return (
               <div
@@ -668,7 +661,7 @@ export default function MapScreen({
           {/* 终点旗帜 - 降低层级避免遮挡第159关 */}
           <div
             className="absolute left-1/2 -translate-x-1/2 z-[5]"
-            style={{ top: `${((levels[158].top + 790) / 1030) * 100}%` }}
+            style={{ top: `${((levels[158].top + 804) / 1044) * 100}%` }}
           >
             <motion.div
               animate={{ rotate: [0, 8, 0, -8, 0] }}
