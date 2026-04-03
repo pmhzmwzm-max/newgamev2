@@ -4,8 +4,25 @@ import { motion, AnimatePresence } from 'motion/react';
 import { allLevelsData } from '../data/questions';
 
 const TOTAL_BATTLE_BLOCKS = 35;
+const BATTLE_BLOCK_COLUMNS = 5;
+const BATTLE_BLOCK_ROWS = 7;
 
 type ShotTier = 'idle' | 'normal' | 'boost' | 'super' | 'final' | 'break';
+
+const BLOCK_CLEAR_ORDER = Array.from({ length: TOTAL_BATTLE_BLOCKS }, (_, index) => index).sort((a, b) => {
+  const rowA = Math.floor(a / BATTLE_BLOCK_COLUMNS);
+  const rowB = Math.floor(b / BATTLE_BLOCK_COLUMNS);
+  const colA = a % BATTLE_BLOCK_COLUMNS;
+  const colB = b % BATTLE_BLOCK_COLUMNS;
+
+  if (rowA !== rowB) return rowB - rowA;
+  return colB - colA;
+});
+
+const BLOCK_CLEAR_RANK = BLOCK_CLEAR_ORDER.reduce<Record<number, number>>((acc, index, rank) => {
+  acc[index] = rank;
+  return acc;
+}, {});
 
 const getShotTier = (combo: number): ShotTier => {
   if (combo >= 10) return 'final';
@@ -21,6 +38,24 @@ const getRemovalCount = (combo: number, remainingBlocks: number) => {
   if (combo >= 6) return Math.min(4, remainingBlocks);
   if (combo >= 3) return Math.min(3, remainingBlocks);
   return Math.min(1, remainingBlocks);
+};
+
+const getShotDelay = (tier: ShotTier, combo: number) => {
+  const totalMotionDuration = getChargeDuration(tier) + 0.62;
+  return Math.round(totalMotionDuration * 0.72 * 1000);
+};
+
+const getAdvanceDelay = (tier: ShotTier, combo: number) => {
+  if (tier === 'final') return 1500;
+  if ((tier === 'super' && combo === 6) || (tier === 'boost' && combo === 3)) return 1220;
+  return tier === 'super' ? 1100 : 1000;
+};
+
+const getChargeDuration = (tier: ShotTier) => {
+  if (tier === 'final') return 2;
+  if (tier === 'super') return 1.1;
+  if (tier === 'boost') return 0.8;
+  return 0.5;
 };
 
 const ParticleBurst = ({ tier = 1 }: { tier?: number }) => {
@@ -192,22 +227,38 @@ const BattleBlock: React.FC<BattleBlockProps> = ({
 const BattleStage = ({
   selectedPet,
   combo,
+  displayCombo,
   shotTier,
   clearedBlocks,
   lastRemoval,
+  shotSequence,
   bannerText,
   feedback,
 }: {
   selectedPet: any;
   combo: number;
+  displayCombo: number;
   shotTier: ShotTier;
   clearedBlocks: number;
   lastRemoval: number;
+  shotSequence: number;
   bannerText: string | null;
   feedback: 'correct' | 'wrong' | null;
 }) => {
-  const comboLabel = bannerText ?? (combo >= 10 ? `${combo} 连击!` : combo >= 3 ? `${combo} 连击` : '');
+  const comboLabel = bannerText ?? (displayCombo >= 10 ? `${displayCombo} 连击!` : displayCombo >= 3 ? `${displayCombo} 连击` : '');
   const recentClearStart = Math.max(0, clearedBlocks - lastRemoval);
+  const showImpact = shotTier !== 'idle' && shotTier !== 'break';
+  const isStageEntry = displayCombo === 3 || displayCombo === 6 || displayCombo >= 10;
+  const chargeDuration = getChargeDuration(shotTier);
+  const petScalePeak = shotTier === 'final' ? 1.3 : shotTier === 'super' ? 1.2 : shotTier === 'boost' ? 1.12 : 1.05;
+  const petGlow =
+    shotTier === 'final'
+      ? 'drop-shadow-[0_0_36px_rgba(251,146,60,1)]'
+      : shotTier === 'super'
+      ? 'drop-shadow-[0_0_26px_rgba(250,204,21,0.92)]'
+      : shotTier === 'boost'
+      ? 'drop-shadow-[0_0_20px_rgba(251,146,60,0.82)]'
+      : 'drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]';
 
   return (
     <div className={`relative w-full h-full overflow-hidden transition-all ${
@@ -215,6 +266,52 @@ const BattleStage = ({
         ? 'border border-red-300/70'
         : ''
     }`}>
+      <AnimatePresence mode="wait">
+        {showImpact && (
+          <motion.div
+            key={`impact-${shotSequence}-${shotTier}`}
+            initial={{ opacity: 0, scale: 0.2, x: 18, y: 8 }}
+            animate={{
+              opacity: [0, 0, 0.96, 0.38, 0],
+              scale:
+                shotTier === 'final'
+                  ? [0.2, 0.2, 1.54, 1.98, 2.18]
+                  : shotTier === 'super'
+                  ? [0.2, 0.2, 1.26, 1.62, 1.82]
+                  : [0.2, 0.2, 1.08, 1.3, 1.48],
+              x: [18, 12, -12, -26, -34],
+              y: [8, 6, 0, -1, -2],
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: chargeDuration + 0.62, times: [0, 0.62, 0.72, 0.9, 1], ease: 'easeOut' }}
+            className="pointer-events-none absolute right-[26%] top-[56%] z-20 h-20 w-20 rounded-full bg-[radial-gradient(circle,rgba(255,251,235,0.98),rgba(254,240,138,0.9)_34%,rgba(251,146,60,0.52)_62%,transparent_100%)]"
+          >
+            <motion.div
+              initial={{ opacity: 0, scaleX: 0.2 }}
+              animate={{
+                opacity: [0, 0, 0.7, 0],
+                scaleX: shotTier === 'final' ? [0.2, 0.2, 1.42, 1.9] : shotTier === 'super' ? [0.2, 0.2, 1.18, 1.55] : [0.2, 0.2, 1.02, 1.28],
+              }}
+              transition={{ duration: chargeDuration + 0.62, times: [0, 0.64, 0.76, 1], ease: 'easeOut' }}
+              className="absolute left-1/2 top-1/2 h-5 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,rgba(251,146,60,0)_0%,rgba(251,191,36,0.75)_42%,rgba(255,251,235,0.96)_100%)]"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence mode="wait">
+        {shotTier === 'final' && (
+          <motion.div
+            key={`final-burst-${shotSequence}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.34, 0.08, 0] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.95, ease: 'easeOut' }}
+            className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_72%_54%,rgba(255,251,235,0.85),rgba(254,240,138,0.42)_22%,rgba(251,146,60,0.18)_45%,transparent_72%)]"
+          />
+        )}
+      </AnimatePresence>
+
       <div className="relative z-10 grid h-full grid-cols-[minmax(0,1fr)_clamp(168px,28%,246px)] gap-1 px-2 pb-1 pt-1 min-h-0">
         <div className="relative flex min-w-0 min-h-0 items-stretch justify-stretch rounded-[1.8rem] px-0 py-1">
           <motion.div
@@ -232,9 +329,10 @@ const BattleStage = ({
           <div className="relative z-10 flex h-full w-full min-h-0 items-stretch justify-stretch pr-1">
             <div className="grid h-full w-full min-h-0 grid-cols-5 grid-rows-7 gap-1.5 place-items-stretch">
               {Array.from({ length: TOTAL_BATTLE_BLOCKS }).map((_, index) => {
-                const cleared = index < clearedBlocks;
-                const justCleared = cleared && index >= recentClearStart;
-                const clearDelay = justCleared ? (index - recentClearStart) * 0.05 : 0;
+                const clearRank = BLOCK_CLEAR_RANK[index];
+                const cleared = clearRank < clearedBlocks;
+                const justCleared = cleared && clearRank >= recentClearStart;
+                const clearDelay = justCleared ? (clearRank - recentClearStart) * 0.055 : 0;
 
                 return (
                   <BattleBlock
@@ -258,46 +356,46 @@ const BattleStage = ({
                 <AnimatePresence mode="wait">
                   {comboLabel ? (
                     <motion.div
-                      key={`${combo}-${comboLabel}`}
+                      key={`${displayCombo}-${comboLabel}`}
                       initial={{ opacity: 0, y: -10, scale: 0.86, rotate: -8 }}
                       animate={
-                        combo >= 10
+                        displayCombo >= 10
                           ? { opacity: 1, y: 0, scale: 1.06, rotate: 0 }
-                          : combo >= 5
+                          : displayCombo >= 5
                           ? { opacity: 1, y: 0, scale: 1.02, rotate: 0 }
                           : { opacity: 1, y: 0, scale: 1, rotate: 0 }
                       }
                       exit={{ opacity: 0, y: -10, scale: 0.86 }}
                       transition={{ duration: 0.32, type: 'spring', bounce: 0.45 }}
                       className={`relative flex min-h-[88px] w-full items-center justify-center gap-2 rounded-[1.6rem] px-2 py-2 text-center shadow-xl border-4 ${
-                        bannerText && combo < 3
+                        bannerText && displayCombo < 3
                           ? 'bg-red-500 border-red-300 shadow-[0_0_20px_rgba(239,68,68,0.28)]'
-                          : combo >= 10
+                          : displayCombo >= 10
                           ? 'bg-white/96 border-purple-400 shadow-[0_0_28px_rgba(168,85,247,0.35)]'
-                          : combo >= 5
+                          : displayCombo >= 5
                           ? 'bg-white/96 border-pink-400 shadow-[0_0_22px_rgba(236,72,153,0.28)]'
                           : 'bg-white/96 border-orange-300 shadow-[0_0_18px_rgba(251,146,60,0.25)]'
                       }`}
                     >
-                      {!(bannerText && combo < 3) && <ParticleBurst tier={combo >= 10 ? 3 : combo >= 5 ? 2 : 1} />}
+                      {!(bannerText && displayCombo < 3) && <ParticleBurst tier={displayCombo >= 10 ? 3 : displayCombo >= 5 ? 2 : 1} />}
                       <div className="relative z-10 flex items-center gap-2">
-                        {bannerText && combo < 3 ? null : combo >= 10 ? (
+                        {bannerText && displayCombo < 3 ? null : displayCombo >= 10 ? (
                           <Crown className="h-10 w-10 text-purple-500 animate-bounce" fill="currentColor" />
-                        ) : combo >= 5 ? (
+                        ) : displayCombo >= 5 ? (
                           <Zap className="h-9 w-9 text-pink-500 animate-bounce" fill="currentColor" />
                         ) : (
                           <Flame className="h-9 w-9 text-orange-500 animate-bounce" fill="currentColor" />
                         )}
                         <span
                           className={`font-black italic drop-shadow-sm ${
-                            bannerText && combo < 3
+                            bannerText && displayCombo < 3
                               ? 'text-[1.55rem] text-white'
-                              : combo >= 10
+                              : displayCombo >= 10
                               ? 'text-[clamp(1.8rem,3vw,2.35rem)] leading-none text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-red-500'
-                              : combo >= 5
+                              : displayCombo >= 5
                               ? 'text-[clamp(1.65rem,2.7vw,2.05rem)] leading-none text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-orange-500'
                               : 'text-[clamp(1.45rem,2.3vw,1.8rem)] leading-none text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600'
-                          }`}
+                          } ${isStageEntry ? 'tracking-tight' : ''}`}
                         >
                           {comboLabel}
                         </span>
@@ -312,22 +410,64 @@ const BattleStage = ({
 
             <div className="flex min-h-0 items-end justify-end rounded-[1.8rem] px-0 pb-1">
               <motion.div
+                key={`pet-hit-${shotSequence}-${shotTier}`}
                 animate={
                   shotTier === 'final'
-                    ? { scale: [1, 1.16, 1.04], y: [0, -10, 0] }
+                    ? {
+                        rotate: [0, 30, 20, -36, -14, 5, 0],
+                        scale: [1, 1.03, 1.08, petScalePeak + 0.05, 1.12, 1.04, 1],
+                        y: [0, 4, 1, -10, -2, 1, 0],
+                      }
                     : shotTier === 'super'
-                    ? { scale: [1, 1.1, 1.02], y: [0, -7, 0] }
+                    ? {
+                        rotate: [0, 30, 18, -34, -13, 4, 0],
+                        scale: [1, 1.02, 1.06, petScalePeak + 0.04, 1.09, 1.03, 1],
+                        y: [0, 3, 1, -8, -2, 1, 0],
+                      }
                     : shotTier === 'boost'
-                    ? { scale: [1, 1.06, 1.02], y: [0, -4, 0] }
+                    ? {
+                        rotate: [0, 30, 16, -32, -12, 4, 0],
+                        scale: [1, 1.02, 1.05, petScalePeak + 0.03, 1.07, 1.02, 1],
+                        y: [0, 2, 1, -6, -1, 1, 0],
+                      }
                     : shotTier === 'normal'
-                    ? { scale: [1, 1.03, 1], y: [0, -2, 0] }
+                    ? {
+                        rotate: [0, 30, 15, -30, -10, 3, 0],
+                        scale: [1, 1.01, 1.03, petScalePeak + 0.02, 1.05, 1.02, 1],
+                        y: [0, 2, 1, -4, -1, 0, 0],
+                      }
                     : shotTier === 'break'
                     ? { x: [-3, 3, -3, 0], scale: [1, 0.98, 1] }
-                    : { scale: 1, y: 0, x: 0 }
+                    : { scale: 1, y: 0, x: 0, rotate: 0 }
                 }
-                transition={{ duration: 0.45 }}
-                className={`relative flex h-[clamp(8.5rem,23vw,11.7rem)] w-[clamp(8.5rem,23vw,11.7rem)] items-center justify-center self-end rounded-[2.6rem] border-4 border-white/75 text-[clamp(4rem,8vw,5.85rem)] shadow-2xl ${selectedPet?.color ?? 'bg-yellow-300'} ${selectedPet?.shadow ?? 'shadow-yellow-300/50'}`}
+                transition={
+                  shotTier === 'break'
+                    ? { duration: 0.45 }
+                    : shotTier === 'idle'
+                    ? { duration: 0.2 }
+                    : {
+                        duration: chargeDuration + 0.62,
+                        times: [0, 0.46, 0.54, 0.68, 0.82, 0.92, 1],
+                        ease: ['easeOut', 'easeInOut', 'easeIn', 'easeOut', 'easeInOut', 'easeOut'],
+                      }
+                }
+                className={`relative flex h-[clamp(8.5rem,23vw,11.7rem)] w-[clamp(8.5rem,23vw,11.7rem)] items-center justify-center self-end rounded-[2.6rem] border-4 border-white/75 text-[clamp(4rem,8vw,5.85rem)] shadow-2xl ${petGlow} ${selectedPet?.color ?? 'bg-yellow-300'} ${selectedPet?.shadow ?? 'shadow-yellow-300/50'}`}
               >
+                <AnimatePresence mode="wait">
+                  {showImpact && (
+                    <motion.div
+                      key={`pet-charge-${shotSequence}-${shotTier}`}
+                      initial={{ opacity: 0, scale: 0.45 }}
+                      animate={{
+                        opacity: [0, 0.62, 0.2, 0],
+                        scale: [0.45, shotTier === 'final' ? 1.62 : shotTier === 'super' ? 1.34 : shotTier === 'boost' ? 1.2 : 1.08, shotTier === 'final' ? 1.92 : shotTier === 'super' ? 1.52 : shotTier === 'boost' ? 1.28 : 1.12, 1.04],
+                      }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: chargeDuration, ease: 'easeOut', times: [0, 0.28, 0.72, 1] }}
+                      className="pointer-events-none absolute inset-0 rounded-[2.6rem] bg-[radial-gradient(circle,rgba(255,250,205,0.96),rgba(254,240,138,0.42)_44%,rgba(251,146,60,0)_78%)]"
+                    />
+                  )}
+                </AnimatePresence>
                 <div className="absolute -top-3 left-7 h-12 w-10 rotate-[-12deg] rounded-t-full rounded-b-lg bg-white/25" />
                 <div className="absolute -top-3 right-7 h-12 w-10 rotate-[12deg] rounded-t-full rounded-b-lg bg-white/25" />
                 <span className="relative z-10">{selectedPet?.emoji ?? '🍮'}</span>
@@ -357,6 +497,7 @@ export default function QuizScreen({
   const [answers, setAnswers] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [combo, setCombo] = useState(0);
+  const [displayCombo, setDisplayCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [startTime] = useState(Date.now());
@@ -366,6 +507,7 @@ export default function QuizScreen({
   const [lastRemoval, setLastRemoval] = useState(0);
   const [shotTier, setShotTier] = useState<ShotTier>('idle');
   const [battleBanner, setBattleBanner] = useState<string | null>(null);
+  const [shotSequence, setShotSequence] = useState(0);
 
   // 从新的数据源获取关卡数据
   const gradeLevels = allLevelsData[gradeId as keyof typeof allLevelsData];
@@ -381,6 +523,7 @@ export default function QuizScreen({
     setAnswers([]);
     setFeedback(null);
     setCombo(0);
+    setDisplayCombo(0);
     setMaxCombo(0);
     setCorrectCount(0);
     setSelectedChoice(null);
@@ -389,6 +532,7 @@ export default function QuizScreen({
     setLastRemoval(0);
     setShotTier('idle');
     setBattleBanner(null);
+    setShotSequence(0);
   }, [gradeId, levelId]);
 
   useEffect(() => {
@@ -422,14 +566,14 @@ export default function QuizScreen({
     });
   };
 
-  const scheduleAdvance = (newCorrectCount: number, newCombo: number) => {
+  const scheduleAdvance = (newCorrectCount: number, newCombo: number, delay = 1000) => {
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
         setCurrentIndex((i: number) => i + 1);
       } else {
         finishLevel(newCorrectCount, newCombo);
       }
-    }, 1000);
+    }, delay);
   };
 
   const registerCorrectAnswer = (newCombo: number) => {
@@ -437,21 +581,31 @@ export default function QuizScreen({
     const remainingBlocks = Math.max(0, TOTAL_BATTLE_BLOCKS - clearedBlocks);
     const removal = getRemovalCount(newCombo, remainingBlocks);
     const newCorrectCount = correctCount + 1;
+    const shotDelay = getShotDelay(tier, newCombo);
+    const advanceDelay = getAdvanceDelay(tier, newCombo);
 
     setFeedback('correct');
     setCombo(newCombo);
     setMaxCombo((m: number) => Math.max(m, newCombo));
     setCorrectCount(newCorrectCount);
     setShotTier(tier);
-    setLastRemoval(removal);
-    setClearedBlocks((prev) => Math.min(TOTAL_BATTLE_BLOCKS, prev + removal));
+    setBattleBanner(null);
+    setLastRemoval(0);
+    setShotSequence((prev) => prev + 1);
 
-    scheduleAdvance(newCorrectCount, newCombo);
+    setTimeout(() => {
+      setDisplayCombo(newCombo);
+      setLastRemoval(removal);
+      setClearedBlocks((prev) => Math.min(TOTAL_BATTLE_BLOCKS, prev + removal));
+    }, shotDelay);
+
+    scheduleAdvance(newCorrectCount, newCombo, advanceDelay);
   };
 
   const registerWrongAnswer = (resetAnswers: () => void) => {
     setFeedback('wrong');
     setCombo(0);
+    setDisplayCombo(0);
     setShotTier('break');
     setLastRemoval(0);
     setBattleBanner('连击中断');
@@ -1024,7 +1178,6 @@ export default function QuizScreen({
       {/* Main Area */}
       <div className="flex-1 min-h-0 flex flex-col px-4 pb-0 pt-1 relative z-10">
         <motion.div
-          key={`battle-${combo}-${clearedBlocks}`}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex-1 min-h-0 mb-0"
@@ -1032,9 +1185,11 @@ export default function QuizScreen({
           <BattleStage
             selectedPet={selectedPet}
             combo={combo}
+            displayCombo={displayCombo}
             shotTier={shotTier}
             clearedBlocks={clearedBlocks}
             lastRemoval={lastRemoval}
+            shotSequence={shotSequence}
             bannerText={battleBanner}
             feedback={feedback}
           />
