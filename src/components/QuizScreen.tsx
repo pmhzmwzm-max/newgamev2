@@ -77,6 +77,118 @@ const ParticleBurst = ({ tier = 1 }: { tier?: number }) => {
   );
 };
 
+const BlockExplosion = ({ delay = 0, tier = 'normal' }: { delay?: number; tier?: ShotTier }) => {
+  const sparkCount = tier === 'final' ? 14 : tier === 'super' ? 11 : tier === 'boost' ? 9 : 7;
+  const colors =
+    tier === 'final'
+      ? ['#FFF7AE', '#FDE047', '#FB923C', '#F87171']
+      : ['#FFF7AE', '#FDE047', '#FB923C'];
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-visible">
+      <motion.div
+        initial={{ scale: 0.25, opacity: 0.9 }}
+        animate={{ scale: tier === 'final' ? 1.45 : 1.2, opacity: 0 }}
+        transition={{ duration: 0.34, delay, ease: 'easeOut' }}
+        className="absolute inset-[12%] rounded-full bg-[radial-gradient(circle,rgba(255,251,235,0.98),rgba(253,224,71,0.92)_36%,rgba(251,146,60,0.58)_68%,transparent_100%)]"
+      />
+      {Array.from({ length: sparkCount }).map((_, i) => {
+        const angle = (i / sparkCount) * Math.PI * 2;
+        const distance = (tier === 'final' ? 34 : 24) + (i % 3) * 5;
+        const x = Math.cos(angle) * distance;
+        const y = Math.sin(angle) * distance;
+        return (
+          <motion.div
+            key={`spark-${i}`}
+            initial={{ x: 0, y: 0, scale: 0.3, opacity: 1 }}
+            animate={{ x, y, scale: 1, opacity: 0 }}
+            transition={{ duration: 0.38, delay: delay + 0.03, ease: 'easeOut' }}
+            className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{
+              background: colors[i % colors.length],
+              boxShadow: `0 0 10px ${colors[i % colors.length]}`,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+type BattleBlockProps = {
+  index: number;
+  cleared: boolean;
+  justCleared: boolean;
+  shotTier: ShotTier;
+  clearDelay: number;
+};
+
+const BattleBlock: React.FC<BattleBlockProps> = ({
+  index,
+  cleared,
+  justCleared,
+  shotTier,
+  clearDelay,
+}) => {
+  const wobbleDelay = (index % 5) * 0.12;
+
+  return (
+    <div className="relative flex h-full w-full items-center justify-center">
+      {!cleared && (
+        <motion.div
+          animate={{
+            x: [-1.4, 1.6, -1.2],
+            rotate: [-1.2, 1.4, -1],
+            y: [0, -0.8, 0.6],
+          }}
+          transition={{
+            duration: 2.2,
+            delay: wobbleDelay,
+            repeat: Infinity,
+            repeatType: 'mirror',
+            ease: 'easeInOut',
+          }}
+          className="relative h-[84%] w-[84%] max-h-full max-w-full"
+        >
+          <div
+            className="relative h-full w-full overflow-hidden rounded-[1rem] shadow-[inset_0_-4px_0_rgba(234,88,12,0.28),0_6px_12px_rgba(133,96,32,0.16)]"
+            style={{
+              background:
+                'linear-gradient(180deg, #FFFCE0 0%, #FFF3A5 32%, #FFE14A 60%, #FFB54B 100%)',
+            }}
+          >
+            <div className="absolute inset-x-[14%] top-[9%] h-[18%] rounded-full bg-white/50 blur-[2px]" />
+            <div className="absolute inset-x-0 bottom-0 h-[22%] bg-[linear-gradient(180deg,rgba(255,170,54,0)_0%,rgba(255,159,67,0.52)_100%)]" />
+          </div>
+        </motion.div>
+      )}
+
+      {justCleared && (
+        <>
+          <motion.div
+            initial={{ scale: 1, opacity: 1, rotate: 0 }}
+            animate={{ scale: [1, 1.08, 0.2], opacity: [1, 1, 0], rotate: [0, -6, 8] }}
+            transition={{ duration: 0.44, delay: clearDelay, ease: 'easeOut' }}
+            className="absolute h-[84%] w-[84%] max-h-full max-w-full"
+          >
+            <div
+              className="relative h-full w-full overflow-hidden rounded-[1rem] shadow-[inset_0_-4px_0_rgba(234,88,12,0.28),0_8px_14px_rgba(133,96,32,0.2)]"
+              style={{
+                background:
+                  'linear-gradient(180deg, #FFFCE0 0%, #FFF3A5 32%, #FFE14A 60%, #FFB54B 100%)',
+              }}
+            >
+              <div className="absolute inset-x-[14%] top-[9%] h-[18%] rounded-full bg-white/60 blur-[2px]" />
+              <div className="absolute inset-x-0 bottom-0 h-[24%] bg-[linear-gradient(180deg,rgba(255,170,54,0)_0%,rgba(255,159,67,0.62)_100%)]" />
+            </div>
+          </motion.div>
+          <BlockExplosion delay={clearDelay} tier={shotTier} />
+        </>
+      )}
+    </div>
+  );
+};
+
 const BattleStage = ({
   selectedPet,
   combo,
@@ -95,24 +207,6 @@ const BattleStage = ({
   feedback: 'correct' | 'wrong' | null;
 }) => {
   const comboLabel = bannerText ?? (combo >= 10 ? `${combo} 连击!` : combo >= 3 ? `${combo} 连击` : '');
-  const beamWidthClass = shotTier === 'final'
-    ? 'w-36 h-4'
-    : shotTier === 'super'
-    ? 'w-28 h-3.5'
-    : shotTier === 'boost'
-    ? 'w-22 h-3'
-    : shotTier === 'normal'
-    ? 'w-14 h-2.5'
-    : 'w-0 h-2.5';
-
-  const beamGlowClass = shotTier === 'final'
-    ? 'from-yellow-200 via-pink-400 to-purple-500 shadow-[0_0_50px_rgba(236,72,153,0.75)]'
-    : shotTier === 'super'
-    ? 'from-yellow-100 via-orange-400 to-pink-500 shadow-[0_0_40px_rgba(249,115,22,0.75)]'
-    : shotTier === 'boost'
-    ? 'from-yellow-100 via-yellow-300 to-orange-400 shadow-[0_0_28px_rgba(251,191,36,0.65)]'
-    : 'from-white/0 via-yellow-200 to-orange-300 shadow-[0_0_20px_rgba(255,255,255,0.3)]';
-
   const recentClearStart = Math.max(0, clearedBlocks - lastRemoval);
 
   return (
@@ -121,24 +215,8 @@ const BattleStage = ({
         ? 'border border-red-300/70'
         : ''
     }`}>
-      <div className="relative z-10 grid h-full grid-cols-[minmax(0,7fr)_minmax(178px,3fr)] gap-3 px-3 pb-2 pt-2">
-        <div className="relative flex min-w-0 items-center justify-start rounded-[1.8rem] px-3 py-2">
-          <motion.div
-            animate={
-              shotTier === 'idle' || shotTier === 'break'
-                ? { width: 0, opacity: 0 }
-                : shotTier === 'normal'
-                ? { width: 56, opacity: 0.9 }
-                : shotTier === 'boost'
-                ? { width: 88, opacity: 1 }
-                : shotTier === 'super'
-                ? { width: 112, opacity: 1 }
-                : { width: 148, opacity: 1 }
-            }
-            transition={{ duration: 0.25 }}
-            className={`absolute right-[8%] top-1/2 z-0 -translate-y-1/2 rounded-full bg-gradient-to-r ${beamWidthClass} ${beamGlowClass} pointer-events-none`}
-          />
-
+      <div className="relative z-10 grid h-full grid-cols-[minmax(0,1fr)_clamp(168px,28%,246px)] gap-1 px-2 pb-1 pt-1 min-h-0">
+        <div className="relative flex min-w-0 min-h-0 items-stretch justify-stretch rounded-[1.8rem] px-0 py-1">
           <motion.div
             animate={
               shotTier === 'idle' || shotTier === 'break'
@@ -148,48 +226,35 @@ const BattleStage = ({
                 : { opacity: [0.3, 0.8, 0.55], scale: [0.8, 1.05, 1] }
             }
             transition={{ duration: 0.35 }}
-            className="absolute right-[6%] top-1/2 z-0 h-16 w-16 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,236,153,0.95),rgba(251,146,60,0.22)_42%,transparent_72%)] pointer-events-none"
+            className="absolute right-2 top-1/2 z-0 h-16 w-16 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,236,153,0.95),rgba(251,146,60,0.22)_42%,transparent_72%)] pointer-events-none"
           />
 
-          <div className="relative z-10 flex h-full w-full items-center justify-start">
-            <div className="h-full w-full max-w-[468px]">
-              <div className="grid h-full w-full grid-cols-5 grid-rows-7 gap-2">
+          <div className="relative z-10 flex h-full w-full min-h-0 items-stretch justify-stretch pr-1">
+            <div className="grid h-full w-full min-h-0 grid-cols-5 grid-rows-7 gap-1.5 place-items-stretch">
               {Array.from({ length: TOTAL_BATTLE_BLOCKS }).map((_, index) => {
                 const cleared = index < clearedBlocks;
                 const justCleared = cleared && index >= recentClearStart;
+                const clearDelay = justCleared ? (index - recentClearStart) * 0.05 : 0;
+
                 return (
-                  <motion.div
+                  <BattleBlock
                     key={index}
-                    initial={false}
-                    animate={
-                      cleared
-                        ? justCleared
-                          ? { scale: [1, 1.12, 0.15], opacity: [1, 1, 0], rotate: [0, -8, 10] }
-                          : { scale: 0.15, opacity: 0 }
-                        : { scale: 1, opacity: 1, rotate: 0 }
-                    }
-                    transition={{
-                      duration: justCleared ? 0.42 : 0.2,
-                      delay: justCleared ? (index - recentClearStart) * 0.05 : 0,
-                      ease: 'easeOut',
-                    }}
-                    className={`rounded-[1rem] ${
-                      cleared
-                        ? 'bg-transparent shadow-none'
-                        : 'bg-gradient-to-b from-yellow-100 via-yellow-300 to-orange-300 shadow-[inset_0_-4px_0_rgba(234,88,12,0.28),0_6px_12px_rgba(133,96,32,0.16)]'
-                    }`}
+                    index={index}
+                    cleared={cleared}
+                    justCleared={justCleared}
+                    shotTier={shotTier}
+                    clearDelay={clearDelay}
                   />
                 );
               })}
-              </div>
             </div>
           </div>
         </div>
 
-        <div className="relative min-w-0">
-          <div className="grid h-full grid-rows-[0.38fr_0.62fr] gap-3">
-            <div className="flex items-stretch">
-              <div className="flex h-full w-full items-center justify-center rounded-[1.8rem] px-2 py-2">
+        <div className="relative min-w-0 min-h-0">
+          <div className="grid h-full min-h-0 grid-rows-[minmax(84px,0.34fr)_minmax(132px,0.66fr)] gap-2">
+            <div className="flex min-h-0 items-stretch">
+              <div className="flex h-full w-full items-center justify-center rounded-[1.8rem] px-1 py-1">
                 <AnimatePresence mode="wait">
                   {comboLabel ? (
                     <motion.div
@@ -204,7 +269,7 @@ const BattleStage = ({
                       }
                       exit={{ opacity: 0, y: -10, scale: 0.86 }}
                       transition={{ duration: 0.32, type: 'spring', bounce: 0.45 }}
-                      className={`relative flex min-h-[112px] w-full items-center justify-center gap-2 rounded-[1.6rem] px-3 py-3 text-center shadow-xl border-4 ${
+                      className={`relative flex min-h-[88px] w-full items-center justify-center gap-2 rounded-[1.6rem] px-2 py-2 text-center shadow-xl border-4 ${
                         bannerText && combo < 3
                           ? 'bg-red-500 border-red-300 shadow-[0_0_20px_rgba(239,68,68,0.28)]'
                           : combo >= 10
@@ -217,21 +282,21 @@ const BattleStage = ({
                       {!(bannerText && combo < 3) && <ParticleBurst tier={combo >= 10 ? 3 : combo >= 5 ? 2 : 1} />}
                       <div className="relative z-10 flex items-center gap-2">
                         {bannerText && combo < 3 ? null : combo >= 10 ? (
-                          <Crown className="h-9 w-9 text-purple-500 animate-bounce" fill="currentColor" />
+                          <Crown className="h-10 w-10 text-purple-500 animate-bounce" fill="currentColor" />
                         ) : combo >= 5 ? (
-                          <Zap className="h-8 w-8 text-pink-500 animate-bounce" fill="currentColor" />
+                          <Zap className="h-9 w-9 text-pink-500 animate-bounce" fill="currentColor" />
                         ) : (
-                          <Flame className="h-7 w-7 text-orange-500 animate-bounce" fill="currentColor" />
+                          <Flame className="h-9 w-9 text-orange-500 animate-bounce" fill="currentColor" />
                         )}
                         <span
                           className={`font-black italic drop-shadow-sm ${
                             bannerText && combo < 3
-                              ? 'text-[1.45rem] text-white'
+                              ? 'text-[1.55rem] text-white'
                               : combo >= 10
-                              ? 'text-[1.65rem] text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-red-500'
+                              ? 'text-[clamp(1.8rem,3vw,2.35rem)] leading-none text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-red-500'
                               : combo >= 5
-                              ? 'text-[1.35rem] text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-orange-500'
-                              : 'text-[1.1rem] text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600'
+                              ? 'text-[clamp(1.65rem,2.7vw,2.05rem)] leading-none text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-orange-500'
+                              : 'text-[clamp(1.45rem,2.3vw,1.8rem)] leading-none text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600'
                           }`}
                         >
                           {comboLabel}
@@ -245,7 +310,7 @@ const BattleStage = ({
               </div>
             </div>
 
-            <div className="flex items-end justify-end rounded-[1.8rem] px-2 pb-3">
+            <div className="flex min-h-0 items-end justify-end rounded-[1.8rem] px-0 pb-1">
               <motion.div
                 animate={
                   shotTier === 'final'
@@ -261,7 +326,7 @@ const BattleStage = ({
                     : { scale: 1, y: 0, x: 0 }
                 }
                 transition={{ duration: 0.45 }}
-                className={`relative flex h-36 w-36 items-center justify-center rounded-[2.6rem] border-4 border-white/75 text-7xl shadow-2xl ${selectedPet?.color ?? 'bg-yellow-300'} ${selectedPet?.shadow ?? 'shadow-yellow-300/50'}`}
+                className={`relative flex h-[clamp(8.5rem,23vw,11.7rem)] w-[clamp(8.5rem,23vw,11.7rem)] items-center justify-center self-end rounded-[2.6rem] border-4 border-white/75 text-[clamp(4rem,8vw,5.85rem)] shadow-2xl ${selectedPet?.color ?? 'bg-yellow-300'} ${selectedPet?.shadow ?? 'shadow-yellow-300/50'}`}
               >
                 <div className="absolute -top-3 left-7 h-12 w-10 rotate-[-12deg] rounded-t-full rounded-b-lg bg-white/25" />
                 <div className="absolute -top-3 right-7 h-12 w-10 rotate-[12deg] rounded-t-full rounded-b-lg bg-white/25" />
@@ -292,8 +357,6 @@ export default function QuizScreen({
   const [answers, setAnswers] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [combo, setCombo] = useState(0);
-  const [showPetCombo, setShowPetCombo] = useState(false);
-  const [petComboTimeout, setPetComboTimeout] = useState<NodeJS.Timeout | null>(null);
   const [maxCombo, setMaxCombo] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [startTime] = useState(Date.now());
@@ -318,7 +381,6 @@ export default function QuizScreen({
     setAnswers([]);
     setFeedback(null);
     setCombo(0);
-    setShowPetCombo(false);
     setMaxCombo(0);
     setCorrectCount(0);
     setSelectedChoice(null);
@@ -349,15 +411,6 @@ export default function QuizScreen({
     const timeout = setTimeout(() => setBattleBanner(null), 1200);
     return () => clearTimeout(timeout);
   }, [battleBanner]);
-
-  const triggerPetComboMessage = (newCombo: number) => {
-    if (newCombo > 0 && newCombo % 3 === 0) {
-      setShowPetCombo(true);
-      if (petComboTimeout) clearTimeout(petComboTimeout);
-      const timeout = setTimeout(() => setShowPetCombo(false), 2000);
-      setPetComboTimeout(timeout);
-    }
-  };
 
   const finishLevel = (newCorrectCount: number, newCombo: number) => {
     const timeTaken = Math.floor((Date.now() - startTime) / 1000);
@@ -393,11 +446,6 @@ export default function QuizScreen({
     setLastRemoval(removal);
     setClearedBlocks((prev) => Math.min(TOTAL_BATTLE_BLOCKS, prev + removal));
 
-    if (newCombo === 3) setBattleBanner('强化发射开启');
-    if (newCombo === 6) setBattleBanner('超级发射开启');
-    if (newCombo === 10) setBattleBanner('终极清屏');
-
-    triggerPetComboMessage(newCombo);
     scheduleAdvance(newCorrectCount, newCombo);
   };
 
@@ -976,7 +1024,7 @@ export default function QuizScreen({
       {/* Main Area */}
       <div className="flex-1 min-h-0 flex flex-col px-4 pb-0 pt-1 relative z-10">
         <motion.div
-          key={`battle-${currentIndex}-${combo}-${clearedBlocks}`}
+          key={`battle-${combo}-${clearedBlocks}`}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex-1 min-h-0 mb-0"
@@ -992,7 +1040,7 @@ export default function QuizScreen({
           />
         </motion.div>
 
-        <div className="shrink-0 bg-white/20 backdrop-blur-md rounded-t-[2rem] px-4 pt-4 pb-5">
+        <div className="shrink-0 bg-white/20 backdrop-blur-md rounded-t-[2rem] px-4 pt-4 pb-4">
           <motion.div
             key={currentIndex}
             initial={{ opacity: 0, x: 40 }}
