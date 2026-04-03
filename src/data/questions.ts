@@ -4,7 +4,7 @@
  * 4个年级 × 50关 × 10题 = 2000题
  */
 
-export type QuestionType = 'vertical_addition' | 'number_comparison' | 'text_to_number' | 'counting' | 'input';
+export type QuestionType = 'vertical_addition' | 'multi_vertical' | 'number_comparison' | 'text_to_number' | 'counting' | 'input' | 'choice';
 
 export interface Question {
   id: string;
@@ -13,10 +13,12 @@ export interface Question {
   label?: string;
   num1?: number;
   num2?: number;
+  num3?: number;
   operator?: '+' | '-' | '×' | '÷';
   question?: string;
   emoji?: string;
   count?: number;
+  options?: string[];
   answer: string;
   answerLength: number;
 }

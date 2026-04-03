@@ -79,6 +79,8 @@ export default function QuizScreen({
   const [maxCombo, setMaxCombo] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [startTime] = useState(Date.now());
+  const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
+  const [multiVerticalStep, setMultiVerticalStep] = useState(1); // 多重竖式当前步骤
 
   // 从新的数据源获取关卡数据
   const gradeLevels = allLevelsData[gradeId as keyof typeof allLevelsData];
@@ -91,15 +93,59 @@ export default function QuizScreen({
 
   useEffect(() => {
     if (question && question.answerLength) {
-      // 对于非竖式计算类型，只使用单个输入框
-      const newAnswers = question.type === 'vertical_addition'
+      // 对于竖式计算类型，使用多个输入框
+      const isVertical = question.type === 'vertical_addition' || question.type === 'multi_vertical';
+      const newAnswers = isVertical
         ? Array(question.answerLength).fill('')
         : [''];
       console.log('Initializing answers:', newAnswers);
       setAnswers(newAnswers);
       setFeedback(null);
+      setSelectedChoice(null);
+      setMultiVerticalStep(1); // 重置多重竖式步骤
     }
   }, [currentIndex]);
+
+  // 选择题答案处理
+  const handleChoiceSelect = (option: string) => {
+    if (feedback === 'correct' || feedback === 'wrong') return;
+
+    setSelectedChoice(option);
+
+    if (option === question.answer) {
+      setFeedback('correct');
+      const newCombo = combo + 1;
+      setCombo(newCombo);
+      setMaxCombo((m: number) => Math.max(m, newCombo));
+      if (newCombo > 0 && newCombo % 3 === 0) {
+        setShowPetCombo(true);
+        if (petComboTimeout) clearTimeout(petComboTimeout);
+        const timeout = setTimeout(() => setShowPetCombo(false), 2000);
+        setPetComboTimeout(timeout);
+      }
+      setCorrectCount((c: number) => c + 1);
+
+      setTimeout(() => {
+        if (currentIndex < questions.length - 1) {
+          setCurrentIndex((i: number) => i + 1);
+        } else {
+          const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+          onFinish({
+            accuracy: Math.round(((correctCount + 1) / questions.length) * 100),
+            time: timeTaken,
+            maxCombo: Math.max(maxCombo, newCombo)
+          });
+        }
+      }, 1000);
+    } else {
+      setFeedback('wrong');
+      setCombo(0);
+      setTimeout(() => {
+        setSelectedChoice(null);
+        setFeedback(null);
+      }, 500);
+    }
+  };
 
   const handleKeyPress = (key: string) => {
     if (feedback === 'correct' || feedback === 'wrong') return;
@@ -107,7 +153,16 @@ export default function QuizScreen({
     if (key === 'delete') {
       setAnswers(prev => {
         const next = [...prev];
-        if (question.type === 'vertical_addition') {
+        if (question.type === 'multi_vertical') {
+          // 多重竖式：按填写顺序的逆序删除
+          if (multiVerticalStep === 1) {
+            if (next[1] !== '') { next[1] = ''; }
+            else if (next[0] !== '') { next[0] = ''; }
+          } else {
+            if (next[3] !== '') { next[3] = ''; }
+            else if (next[2] !== '') { next[2] = ''; }
+          }
+        } else if (question.type === 'vertical_addition') {
           // 竖式计算：从右到左删除
           const filledIdx = next.findIndex(val => val !== '');
           if (filledIdx !== -1) {
@@ -125,7 +180,16 @@ export default function QuizScreen({
     } else {
       setAnswers(prev => {
         const next = [...prev];
-        if (question.type === 'vertical_addition') {
+        if (question.type === 'multi_vertical') {
+          // 多重竖式：从右到左，每个格子一个数字
+          if (multiVerticalStep === 1) {
+            if (next[0] === '') { next[0] = key; }
+            else if (next[1] === '') { next[1] = key; }
+          } else {
+            if (next[2] === '') { next[2] = key; }
+            else if (next[3] === '') { next[3] = key; }
+          }
+        } else if (question.type === 'vertical_addition') {
           // 竖式计算：从右到左填写，每个格子一个数字
           for (let i = next.length - 1; i >= 0; i--) {
             if (next[i] === '') {
@@ -150,6 +214,74 @@ export default function QuizScreen({
   const checkAnswer = () => {
     const userAnswerStr = answers.join('');
 
+    // 多重竖式计算：两步验证
+    if (question.type === 'multi_vertical') {
+      const firstResult = (question.num1! + question.num2!).toString();
+      const finalResult = question.answer;
+
+      if (multiVerticalStep === 1) {
+        // 检查第一层：answers[1]是十位，answers[0]是个位
+        const step1Answer = (answers[1] || '') + (answers[0] || '');
+        if (answers[0] === '' || answers[1] === '') return; // 未填完
+
+        if (step1Answer === firstResult) {
+          setFeedback('correct');
+          setTimeout(() => {
+            setMultiVerticalStep(2);
+            setFeedback(null);
+            // 清空第二层答案位置
+            setAnswers(['', '', '', '']);
+          }, 600);
+        } else {
+          setFeedback('wrong');
+          setTimeout(() => {
+            setAnswers(['', '', '', '']);
+            setFeedback(null);
+          }, 500);
+        }
+        return;
+      } else {
+        // 检查第二层：answers[3]是十位，answers[2]是个位
+        const step2Answer = (answers[3] || '') + (answers[2] || '');
+        if (answers[2] === '' || answers[3] === '') return; // 未填完
+
+        if (step2Answer === finalResult) {
+          setFeedback('correct');
+          const newCombo = combo + 1;
+          setCombo(newCombo);
+          setMaxCombo((m: number) => Math.max(m, newCombo));
+          if (newCombo > 0 && newCombo % 3 === 0) {
+            setShowPetCombo(true);
+            if (petComboTimeout) clearTimeout(petComboTimeout);
+            const timeout = setTimeout(() => setShowPetCombo(false), 2000);
+            setPetComboTimeout(timeout);
+          }
+          setCorrectCount((c: number) => c + 1);
+
+          setTimeout(() => {
+            if (currentIndex < questions.length - 1) {
+              setCurrentIndex((i: number) => i + 1);
+            } else {
+              const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+              onFinish({
+                accuracy: Math.round(((correctCount + 1) / questions.length) * 100),
+                time: timeTaken,
+                maxCombo: Math.max(maxCombo, newCombo)
+              });
+            }
+          }, 1000);
+        } else {
+          setFeedback('wrong');
+          setCombo(0);
+          setTimeout(() => {
+            setAnswers((prev: string[]) => { prev[2] = ''; prev[3] = ''; return [...prev]; });
+            setFeedback(null);
+          }, 500);
+        }
+        return;
+      }
+    }
+
     // 对于非竖式计算：输入位数必须等于答案位数才判断
     // 对于竖式计算：需要填满所有格子才判断
     if (question.type === 'vertical_addition') {
@@ -163,7 +295,7 @@ export default function QuizScreen({
       setFeedback('correct');
       const newCombo = combo + 1;
       setCombo(newCombo);
-      setMaxCombo(m => Math.max(m, newCombo));
+      setMaxCombo((m: number) => Math.max(m, newCombo));
       if (newCombo > 0 && newCombo % 3 === 0) {
         setShowPetCombo(true);
         if (petComboTimeout) clearTimeout(petComboTimeout);
@@ -171,11 +303,11 @@ export default function QuizScreen({
         const timeout = setTimeout(() => setShowPetCombo(false), 2000);
         setPetComboTimeout(timeout);
       }
-      setCorrectCount(c => c + 1);
+      setCorrectCount((c: number) => c + 1);
 
       setTimeout(() => {
         if (currentIndex < questions.length - 1) {
-          setCurrentIndex(i => i + 1);
+          setCurrentIndex((i: number) => i + 1);
         } else {
           const timeTaken = Math.floor((Date.now() - startTime) / 1000);
           onFinish({
@@ -206,6 +338,18 @@ export default function QuizScreen({
 
   const getActiveIndex = () => {
     if (feedback !== null) return -1;
+    if (question.type === 'multi_vertical') {
+      // 多重竖式：从右到左填写
+      // 第一步：B(0) -> A(1)，第二步：D(2) -> C(3)
+      if (multiVerticalStep === 1) {
+        if (answers[0] === '') return 0; // B (个位)
+        if (answers[1] === '') return 1; // A (十位)
+      } else {
+        if (answers[2] === '') return 2; // D (个位)
+        if (answers[3] === '') return 3; // C (十位)
+      }
+      return -1;
+    }
     if (question.type === 'vertical_addition') {
       // 竖式计算：从右到左找空位
       for (let i = answers.length - 1; i >= 0; i--) {
@@ -312,6 +456,123 @@ export default function QuizScreen({
     );
   };
 
+  // 多重竖式计算渲染（三数连加，如 23+45+12）
+  const renderMultiVertical = () => {
+    if (!question || !question.num1 || !question.num2 || !question.num3) {
+      console.error('Invalid multi_vertical question data:', question);
+      return <div className="text-white text-2xl">题目数据错误</div>;
+    }
+
+    const step = multiVerticalStep;
+    const firstResult = question.num1 + question.num2;
+    const finalResult = parseInt(question.answer);
+    const maxLen = 2; // 两位数
+
+    return (
+      <div className="text-center flex flex-col items-end">
+        {/* 第一行：num1 */}
+        <div className="flex justify-end gap-3 text-4xl font-bold text-gray-700 tracking-widest font-mono">
+          {question.num1.toString().padStart(maxLen, ' ').split('').map((char, i) => (
+            <span key={i} className="w-7 text-center">{char === ' ' ? '' : char}</span>
+          ))}
+        </div>
+        {/* 第二行：+ num2 */}
+        <div className="flex justify-end gap-3 text-4xl font-bold text-gray-700 mt-2 relative tracking-widest font-mono">
+          <span className="absolute -left-10 text-blue-500">+</span>
+          {question.num2.toString().padStart(maxLen, ' ').split('').map((char, i) => (
+            <span key={i} className="w-7 text-center">{char === ' ' ? '' : char}</span>
+          ))}
+        </div>
+        {/* 第一条横线 */}
+        <div className="w-full h-1 bg-gray-300 my-4"></div>
+        {/* 第三行：第一层结果 AB */}
+        <div className="flex gap-2 justify-end">
+          {step === 1 ? (
+            // 第一步：填写第一层结果
+            <>
+              <motion.div
+                animate={feedback === 'wrong' ? { x: [-5, 5, -5, 5, 0] } : { x: 0 }}
+                className={`w-12 h-14 rounded-xl flex items-center justify-center text-2xl font-bold transition-all
+                  ${answers[1] ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-400'}
+                  ${1 === activeIndex ? 'ring-4 ring-yellow-300 bg-yellow-50 shadow-[0_0_25px_rgba(253,224,71,0.8)]' : 'shadow-inner'}
+                `}
+              >
+                {answers[1] || '?'}
+              </motion.div>
+              <motion.div
+                animate={feedback === 'wrong' ? { x: [-5, 5, -5, 5, 0] } : { x: 0 }}
+                className={`w-12 h-14 rounded-xl flex items-center justify-center text-2xl font-bold transition-all
+                  ${answers[0] ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-400'}
+                  ${0 === activeIndex ? 'ring-4 ring-yellow-300 bg-yellow-50 shadow-[0_0_25px_rgba(253,224,71,0.8)]' : 'shadow-inner'}
+                `}
+              >
+                {answers[0] || '?'}
+              </motion.div>
+            </>
+          ) : (
+            // 第二步：显示已完成的第层结果
+            <>
+              <div className="w-12 h-14 rounded-xl flex items-center justify-center text-2xl font-bold bg-green-100 text-green-500 shadow-inner">
+                {firstResult.toString()[0]}
+              </div>
+              <div className="w-12 h-14 rounded-xl flex items-center justify-center text-2xl font-bold bg-green-100 text-green-500 shadow-inner">
+                {firstResult.toString()[1]}
+              </div>
+            </>
+          )}
+        </div>
+        {/* 第四行：+ num3 */}
+        <div className="flex justify-end gap-3 text-4xl font-bold text-gray-700 mt-3 relative tracking-widest font-mono">
+          <span className="absolute -left-10 text-blue-500">+</span>
+          {question.num3.toString().padStart(maxLen, ' ').split('').map((char, i) => (
+            <span key={i} className="w-7 text-center">{char === ' ' ? '' : char}</span>
+          ))}
+        </div>
+        {/* 第二条横线 */}
+        <div className="w-full h-1 bg-gray-300 my-4"></div>
+        {/* 第五行：第二层结果 CD */}
+        <div className="flex gap-2 justify-end">
+          {step === 2 ? (
+            <>
+              <motion.div
+                animate={feedback === 'wrong' ? { x: [-5, 5, -5, 5, 0] } : { x: 0 }}
+                className={`w-12 h-14 rounded-xl flex items-center justify-center text-2xl font-bold transition-all
+                  ${answers[3] ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-400'}
+                  ${3 === activeIndex ? 'ring-4 ring-yellow-300 bg-yellow-50 shadow-[0_0_25px_rgba(253,224,71,0.8)]' : 'shadow-inner'}
+                `}
+              >
+                {answers[3] || '?'}
+              </motion.div>
+              <motion.div
+                animate={feedback === 'wrong' ? { x: [-5, 5, -5, 5, 0] } : { x: 0 }}
+                className={`w-12 h-14 rounded-xl flex items-center justify-center text-2xl font-bold transition-all
+                  ${answers[2] ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-400'}
+                  ${2 === activeIndex ? 'ring-4 ring-yellow-300 bg-yellow-50 shadow-[0_0_25px_rgba(253,224,71,0.8)]' : 'shadow-inner'}
+                `}
+              >
+                {answers[2] || '?'}
+              </motion.div>
+            </>
+          ) : (
+            // 第一步时，第二层显示为禁用状态
+            <>
+              <div className="w-12 h-14 rounded-xl flex items-center justify-center text-2xl font-bold bg-gray-50 text-gray-300 opacity-40 shadow-inner">
+                ?
+              </div>
+              <div className="w-12 h-14 rounded-xl flex items-center justify-center text-2xl font-bold bg-gray-50 text-gray-300 opacity-40 shadow-inner">
+                ?
+              </div>
+            </>
+          )}
+        </div>
+        {/* 提示文字 */}
+        <div className="mt-4 text-center text-sm text-gray-400 w-full">
+          {step === 1 ? `先计算 ${question.num1} + ${question.num2}` : `再计算 ${firstResult} + ${question.num3}`}
+        </div>
+      </div>
+    );
+  };
+
   // 输入题渲染（算式 + 答案框）
   const renderInput = () => {
     return (
@@ -387,6 +648,63 @@ export default function QuizScreen({
           >
             {answers[0] || '?'}
           </motion.div>
+        </div>
+      </div>
+    );
+  };
+
+  // 选择题渲染
+  const renderChoice = () => {
+    const options = question.options || [];
+    return (
+      <div className="text-center w-full">
+        <div className="text-2xl font-bold text-gray-500 mb-6 tracking-wider">选择正确答案</div>
+        <div className="flex items-center justify-center gap-4 mb-8">
+          <span className="text-4xl font-black text-gray-800">{question.question}</span>
+          <motion.div
+            animate={
+              feedback === 'wrong' && selectedChoice !== question.answer
+                ? { x: [-5, 5, -5, 5, 0] }
+                : selectedChoice
+                  ? { scale: 1 }
+                  : { scale: 1.1, boxShadow: "0 0 30px rgba(253,224,71,0.8)" }
+            }
+            transition={
+              feedback === 'wrong' ? { duration: 0.4 } : { repeat: Infinity, duration: 1.2, ease: "easeInOut", repeatType: "reverse" }
+            }
+            className={`min-w-[80px] px-6 h-16 rounded-xl flex items-center justify-center text-3xl font-bold transition-colors
+              ${selectedChoice ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-400'}
+              ${feedback === 'correct' ? 'bg-green-100 text-green-500' : ''}
+              ${feedback === 'wrong' ? 'bg-red-100 text-red-500' : ''}
+              ${!selectedChoice ? 'ring-4 ring-yellow-300 bg-yellow-50' : ''}
+            `}
+          >
+            {selectedChoice || '?'}
+          </motion.div>
+        </div>
+        <div className="grid grid-cols-4 gap-3">
+          {options.map((option, i) => (
+            <motion.button
+              key={i}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleChoiceSelect(option)}
+              disabled={feedback !== null}
+              className={`py-4 px-6 text-2xl font-bold rounded-2xl transition-all border-4 ${
+                feedback === 'correct' && option === question.answer
+                  ? 'bg-green-500 text-white border-green-600 shadow-[0_4px_0_#16a34a]'
+                  : feedback === 'wrong' && option === question.answer
+                  ? 'bg-green-500 text-white border-green-600 shadow-[0_4px_0_#16a34a]'
+                  : feedback === 'wrong' && selectedChoice === option
+                  ? 'bg-red-500 text-white border-red-600 shadow-[0_4px_0_#dc2626]'
+                  : selectedChoice === option
+                  ? 'bg-blue-500 text-white border-blue-600 shadow-[0_4px_0_#1d4ed8]'
+                  : 'bg-white text-gray-700 border-gray-200 shadow-[0_4px_0_#d1d5db] hover:border-blue-300'
+              }`}
+            >
+              {option}
+            </motion.button>
+          ))}
         </div>
       </div>
     );
@@ -528,6 +846,10 @@ export default function QuizScreen({
             renderInput()
           ) : question.type === 'counting' ? (
             renderCounting()
+          ) : question.type === 'choice' ? (
+            renderChoice()
+          ) : question.type === 'multi_vertical' ? (
+            renderMultiVertical()
           ) : (
             renderVerticalMath()
           )}
@@ -560,6 +882,10 @@ export default function QuizScreen({
                 <span className="text-6xl font-bold">{sym}</span>
               </button>
             ))}
+          </div>
+        ) : question.type === 'choice' ? (
+          <div className="text-center text-white/80 py-8">
+            <span className="text-xl font-bold">👆 点击上方选项作答</span>
           </div>
         ) : (
           <div className="flex flex-col gap-4 items-center">

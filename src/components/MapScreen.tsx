@@ -14,7 +14,6 @@ export default function MapScreen({
   gradeId,
   onStart,
   onOpenPokedex,
-  onBackToGrades,
   unlockedLevels,
   puzzlePieces,
   maxLevels = MAX_LEVELS
@@ -22,7 +21,6 @@ export default function MapScreen({
   gradeId: string;
   onStart: (levelId: number) => void;
   onOpenPokedex: () => void;
-  onBackToGrades: () => void;
   unlockedLevels: number[];
   puzzlePieces: number;
   maxLevels?: number;
@@ -33,20 +31,12 @@ export default function MapScreen({
 
   const gradeData = allLevelsData[gradeId as keyof typeof allLevelsData];
 
-  // 各年级背景图
+  // 三年级使用一年级背景图
   const gradeBackgrounds: Record<string, string> = {
     'k': '/images/幼儿园关卡背景图.png',
     '1': '/images/一年级关卡背景图.png',
     '2': '/images/二年级关卡背景图.png',
-    '3': '/images/三年级关卡背景图.png'
-  };
-
-  // 各年级返回按钮切图
-  const gradeReturnButtons: Record<string, string> = {
-    'k': '/images/幼儿园返回.png',
-    '1': '/images/一年级返回.png',
-    '2': '/images/二年级返回.png',
-    '3': '/images/三年级返回.png'
+    '3': '/images/一年级关卡背景图.png' // 三年级使用一年级背景
   };
 
   // 宠物图鉴按钮切图
@@ -297,21 +287,92 @@ export default function MapScreen({
         />
       </div>
 
-      {/* 顶部导航栏 */}
-      <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-20 pointer-events-none">
-        {/* 返回按钮 - 使用切图，放大50% */}
-        <button
-          onClick={onBackToGrades}
-          className="pointer-events-auto active:scale-95 transition-transform"
+      {/* 漂浮云朵 - 从年级岛屿页保留 */}
+      <div className="absolute inset-0 z-[50] overflow-hidden pointer-events-none">
+        {/* 云朵1 - 大白云 */}
+        <motion.div
+          initial={{ x: 100 }}
+          animate={{ x: 1200 }}
+          transition={{
+            duration: 50,
+            repeat: Infinity,
+            ease: "linear",
+            repeatType: "loop",
+            repeatDelay: 5
+          }}
+          className="absolute top-[12%]"
         >
-          <img
-            src={gradeReturnButtons[gradeId] || gradeReturnButtons['k']}
-            alt="返回"
-            className="h-18 w-auto object-contain"
-            style={{ height: '72px' }}
-          />
-        </button>
+          <svg width="160" height="70" viewBox="0 0 160 70" className="opacity-75">
+            <defs>
+              <linearGradient id="cloudGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.95" />
+                <stop offset="100%" stopColor="#F0F8FF" stopOpacity="0.8" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M25,50 Q15,50 15,40 Q15,28 28,28 Q32,15 52,15 Q68,8 88,15 Q102,12 116,24 Q130,20 140,35 Q150,35 150,48 Q150,58 136,58 L35,58 Q25,58 25,50Z"
+              fill="url(#cloudGrad1)"
+            />
+          </svg>
+        </motion.div>
 
+        {/* 云朵2 - 中等 */}
+        <motion.div
+          initial={{ x: 400 }}
+          animate={{ x: 1400 }}
+          transition={{
+            duration: 65,
+            repeat: Infinity,
+            ease: "linear",
+            repeatType: "loop",
+            repeatDelay: 3
+          }}
+          className="absolute top-[35%]"
+        >
+          <svg width="130" height="55" viewBox="0 0 130 55" className="opacity-65">
+            <defs>
+              <linearGradient id="cloudGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#E8F4FF" stopOpacity="0.7" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M22,42 Q12,42 12,32 Q12,22 24,22 Q28,12 46,12 Q58,6 74,12 Q86,10 96,20 Q108,16 116,28 Q124,28 124,38 Q124,46 112,46 L26,46 Q22,42 22,42Z"
+              fill="url(#cloudGrad2)"
+            />
+          </svg>
+        </motion.div>
+
+        {/* 云朵3 - 小云朵 */}
+        <motion.div
+          initial={{ x: 750 }}
+          animate={{ x: 1500 }}
+          transition={{
+            duration: 45,
+            repeat: Infinity,
+            ease: "linear",
+            repeatType: "loop",
+            repeatDelay: 8
+          }}
+          className="absolute top-[58%]"
+        >
+          <svg width="90" height="42" viewBox="0 0 90 42" className="opacity-55">
+            <defs>
+              <linearGradient id="cloudGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.85" />
+                <stop offset="100%" stopColor="#F5FAFF" stopOpacity="0.65" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M15,34 Q10,34 10,26 Q10,18 18,18 Q22,10 34,10 Q44,6 54,12 Q64,8 70,18 Q78,18 78,26 Q78,32 68,32 L18,32 Q15,34 15,34Z"
+              fill="url(#cloudGrad3)"
+            />
+          </svg>
+        </motion.div>
+      </div>
+
+      {/* 顶部导航栏 */}
+      <div className="absolute top-0 left-0 w-full p-4 flex justify-end items-start z-20 pointer-events-none">
         {/* 宠物图鉴按钮 - 使用切图，放大50% */}
         <button
           onClick={onOpenPokedex}

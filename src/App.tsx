@@ -4,7 +4,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import GradeSelectScreen from './components/GradeSelectScreen';
 import MapScreen from './components/MapScreen';
 import QuizScreen from './components/QuizScreen';
 import ResultScreen from './components/ResultScreen';
@@ -12,7 +11,7 @@ import PokedexScreen from './components/PokedexScreen';
 import PetUnlockModal from './components/PetUnlockModal';
 import { petsData } from './data/pets';
 
-type Screen = 'grade_select' | 'map' | 'quiz' | 'result';
+type Screen = 'map' | 'quiz' | 'result';
 type GradeKey = 'k' | '1' | '2' | '3';
 
 interface GradeData {
@@ -32,8 +31,9 @@ const defaultData: GameData = {
 };
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('grade_select');
-  const [currentGrade, setCurrentGrade] = useState<GradeKey>('1');
+  // 直接进入三年级关卡地图
+  const [currentScreen, setCurrentScreen] = useState<Screen>('map');
+  const [currentGrade, setCurrentGrade] = useState<GradeKey>('3');
   const [stats, setStats] = useState({ accuracy: 0, time: 0, maxCombo: 0 });
   const [currentLevelId, setCurrentLevelId] = useState<number>(1);
   const [selectedPetId, setSelectedPetId] = useState<number>(() => {
@@ -64,7 +64,7 @@ export default function App() {
     localStorage.setItem('gameDataV3', JSON.stringify(gameData));
   }, [gameData]);
 
-  const handleLevelComplete = (levelStats: any) => {
+  const handleLevelComplete = (levelStats: { accuracy: number; time: number; maxCombo: number }) => {
     setStats(levelStats);
 
     setGameData(prev => {
@@ -107,15 +107,6 @@ export default function App() {
   return (
     <div className="w-full h-screen bg-gray-100 flex justify-center items-center overflow-hidden font-sans">
       <div className="w-[1024px] h-[768px] bg-white relative shadow-xl overflow-hidden rounded-2xl">
-        {currentScreen === 'grade_select' && (
-          <GradeSelectScreen
-            gameData={gameData}
-            onSelect={(gradeId) => {
-              setCurrentGrade(gradeId as GradeKey);
-              setCurrentScreen('map');
-            }}
-          />
-        )}
         {currentScreen === 'map' && (
           <MapScreen
             gradeId={currentGrade}
@@ -127,7 +118,6 @@ export default function App() {
               setCurrentScreen('quiz');
             }}
             onOpenPokedex={() => setShowPokedexModal(true)}
-            onBackToGrades={() => setCurrentScreen('grade_select')}
           />
         )}
         {currentScreen === 'quiz' && (
