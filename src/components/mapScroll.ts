@@ -3,7 +3,7 @@ export type MapLevelPosition = {
   top: number;
 };
 
-const MAP_TOP_MIN = -82;
+const MAP_TOP_MIN = -790;
 const MAP_TOP_MAX = 240;
 const MAP_TOP_RANGE = MAP_TOP_MAX - MAP_TOP_MIN;
 
