@@ -107,6 +107,9 @@ let masterGain: GainNode | null = null;
 let activeNodes = new Set<ManagedAudioNode>();
 let chargeToken = 0;
 let battleBgm: HTMLAudioElement | null = null;
+const BATTLE_BGM_VOLUME = 0.2;
+let battleBgmWarmupDone = false;
+let battleBgmWarmupHandle: number | ReturnType<typeof setTimeout> | null = null;
 
 const noiseBufferCache = new Map<string, AudioBuffer>();
 
@@ -128,10 +131,34 @@ const getBattleBgm = () => {
   if (!battleBgm) {
     battleBgm = new Audio(battleBgmUrl);
     battleBgm.loop = true;
-    battleBgm.preload = 'auto';
-    battleBgm.volume = 0.3;
+    battleBgm.preload = 'metadata';
+    battleBgm.volume = BATTLE_BGM_VOLUME;
   }
   return battleBgm;
+};
+
+const performBattleBgmWarmup = () => {
+  const bgm = getBattleBgm();
+  if (!bgm || battleBgmWarmupDone) return;
+  battleBgmWarmupDone = true;
+  bgm.load();
+};
+
+export const warmupBattleBgm = () => {
+  if (typeof window === 'undefined' || battleBgmWarmupDone || battleBgmWarmupHandle !== null) return;
+
+  if ('requestIdleCallback' in window) {
+    battleBgmWarmupHandle = window.requestIdleCallback(() => {
+      battleBgmWarmupHandle = null;
+      performBattleBgmWarmup();
+    }, { timeout: 1200 });
+    return;
+  }
+
+  battleBgmWarmupHandle = globalThis.setTimeout(() => {
+    battleBgmWarmupHandle = null;
+    performBattleBgmWarmup();
+  }, 220);
 };
 
 const cleanupNode = (node: ManagedAudioNode | null) => {
@@ -186,13 +213,15 @@ export const primeBattleSfx = async () => {
   if (ctx.state === 'suspended') {
     await ctx.resume();
   }
+  warmupBattleBgm();
   void startBattleBgm();
 };
 
 export const startBattleBgm = async () => {
   const bgm = getBattleBgm();
   if (!bgm) return;
-  bgm.volume = 0.3;
+  warmupBattleBgm();
+  bgm.volume = BATTLE_BGM_VOLUME;
   if (!bgm.paused) return;
   try {
     await bgm.play();
@@ -202,6 +231,14 @@ export const startBattleBgm = async () => {
 };
 
 export const stopBattleBgm = () => {
+  if (typeof window !== 'undefined' && battleBgmWarmupHandle !== null) {
+    if ('cancelIdleCallback' in window) {
+      window.cancelIdleCallback(battleBgmWarmupHandle as number);
+    } else {
+      globalThis.clearTimeout(battleBgmWarmupHandle);
+    }
+    battleBgmWarmupHandle = null;
+  }
   if (!battleBgm) return;
   battleBgm.pause();
   battleBgm.currentTime = 0;

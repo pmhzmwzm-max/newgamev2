@@ -2,11 +2,11 @@ import React, { memo, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Delete, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { allLevelsData } from '../data/questions';
-import { playCloudPuffBreak, playCloudPuffBurst, playCloudPuffCharge, primeBattleSfx, startBattleBgm, stopBattleBgm } from './battleSfx';
+import { playCloudPuffBreak, playCloudPuffBurst, playCloudPuffCharge, primeBattleSfx, startBattleBgm, stopBattleBgm, warmupBattleBgm } from './battleSfx';
 import { getBreakFeedbackProfile, getCameraShakeProfile, getChargeDuration, getExplosionProfile, getRemovalCount, getShotTier, getShotTiming, type ShotTier } from './quizTiming';
 import fireFoxImage from '../assets/battle/fire-fox-battle.png';
 import blockGemImage from '../assets/battle/block-gem-battle.png';
-import quizBattleBackground from '../assets/battle/quiz-battle-background.png';
+import quizBattleBackground from '../../UI v2.0/关卡内背景v2.jpg';
 
 const TOTAL_BATTLE_BLOCKS = 35;
 const BATTLE_BLOCK_COLUMNS = 5;
@@ -153,7 +153,7 @@ const getExplosionPreset = (tier: ShotTier, seed: number, profile: ReturnType<ty
 };
 
 const BlockExplosion = memo(({ delay = 0, tier = 'normal', seed }: { delay?: number; tier?: ShotTier; seed: number }) => {
-  const profile = getExplosionProfile(tier);
+  const profile = useMemo(() => getExplosionProfile(tier), [tier]);
   const preset = useMemo(() => getExplosionPreset(tier, seed, profile), [profile, seed, tier]);
   const burstScale = tier === 'final' ? 3.9 : 3.1;
 
@@ -346,9 +346,9 @@ const ComboHud = memo(({ displayCombo }: { displayCombo: number }) => {
     <AnimatePresence>
       {showCombo ? (
         <motion.div
-          initial={{ opacity: 0, y: -12, scale: 0.92, filter: 'blur(8px)' }}
-          animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, y: -12, scale: 0.84, filter: 'blur(10px)' }}
+          initial={{ opacity: 0, y: -12, scale: 0.92 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -12, scale: 0.84 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
           className="relative flex min-h-[88px] w-fit items-end justify-end gap-1.5 overflow-visible px-1 pt-3 pb-2 text-right"
           style={{ willChange: 'transform, opacity' }}
@@ -375,9 +375,9 @@ const ComboHud = memo(({ displayCombo }: { displayCombo: number }) => {
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span
               key={displayCombo}
-              initial={{ opacity: 0, y: -8, scale: 0.94, filter: 'blur(6px)' }}
-              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: 8, scale: 0.9, filter: 'blur(6px)' }}
+              initial={{ opacity: 0, y: -8, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.9 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
               className="relative z-10 min-w-[4.2rem] -skew-x-[10deg] text-left text-[clamp(2.32rem,3.66vw,3rem)] font-black italic leading-[1.04] tracking-[-0.06em] text-[#ffd23a]"
               style={{
@@ -704,6 +704,7 @@ export default function QuizScreen({
   }, [gradeId, levelId]);
 
   useEffect(() => {
+    warmupBattleBgm();
     void startBattleBgm();
     return () => {
       stopBattleBgm();
