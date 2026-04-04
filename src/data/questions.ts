@@ -532,6 +532,19 @@ function generateGrade2Levels(): Record<number, LevelData> {
 function generateGrade3Levels(): Record<number, LevelData> {
   const levels: Record<number, LevelData> = {};
 
+  // 第0关：过渡热身关，仅包含两位数与一位数之间的简单四则运算
+  levels[0] = {
+    title: '第 0 关',
+    questions: [
+      { id: 'g3_0_1', type: 'input', question: '24+3 =', answer: '27', answerLength: 2 },
+      { id: 'g3_0_2', type: 'input', question: '18-6 =', answer: '12', answerLength: 2 },
+      { id: 'g3_0_3', type: 'input', question: '12×4 =', answer: '48', answerLength: 2 },
+      { id: 'g3_0_4', type: 'input', question: '36÷4 =', answer: '9', answerLength: 1 },
+      { id: 'g3_0_5', type: 'input', question: '47+2 =', answer: '49', answerLength: 2 },
+      { id: 'g3_0_6', type: 'input', question: '21-9 =', answer: '12', answerLength: 2 },
+    ],
+  };
+
   // 第1关
   levels[1] = {
     title: '第 1 关',

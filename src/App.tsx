@@ -22,13 +22,26 @@ interface GradeData {
 type GameData = Record<GradeKey, GradeData>;
 
 const MAX_LEVELS = 50; // 每个年级50关
+const INITIAL_GRADE3_UNLOCKS = [0, 1];
 
 const defaultData: GameData = {
   k: { unlockedLevels: [1], puzzlePieces: 0 },
   '1': { unlockedLevels: [1], puzzlePieces: 0 },
   '2': { unlockedLevels: [1], puzzlePieces: 0 },
-  '3': { unlockedLevels: [1], puzzlePieces: 0 },
+  '3': { unlockedLevels: INITIAL_GRADE3_UNLOCKS, puzzlePieces: 0 },
 };
+
+function normalizeGameData(data: GameData): GameData {
+  const normalizedGrade3Unlocks = Array.from(new Set([...(data['3']?.unlockedLevels ?? []), ...INITIAL_GRADE3_UNLOCKS])).sort((a, b) => a - b);
+
+  return {
+    ...data,
+    '3': {
+      ...data['3'],
+      unlockedLevels: normalizedGrade3Unlocks,
+    },
+  };
+}
 
 export default function App() {
   // 直接进入三年级关卡地图
@@ -59,7 +72,7 @@ export default function App() {
     const saved = localStorage.getItem('gameDataV3');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        return normalizeGameData(JSON.parse(saved));
       } catch {
         return defaultData;
       }

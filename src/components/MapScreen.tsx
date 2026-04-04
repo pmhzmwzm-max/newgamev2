@@ -7,6 +7,7 @@ import {
   getLevelProgressRatio,
   getScrollTopForLevel,
 } from './mapScroll';
+import { primeMapBgm, startMapBgm, stopMapBgm, warmupMapBgm } from './mapBgm';
 
 const MAX_LEVELS = 159;
 
@@ -280,6 +281,24 @@ export default function MapScreen({
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unlockedLevels]);
+
+  useEffect(() => {
+    warmupMapBgm();
+    void startMapBgm();
+
+    const resumeMapBgm = () => {
+      void primeMapBgm();
+    };
+
+    window.addEventListener('pointerdown', resumeMapBgm, { passive: true });
+    window.addEventListener('keydown', resumeMapBgm);
+
+    return () => {
+      window.removeEventListener('pointerdown', resumeMapBgm);
+      window.removeEventListener('keydown', resumeMapBgm);
+      stopMapBgm();
+    };
+  }, []);
 
   // 监听滚动，检测当前关卡头像是否在可视区域内
   useEffect(() => {
@@ -690,6 +709,15 @@ export default function MapScreen({
         >
           返回当前关卡
         </motion.button>
+      )}
+
+      {gradeId === '3' && (
+        <button
+          onClick={() => onStart(0)}
+          className="absolute bottom-6 right-6 z-20 rounded-full bg-white/85 px-4 py-2 text-sm font-semibold text-gray-700 shadow-md border border-white/70 hover:bg-white active:scale-95 transition-all"
+        >
+          第0关
+        </button>
       )}
     </div>
   );
