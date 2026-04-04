@@ -2,7 +2,7 @@ import React, { memo, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Delete, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { allLevelsData } from '../data/questions';
-import { playCloudPuffBreak, playCloudPuffBurst, playCloudPuffCharge, primeBattleSfx } from './battleSfx';
+import { playCloudPuffBreak, playCloudPuffBurst, playCloudPuffCharge, primeBattleSfx, startBattleBgm, stopBattleBgm } from './battleSfx';
 import { getBreakFeedbackProfile, getCameraShakeProfile, getChargeDuration, getExplosionProfile, getRemovalCount, getShotTier, getShotTiming, type ShotTier } from './quizTiming';
 import fireFoxImage from '../assets/battle/fire-fox-battle.png';
 import blockGemImage from '../assets/battle/block-gem-battle.png';
@@ -702,6 +702,13 @@ export default function QuizScreen({
     setShotSequence(0);
     setImpactSequence(0);
   }, [gradeId, levelId]);
+
+  useEffect(() => {
+    void startBattleBgm();
+    return () => {
+      stopBattleBgm();
+    };
+  }, []);
 
   useEffect(() => {
     if (question && question.answerLength) {

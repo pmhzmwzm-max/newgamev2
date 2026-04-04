@@ -1,4 +1,5 @@
 import type { ShotTier } from './quizTiming';
+import battleBgmUrl from '../../UI v2.0/关卡内bgm.mp3';
 
 type ManagedAudioNode = AudioNode & { dataset?: string; stop?: (when?: number) => void };
 
@@ -105,6 +106,7 @@ let audioContext: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 let activeNodes = new Set<ManagedAudioNode>();
 let chargeToken = 0;
+let battleBgm: HTMLAudioElement | null = null;
 
 const noiseBufferCache = new Map<string, AudioBuffer>();
 
@@ -119,6 +121,17 @@ const getAudioContext = () => {
     masterGain.connect(audioContext.destination);
   }
   return audioContext;
+};
+
+const getBattleBgm = () => {
+  if (typeof window === 'undefined') return null;
+  if (!battleBgm) {
+    battleBgm = new Audio(battleBgmUrl);
+    battleBgm.loop = true;
+    battleBgm.preload = 'auto';
+    battleBgm.volume = 0.3;
+  }
+  return battleBgm;
 };
 
 const cleanupNode = (node: ManagedAudioNode | null) => {
@@ -173,6 +186,25 @@ export const primeBattleSfx = async () => {
   if (ctx.state === 'suspended') {
     await ctx.resume();
   }
+  void startBattleBgm();
+};
+
+export const startBattleBgm = async () => {
+  const bgm = getBattleBgm();
+  if (!bgm) return;
+  bgm.volume = 0.3;
+  if (!bgm.paused) return;
+  try {
+    await bgm.play();
+  } catch {
+    // Autoplay may be blocked until the first user interaction.
+  }
+};
+
+export const stopBattleBgm = () => {
+  if (!battleBgm) return;
+  battleBgm.pause();
+  battleBgm.currentTime = 0;
 };
 
 export const playCloudPuffCharge = async (tier: Exclude<ShotTier, 'idle' | 'break'>, targetDurationMs: number) => {
