@@ -383,10 +383,66 @@
       ];
 
       const tierProfiles = {
-        normal: { gain: 0.78, duration: 0.92, burstGain: 0.84, sparkleGain: 0.12, label: "Normal" },
-        boost: { gain: 0.92, duration: 1.02, burstGain: 1.02, sparkleGain: 0.17, label: "Boost" },
-        super: { gain: 1.05, duration: 1.12, burstGain: 1.18, sparkleGain: 0.22, label: "Super" },
-        final: { gain: 1.18, duration: 1.22, burstGain: 1.34, sparkleGain: 0.3, label: "Final" },
+        normal: {
+          gain: 0.72,
+          duration: 0.82,
+          burstGain: 0.76,
+          sparkleGain: 0.08,
+          chargeLift: 0.92,
+          filterPeak: 1800,
+          wobbleBoost: 0.82,
+          punchBoost: 0.72,
+          snapBoost: 0.8,
+          subBoost: 0,
+          tailHold: 0.06,
+          extraSparkle: 0,
+          label: "Normal",
+        },
+        boost: {
+          gain: 0.9,
+          duration: 0.96,
+          burstGain: 0.96,
+          sparkleGain: 0.14,
+          chargeLift: 1.04,
+          filterPeak: 2300,
+          wobbleBoost: 1,
+          punchBoost: 0.96,
+          snapBoost: 1,
+          subBoost: 0.08,
+          tailHold: 0.1,
+          extraSparkle: 0.04,
+          label: "Boost",
+        },
+        super: {
+          gain: 1.08,
+          duration: 1.18,
+          burstGain: 1.2,
+          sparkleGain: 0.24,
+          chargeLift: 1.2,
+          filterPeak: 3100,
+          wobbleBoost: 1.24,
+          punchBoost: 1.16,
+          snapBoost: 1.22,
+          subBoost: 0.18,
+          tailHold: 0.16,
+          extraSparkle: 0.12,
+          label: "Super",
+        },
+        final: {
+          gain: 1.24,
+          duration: 1.36,
+          burstGain: 1.42,
+          sparkleGain: 0.34,
+          chargeLift: 1.34,
+          filterPeak: 3800,
+          wobbleBoost: 1.42,
+          punchBoost: 1.34,
+          snapBoost: 1.42,
+          subBoost: 0.28,
+          tailHold: 0.22,
+          extraSparkle: 0.22,
+          label: "Final",
+        },
       };
 
       const statusEl = document.getElementById("status");
@@ -476,38 +532,51 @@
         const modGain = trackNode(audioContext.createGain());
         const gain = trackNode(audioContext.createGain());
         const filter = trackNode(audioContext.createBiquadFilter());
+        const air = trackNode(audioContext.createOscillator());
+        const airGain = trackNode(audioContext.createGain());
 
         oscillator.type = variant.charge.wave;
         oscillator.frequency.setValueAtTime(variant.charge.start, now);
-        oscillator.frequency.exponentialRampToValueAtTime(variant.charge.end * (1 + (profile.gain - 0.78) * 0.18), now + duration);
+        oscillator.frequency.exponentialRampToValueAtTime(variant.charge.end * profile.chargeLift, now + duration);
 
         mod.type = "sine";
         mod.frequency.setValueAtTime(variant.charge.wobble, now);
-        mod.frequency.linearRampToValueAtTime(variant.charge.wobble * 1.6, now + duration);
+        mod.frequency.linearRampToValueAtTime(variant.charge.wobble * 1.6 * profile.wobbleBoost, now + duration);
 
         modGain.gain.setValueAtTime(10, now);
-        modGain.gain.linearRampToValueAtTime(26, now + duration);
+        modGain.gain.linearRampToValueAtTime(28 * profile.wobbleBoost, now + duration);
 
         filter.type = "lowpass";
         filter.Q.value = 2.4;
         filter.frequency.setValueAtTime(900, now);
-        filter.frequency.linearRampToValueAtTime(2400, now + duration);
+        filter.frequency.linearRampToValueAtTime(profile.filterPeak, now + duration);
 
         gain.gain.setValueAtTime(0.0001, now);
         gain.gain.linearRampToValueAtTime(0.18 * profile.gain, now + variant.charge.attack);
-        gain.gain.exponentialRampToValueAtTime(0.24 * profile.gain, now + duration * 0.75);
+        gain.gain.exponentialRampToValueAtTime(0.28 * profile.gain, now + duration * 0.82);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + duration + variant.charge.release);
+
+        air.type = "sine";
+        air.frequency.setValueAtTime(variant.charge.end * 0.8, now + duration * 0.3);
+        air.frequency.exponentialRampToValueAtTime(variant.charge.end * (1.05 + profile.extraSparkle), now + duration);
+        airGain.gain.setValueAtTime(0.0001, now);
+        airGain.gain.linearRampToValueAtTime(0.015 + profile.extraSparkle * 0.05, now + duration * 0.35);
+        airGain.gain.exponentialRampToValueAtTime(0.0001, now + duration + 0.04);
 
         mod.connect(modGain);
         modGain.connect(oscillator.frequency);
         oscillator.connect(filter);
         filter.connect(gain);
         gain.connect(masterGain);
+        air.connect(airGain);
+        airGain.connect(masterGain);
 
         oscillator.start(now);
         mod.start(now);
+        air.start(now + duration * 0.18);
         oscillator.stop(now + duration + variant.charge.release + 0.02);
         mod.stop(now + duration + variant.charge.release + 0.02);
+        air.stop(now + duration + 0.06);
 
         oscillator.onended = () => {
           cleanupNode(oscillator);
@@ -515,6 +584,8 @@
           cleanupNode(modGain);
           cleanupNode(gain);
           cleanupNode(filter);
+          cleanupNode(air);
+          cleanupNode(airGain);
         };
 
         return duration * 1000;
@@ -535,6 +606,10 @@
         const noiseSource = trackNode(audioContext.createBufferSource());
         const noiseGain = trackNode(audioContext.createGain());
         const noiseFilter = trackNode(audioContext.createBiquadFilter());
+        const sub = trackNode(audioContext.createOscillator());
+        const subGain = trackNode(audioContext.createGain());
+        const tail = trackNode(audioContext.createOscillator());
+        const tailGain = trackNode(audioContext.createGain());
 
         thump.type = "sine";
         thump.frequency.setValueAtTime(variant.burst.base, now);
@@ -547,6 +622,14 @@
         sparkle.type = "square";
         sparkle.frequency.setValueAtTime(variant.burst.sparkle, now + 0.01);
         sparkle.frequency.exponentialRampToValueAtTime(variant.burst.sparkle * 0.62, now + variant.burst.tail + 0.08);
+
+        sub.type = "sine";
+        sub.frequency.setValueAtTime(Math.max(58, variant.burst.base * 0.48), now);
+        sub.frequency.exponentialRampToValueAtTime(Math.max(38, variant.burst.drop * 0.42), now + variant.burst.decay + profile.tailHold);
+
+        tail.type = "triangle";
+        tail.frequency.setValueAtTime(variant.burst.snap * 0.48, now + 0.03);
+        tail.frequency.exponentialRampToValueAtTime(variant.burst.drop * 1.4, now + variant.burst.tail + profile.tailHold);
 
         thumpFilter.type = "lowpass";
         thumpFilter.frequency.value = 560;
@@ -572,6 +655,14 @@
         noiseGain.gain.linearRampToValueAtTime(variant.burst.noise * profile.burstGain, now + 0.008);
         noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + variant.burst.decay + 0.08);
 
+        subGain.gain.setValueAtTime(0.0001, now);
+        subGain.gain.linearRampToValueAtTime(profile.subBoost, now + 0.012);
+        subGain.gain.exponentialRampToValueAtTime(0.0001, now + variant.burst.decay + profile.tailHold + 0.04);
+
+        tailGain.gain.setValueAtTime(0.0001, now + 0.03);
+        tailGain.gain.linearRampToValueAtTime(0.06 + profile.extraSparkle * 0.12, now + 0.05);
+        tailGain.gain.exponentialRampToValueAtTime(0.0001, now + variant.burst.tail + profile.tailHold + 0.1);
+
         noiseSource.buffer = getNoiseBuffer(audioContext, 0.7);
 
         thump.connect(thumpFilter);
@@ -588,15 +679,25 @@
         noiseFilter.connect(noiseGain);
         noiseGain.connect(masterGain);
 
+        sub.connect(subGain);
+        subGain.connect(masterGain);
+
+        tail.connect(tailGain);
+        tailGain.connect(masterGain);
+
         thump.start(now);
         snap.start(now);
         sparkle.start(now + 0.01);
         noiseSource.start(now);
+        sub.start(now);
+        tail.start(now + 0.03);
 
         thump.stop(now + variant.burst.decay + 0.04);
         snap.stop(now + variant.burst.tail + 0.08);
         sparkle.stop(now + 0.22);
         noiseSource.stop(now + variant.burst.decay + 0.1);
+        sub.stop(now + variant.burst.decay + profile.tailHold + 0.08);
+        tail.stop(now + variant.burst.tail + profile.tailHold + 0.12);
 
         thump.onended = () => {
           cleanupNode(thump);
@@ -615,6 +716,14 @@
           cleanupNode(noiseSource);
           cleanupNode(noiseGain);
           cleanupNode(noiseFilter);
+        };
+        sub.onended = () => {
+          cleanupNode(sub);
+          cleanupNode(subGain);
+        };
+        tail.onended = () => {
+          cleanupNode(tail);
+          cleanupNode(tailGain);
         };
 
         return Math.max((variant.burst.decay + 0.1) * 1000, 260);

@@ -2,6 +2,7 @@ import React, { memo, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Delete, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { allLevelsData } from '../data/questions';
+import { playCloudPuffBreak, playCloudPuffBurst, playCloudPuffCharge, primeBattleSfx } from './battleSfx';
 import { getBreakFeedbackProfile, getCameraShakeProfile, getChargeDuration, getExplosionProfile, getRemovalCount, getShotTier, getShotTiming, type ShotTier } from './quizTiming';
 import fireFoxImage from '../assets/battle/fire-fox-battle.png';
 import blockGemImage from '../assets/battle/block-gem-battle.png';
@@ -349,12 +350,25 @@ const ComboHud = memo(({ displayCombo }: { displayCombo: number }) => {
           animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
           exit={{ opacity: 0, y: -12, scale: 0.84, filter: 'blur(10px)' }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="relative flex min-h-[88px] w-fit items-center justify-end gap-2 px-1 py-2 text-right"
+          className="relative flex min-h-[88px] w-fit items-end justify-end gap-1.5 overflow-visible px-1 pt-3 pb-2 text-right"
           style={{ willChange: 'transform, opacity' }}
         >
           <span
-            className="relative z-10 text-[clamp(1.32rem,2.2vw,1.72rem)] font-black italic leading-none tracking-tight text-[#ff7a18]"
-            style={{ textShadow: '0 3px 0 rgba(255,242,184,0.95)' }}
+            className="relative z-10 -skew-x-[10deg] text-[clamp(1.44rem,2.33vw,1.88rem)] font-black italic leading-[1.06] tracking-[-0.05em] text-[#ffd23a]"
+            style={{
+              textShadow: `
+                0 -2px 0 #5a2b16,
+                2px -2px 0 #5a2b16,
+                -2px -2px 0 #5a2b16,
+                0 4px 0 #5a2b16,
+                2px 0 0 #5a2b16,
+                -2px 0 0 #5a2b16,
+                0 2px 0 #5a2b16,
+                2px 2px 0 #5a2b16,
+                -2px 2px 0 #5a2b16,
+                0 0 14px rgba(255,219,95,0.28)
+              `,
+            }}
           >
             combo
           </span>
@@ -365,8 +379,22 @@ const ComboHud = memo(({ displayCombo }: { displayCombo: number }) => {
               animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
               exit={{ opacity: 0, y: 8, scale: 0.9, filter: 'blur(6px)' }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="relative z-10 min-w-[3.4rem] text-left text-[clamp(1.5rem,2.42vw,1.98rem)] font-black italic leading-none tracking-tight text-[#ff4f7a]"
-              style={{ textShadow: '0 3px 0 rgba(255,243,176,0.98)', willChange: 'transform, opacity' }}
+              className="relative z-10 min-w-[4.2rem] -skew-x-[10deg] text-left text-[clamp(2.32rem,3.66vw,3rem)] font-black italic leading-[1.04] tracking-[-0.06em] text-[#ffd23a]"
+              style={{
+                textShadow: `
+                  0 -2px 0 #5a2b16,
+                  2px -2px 0 #5a2b16,
+                  -2px -2px 0 #5a2b16,
+                  0 4px 0 #5a2b16,
+                  2px 0 0 #5a2b16,
+                  -2px 0 0 #5a2b16,
+                  0 2px 0 #5a2b16,
+                  2px 2px 0 #5a2b16,
+                  -2px 2px 0 #5a2b16,
+                  0 0 16px rgba(255,219,95,0.32)
+                `,
+                willChange: 'transform, opacity',
+              }}
             >
               {`x${displayCombo}`}
             </motion.span>
@@ -715,6 +743,7 @@ export default function QuizScreen({
     const removal = getRemovalCount(newCombo, remainingBlocks);
     const newCorrectCount = correctCount + 1;
     const { shotDelay, advanceDelay } = getShotTiming(tier, newCombo);
+    const soundTier = tier === 'final' || tier === 'super' || tier === 'boost' || tier === 'normal' ? tier : 'normal';
 
     setFeedback('correct');
     setCombo(newCombo);
@@ -724,7 +753,9 @@ export default function QuizScreen({
     setLastRemoval(0);
     setShotSequence((prev) => prev + 1);
 
+    void playCloudPuffCharge(soundTier, shotDelay);
     setTimeout(() => {
+      void playCloudPuffBurst(soundTier);
       setDisplayCombo(newCombo);
       setLastRemoval(removal);
       setClearedBlocks((prev) => Math.min(TOTAL_BATTLE_BLOCKS, prev + removal));
@@ -735,11 +766,13 @@ export default function QuizScreen({
   };
 
   const registerWrongAnswer = (resetAnswers: () => void) => {
+    const breakSoundTier = combo >= 10 ? 'final' : combo >= 6 ? 'super' : combo >= 3 ? 'boost' : 'normal';
     setFeedback('wrong');
     setCombo(0);
     setDisplayCombo(0);
     setShotTier('break');
     setLastRemoval(0);
+    void playCloudPuffBreak(breakSoundTier);
 
     setTimeout(() => {
       resetAnswers();
@@ -753,6 +786,7 @@ export default function QuizScreen({
   const handleChoiceSelect = (option: string) => {
     if (feedback === 'correct' || feedback === 'wrong') return;
 
+    void primeBattleSfx();
     setSelectedChoice(option);
 
     if (option === question.answer) {
@@ -766,6 +800,7 @@ export default function QuizScreen({
   const handleKeyPress = (key: string) => {
     if (feedback === 'correct' || feedback === 'wrong') return;
 
+    void primeBattleSfx();
     if (key === 'delete') {
       setAnswers(prev => {
         const next = [...prev];
