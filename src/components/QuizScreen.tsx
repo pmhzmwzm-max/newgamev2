@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Delete, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { allLevelsData } from '../data/questions';
 import { getBreakFeedbackProfile, getCameraShakeProfile, getChargeDuration, getExplosionProfile, getRemovalCount, getShotTier, getShotTiming, type ShotTier } from './quizTiming';
-import fireFoxImage from '../../UI v2.0/火尾狐.png';
-import blockGemImage from '../../UI v2.0/方块宝石.png';
-import quizBattleBackground from '../../UI v2.0/关卡内背景.png';
+import fireFoxImage from '../assets/battle/fire-fox-battle.png';
+import blockGemImage from '../assets/battle/block-gem-battle.png';
+import quizBattleBackground from '../assets/battle/quiz-battle-background.png';
 
 const TOTAL_BATTLE_BLOCKS = 35;
 const BATTLE_BLOCK_COLUMNS = 5;
@@ -26,35 +26,144 @@ const BLOCK_CLEAR_RANK = BLOCK_CLEAR_ORDER.reduce<Record<number, number>>((acc, 
   return acc;
 }, {});
 
-const BlockExplosion = ({ delay = 0, tier = 'normal' }: { delay?: number; tier?: ShotTier }) => {
-  const {
-    flashScale,
-    shardCount,
-    sparkCount,
-    shockwaveSize,
-    shardDistanceBase,
-    sparkDistanceBase,
-    hasScreenFacingShards,
-    screenShardCount,
-  } = getExplosionProfile(tier);
-  const shardColors =
-    tier === 'final'
-      ? ['#FFF7AE', '#FDE047', '#FB923C', '#F87171', '#FB7185']
-      : tier === 'super'
-      ? ['#FFF7AE', '#FDE047', '#FB923C', '#F87171']
-      : ['#FFF7AE', '#FDE047', '#FB923C'];
-  const sparkColors =
-    tier === 'final'
-      ? ['#FFFFFF', '#FEF3C7', '#FDE68A', '#FDBA74']
-      : ['#FFFFFF', '#FEF3C7', '#FDE68A'];
+const BATTLE_BLOCK_INDEXES = Array.from({ length: TOTAL_BATTLE_BLOCKS }, (_, index) => index);
+
+const BLOCK_WOBBLE_ANIMATE = {
+  x: [-1.4, 1.6, -1.2],
+  rotate: [-1.2, 1.4, -1],
+  y: [0, -0.8, 0.6],
+};
+
+const BLOCK_WOBBLE_TRANSITION = {
+  duration: 2.2,
+  repeat: Infinity,
+  repeatType: 'mirror' as const,
+  ease: 'easeInOut' as const,
+};
+
+type ExplosionShardPreset = {
+  x: number;
+  y: number;
+  rotation: number;
+  width: number;
+  height: number;
+  color: string;
+  delayOffset: number;
+};
+
+type ExplosionSparkPreset = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+  delayOffset: number;
+};
+
+type ExplosionScreenShardPreset = {
+  offsetX: number;
+  offsetY: number;
+  rotationMid: number;
+  rotationEnd: number;
+  width: number;
+  height: number;
+  color: string;
+  delayOffset: number;
+};
+
+type ExplosionPreset = {
+  shards: ExplosionShardPreset[];
+  sparks: ExplosionSparkPreset[];
+  screenShards: ExplosionScreenShardPreset[];
+};
+
+const explosionPresetCache = new Map<string, ExplosionPreset>();
+
+const createSeededRandom = (seed: number) => {
+  let state = seed >>> 0;
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 0x100000000;
+  };
+};
+
+const getShardColors = (tier: ShotTier) =>
+  tier === 'final'
+    ? ['#FFF7AE', '#FDE047', '#FB923C', '#F87171', '#FB7185']
+    : tier === 'super'
+    ? ['#FFF7AE', '#FDE047', '#FB923C', '#F87171']
+    : ['#FFF7AE', '#FDE047', '#FB923C'];
+
+const getSparkColors = (tier: ShotTier) =>
+  tier === 'final' ? ['#FFFFFF', '#FEF3C7', '#FDE68A', '#FDBA74'] : ['#FFFFFF', '#FEF3C7', '#FDE68A'];
+
+const getExplosionPreset = (tier: ShotTier, seed: number, profile: ReturnType<typeof getExplosionProfile>) => {
+  const cacheKey = `${tier}:${seed}`;
+  const cached = explosionPresetCache.get(cacheKey);
+  if (cached) return cached;
+
+  const shardColors = getShardColors(tier);
+  const sparkColors = getSparkColors(tier);
+  const rand = createSeededRandom(seed + 1);
+
+  const preset: ExplosionPreset = {
+    shards: Array.from({ length: profile.shardCount }, (_, i) => {
+      const angle = (i / profile.shardCount) * Math.PI * 2 + (i % 2 === 0 ? -0.12 : 0.18);
+      const distance = profile.shardDistanceBase + (i % 4) * 18;
+      return {
+        x: Math.cos(angle) * distance,
+        y: Math.sin(angle) * distance,
+        rotation: (rand() - 0.5) * 240,
+        width: tier === 'final' ? 16 : tier === 'super' ? 14 : 12,
+        height: i % 3 === 0 ? 8 : 6,
+        color: shardColors[i % shardColors.length],
+        delayOffset: 0.02 + (i % 3) * 0.012,
+      };
+    }),
+    sparks: Array.from({ length: profile.sparkCount }, (_, i) => {
+      const angle = (i / profile.sparkCount) * Math.PI * 2 + Math.sin(i * 1.7) * 0.08;
+      const distance = profile.sparkDistanceBase + (i % 5) * 16;
+      const size = i % 4 === 0 ? 9 : 6;
+      return {
+        x: Math.cos(angle) * distance,
+        y: Math.sin(angle) * distance,
+        width: size,
+        height: size,
+        color: sparkColors[i % sparkColors.length],
+        delayOffset: 0.05 + (i % 6) * 0.01,
+      };
+    }),
+    screenShards: profile.hasScreenFacingShards
+      ? Array.from({ length: profile.screenShardCount }, (_, i) => ({
+          offsetX: (rand() - 0.5) * (tier === 'final' ? 90 : 70),
+          offsetY: (rand() - 0.5) * (tier === 'final' ? 76 : 58),
+          rotationMid: (i % 2 === 0 ? 1 : -1) * 48,
+          rotationEnd: (i % 2 === 0 ? 1 : -1) * 112,
+          width: tier === 'final' ? 22 : 18,
+          height: tier === 'final' ? 14 : 12,
+          color: shardColors[i % shardColors.length],
+          delayOffset: 0.03 + i * 0.02,
+        }))
+      : [],
+  };
+
+  explosionPresetCache.set(cacheKey, preset);
+  return preset;
+};
+
+const BlockExplosion = memo(({ delay = 0, tier = 'normal', seed }: { delay?: number; tier?: ShotTier; seed: number }) => {
+  const profile = getExplosionProfile(tier);
+  const preset = useMemo(() => getExplosionPreset(tier, seed, profile), [profile, seed, tier]);
+  const burstScale = tier === 'final' ? 3.9 : 3.1;
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-visible">
       <motion.div
         initial={{ scale: 0.2, opacity: 0.98 }}
-        animate={{ scale: [0.2, flashScale * 0.72, flashScale], opacity: [0.98, 0.62, 0] }}
+        animate={{ scale: [0.2, profile.flashScale * 0.72, profile.flashScale], opacity: [0.98, 0.62, 0] }}
         transition={{ duration: 0.42, delay, ease: 'easeOut', times: [0, 0.24, 1] }}
         className="absolute inset-[2%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,1),rgba(255,251,235,0.96)_16%,rgba(253,224,71,0.9)_34%,rgba(251,146,60,0.7)_56%,rgba(239,68,68,0.34)_74%,transparent_100%)]"
+        style={{ willChange: 'transform, opacity' }}
       />
 
       <motion.div
@@ -63,93 +172,74 @@ const BlockExplosion = ({ delay = 0, tier = 'normal' }: { delay?: number; tier?:
         transition={{ duration: 0.58, delay: delay + 0.02, ease: 'easeOut', times: [0, 0.36, 1] }}
         className="absolute left-1/2 top-1/2 rounded-full border border-white/80"
         style={{
-          width: shockwaveSize,
-          height: shockwaveSize,
-          marginLeft: -shockwaveSize / 2,
-          marginTop: -shockwaveSize / 2,
+          width: profile.shockwaveSize,
+          height: profile.shockwaveSize,
+          marginLeft: -profile.shockwaveSize / 2,
+          marginTop: -profile.shockwaveSize / 2,
           boxShadow: '0 0 38px rgba(255,255,255,0.45)',
+          willChange: 'transform, opacity',
         }}
       />
 
-      {Array.from({ length: shardCount }).map((_, i) => {
-        const angle = (i / shardCount) * Math.PI * 2 + (i % 2 === 0 ? -0.12 : 0.18);
-        const distance = shardDistanceBase + (i % 4) * 18;
-        const x = Math.cos(angle) * distance;
-        const y = Math.sin(angle) * distance;
-        const rotation = (Math.random() - 0.5) * 240;
-        return (
-          <motion.div
-            key={`shard-${i}`}
-            initial={{ x: 0, y: 0, scale: 0.4, opacity: 1, rotate: 0 }}
-            animate={{ x, y, scale: [0.4, 1.24, 0.78], opacity: [1, 1, 0], rotate: [0, rotation, rotation * 1.35] }}
-            transition={{ duration: tier === 'final' ? 0.72 : 0.62, delay: delay + 0.02 + (i % 3) * 0.012, ease: [0.12, 0.8, 0.2, 1] }}
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[0.35rem]"
-            style={{
-              width: tier === 'final' ? 16 : tier === 'super' ? 14 : 12,
-              height: i % 3 === 0 ? 8 : 6,
-              background: `linear-gradient(135deg, ${shardColors[i % shardColors.length]} 0%, rgba(255,255,255,0.95) 48%, rgba(251,146,60,0.4) 100%)`,
-              boxShadow: `0 0 22px ${shardColors[i % shardColors.length]}`,
-              filter: 'blur(0.2px)',
-            }}
-          />
-        );
-      })}
+      {preset.shards.map((shard, i) => (
+        <motion.div
+          key={`shard-${i}`}
+          initial={{ x: 0, y: 0, scale: 0.4, opacity: 1, rotate: 0 }}
+          animate={{ x: shard.x, y: shard.y, scale: [0.4, 1.24, 0.78], opacity: [1, 1, 0], rotate: [0, shard.rotation, shard.rotation * 1.35] }}
+          transition={{ duration: tier === 'final' ? 0.72 : 0.62, delay: delay + shard.delayOffset, ease: [0.12, 0.8, 0.2, 1] }}
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[0.35rem]"
+          style={{
+            width: shard.width,
+            height: shard.height,
+            background: `linear-gradient(135deg, ${shard.color} 0%, rgba(255,255,255,0.95) 48%, rgba(251,146,60,0.4) 100%)`,
+            boxShadow: `0 0 22px ${shard.color}`,
+            willChange: 'transform, opacity',
+          }}
+        />
+      ))}
 
-      {Array.from({ length: sparkCount }).map((_, i) => {
-        const angle = (i / sparkCount) * Math.PI * 2 + Math.sin(i * 1.7) * 0.08;
-        const distance = sparkDistanceBase + (i % 5) * 16;
-        const x = Math.cos(angle) * distance;
-        const y = Math.sin(angle) * distance;
-        return (
-          <motion.div
-            key={`spark-${i}`}
-            initial={{ x: 0, y: 0, scale: 0.2, opacity: 0.95 }}
-            animate={{ x, y, scale: [0.2, 1.06, 0.28], opacity: [0.95, 0.82, 0] }}
-            transition={{ duration: tier === 'final' ? 0.84 : 0.72, delay: delay + 0.05 + (i % 6) * 0.01, ease: 'easeOut' }}
-            className="absolute left-1/2 top-1/2 rounded-full -translate-x-1/2 -translate-y-1/2"
-            style={{
-              width: i % 4 === 0 ? 9 : 6,
-              height: i % 4 === 0 ? 9 : 6,
-              background: sparkColors[i % sparkColors.length],
-              boxShadow: `0 0 18px ${sparkColors[i % sparkColors.length]}`,
-            }}
-          />
-        );
-      })}
+      {preset.sparks.map((spark, i) => (
+        <motion.div
+          key={`spark-${i}`}
+          initial={{ x: 0, y: 0, scale: 0.2, opacity: 0.95 }}
+          animate={{ x: spark.x, y: spark.y, scale: [0.2, 1.06, 0.28], opacity: [0.95, 0.82, 0] }}
+          transition={{ duration: tier === 'final' ? 0.84 : 0.72, delay: delay + spark.delayOffset, ease: 'easeOut' }}
+          className="absolute left-1/2 top-1/2 rounded-full -translate-x-1/2 -translate-y-1/2"
+          style={{
+            width: spark.width,
+            height: spark.height,
+            background: spark.color,
+            boxShadow: `0 0 18px ${spark.color}`,
+            willChange: 'transform, opacity',
+          }}
+        />
+      ))}
 
-      {hasScreenFacingShards &&
-        Array.from({ length: screenShardCount }).map((_, i) => {
-          const offsetX = (Math.random() - 0.5) * (tier === 'final' ? 90 : 70);
-          const offsetY = (Math.random() - 0.5) * (tier === 'final' ? 76 : 58);
-          const burstScale = tier === 'final' ? 3.9 : 3.1;
-          const shardColor = shardColors[i % shardColors.length];
-
-          return (
-            <motion.div
-              key={`screen-shard-${i}`}
-              initial={{ x: 0, y: 0, scale: 0.22, opacity: 0, z: 0, rotate: 0 }}
-              animate={{
-                x: [0, offsetX * 0.35, offsetX],
-                y: [0, offsetY * 0.28, offsetY],
-                scale: [0.22, burstScale * 0.62, burstScale],
-                opacity: [0, 1, 0],
-                rotate: [0, (i % 2 === 0 ? 1 : -1) * 48, (i % 2 === 0 ? 1 : -1) * 112],
-              }}
-              transition={{ duration: tier === 'final' ? 0.78 : 0.68, delay: delay + 0.03 + i * 0.02, ease: [0.16, 0.84, 0.2, 1] }}
-              className="absolute left-1/2 top-1/2 rounded-[0.55rem] -translate-x-1/2 -translate-y-1/2"
-              style={{
-                width: tier === 'final' ? 22 : 18,
-                height: tier === 'final' ? 14 : 12,
-                background: `linear-gradient(135deg, rgba(255,255,255,0.98) 0%, ${shardColor} 52%, rgba(251,146,60,0.52) 100%)`,
-                boxShadow: `0 0 28px ${shardColor}`,
-                filter: 'blur(0.35px)',
-              }}
-            />
-          );
-        })}
+      {preset.screenShards.map((screenShard, i) => (
+        <motion.div
+          key={`screen-shard-${i}`}
+          initial={{ x: 0, y: 0, scale: 0.22, opacity: 0, z: 0, rotate: 0 }}
+          animate={{
+            x: [0, screenShard.offsetX * 0.35, screenShard.offsetX],
+            y: [0, screenShard.offsetY * 0.28, screenShard.offsetY],
+            scale: [0.22, burstScale * 0.62, burstScale],
+            opacity: [0, 1, 0],
+            rotate: [0, screenShard.rotationMid, screenShard.rotationEnd],
+          }}
+          transition={{ duration: tier === 'final' ? 0.78 : 0.68, delay: delay + screenShard.delayOffset, ease: [0.16, 0.84, 0.2, 1] }}
+          className="absolute left-1/2 top-1/2 rounded-[0.55rem] -translate-x-1/2 -translate-y-1/2"
+          style={{
+            width: screenShard.width,
+            height: screenShard.height,
+            background: `linear-gradient(135deg, rgba(255,255,255,0.98) 0%, ${screenShard.color} 52%, rgba(251,146,60,0.52) 100%)`,
+            boxShadow: `0 0 28px ${screenShard.color}`,
+            willChange: 'transform, opacity',
+          }}
+        />
+      ))}
     </div>
   );
-};
+});
 
 type BattleBlockProps = {
   index: number;
@@ -159,7 +249,7 @@ type BattleBlockProps = {
   clearDelay: number;
 };
 
-const BattleBlock: React.FC<BattleBlockProps> = ({
+const BattleBlock: React.FC<BattleBlockProps> = memo(({
   index,
   cleared,
   justCleared,
@@ -172,25 +262,19 @@ const BattleBlock: React.FC<BattleBlockProps> = ({
     <div className="relative flex h-full w-full items-center justify-center">
       {!cleared && (
         <motion.div
-          animate={{
-            x: [-1.4, 1.6, -1.2],
-            rotate: [-1.2, 1.4, -1],
-            y: [0, -0.8, 0.6],
-          }}
+          animate={BLOCK_WOBBLE_ANIMATE}
           transition={{
-            duration: 2.2,
+            ...BLOCK_WOBBLE_TRANSITION,
             delay: wobbleDelay,
-            repeat: Infinity,
-            repeatType: 'mirror',
-            ease: 'easeInOut',
           }}
-          className="relative h-[98%] w-[122%] max-h-full max-w-none overflow-visible"
+          className="relative h-[98%] w-[122%] max-h-full max-w-none overflow-visible will-change-transform"
         >
           <img
             src={blockGemImage}
             alt=""
             draggable={false}
-            className="h-full w-full scale-x-[1.04] scale-y-[1.36] object-fill select-none drop-shadow-[0_10px_18px_rgba(49,104,201,0.22)]"
+            className="h-full w-full scale-x-[1.04] scale-y-[1.36] object-fill select-none"
+            style={{ filter: 'drop-shadow(0 10px 18px rgba(49,104,201,0.22))' }}
           />
         </motion.div>
       )}
@@ -207,17 +291,95 @@ const BattleBlock: React.FC<BattleBlockProps> = ({
               src={blockGemImage}
               alt=""
               draggable={false}
-              className="h-full w-full scale-x-[1.04] scale-y-[1.36] object-fill select-none drop-shadow-[0_12px_20px_rgba(49,104,201,0.24)]"
+              className="h-full w-full scale-x-[1.04] scale-y-[1.36] object-fill select-none"
+              style={{ filter: 'drop-shadow(0 12px 20px rgba(49,104,201,0.24))' }}
             />
           </motion.div>
-          <BlockExplosion delay={clearDelay} tier={shotTier} />
+          <BlockExplosion delay={clearDelay} tier={shotTier} seed={index} />
         </>
       )}
     </div>
   );
-};
+});
 
-const BattleStage = ({
+const BattleBlockGrid = memo(
+  ({
+    clearedBlocks,
+    lastRemoval,
+    shotTier,
+  }: {
+    clearedBlocks: number;
+    lastRemoval: number;
+    shotTier: ShotTier;
+  }) => {
+    const recentClearStart = Math.max(0, clearedBlocks - lastRemoval);
+
+    return (
+      <div className="grid h-full w-full min-h-0 grid-cols-5 grid-rows-7 gap-x-0 gap-y-0 place-items-stretch">
+        {BATTLE_BLOCK_INDEXES.map((index) => {
+          const clearRank = BLOCK_CLEAR_RANK[index];
+          const cleared = clearRank < clearedBlocks;
+          const justCleared = cleared && clearRank >= recentClearStart;
+          const clearDelay = justCleared ? (clearRank - recentClearStart) * 0.055 : 0;
+
+          return (
+            <BattleBlock
+              key={index}
+              index={index}
+              cleared={cleared}
+              justCleared={justCleared}
+              shotTier={shotTier}
+              clearDelay={clearDelay}
+            />
+          );
+        })}
+      </div>
+    );
+  },
+);
+
+const ComboHud = memo(({ displayCombo }: { displayCombo: number }) => {
+  const showCombo = displayCombo >= 3;
+
+  return (
+    <AnimatePresence>
+      {showCombo ? (
+        <motion.div
+          initial={{ opacity: 0, y: -12, scale: 0.92, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+          exit={{ opacity: 0, y: -12, scale: 0.84, filter: 'blur(10px)' }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="relative flex min-h-[88px] w-fit items-center justify-end gap-2 px-1 py-2 text-right"
+          style={{ willChange: 'transform, opacity' }}
+        >
+          <span
+            className="relative z-10 text-[clamp(1.32rem,2.2vw,1.72rem)] font-black italic leading-none tracking-tight text-[#ff7a18]"
+            style={{ textShadow: '0 3px 0 rgba(255,242,184,0.95)' }}
+          >
+            combo
+          </span>
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={displayCombo}
+              initial={{ opacity: 0, y: -8, scale: 0.94, filter: 'blur(6px)' }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: 8, scale: 0.9, filter: 'blur(6px)' }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="relative z-10 min-w-[3.4rem] text-left text-[clamp(1.5rem,2.42vw,1.98rem)] font-black italic leading-none tracking-tight text-[#ff4f7a]"
+              style={{ textShadow: '0 3px 0 rgba(255,243,176,0.98)', willChange: 'transform, opacity' }}
+            >
+              {`x${displayCombo}`}
+            </motion.span>
+          </AnimatePresence>
+        </motion.div>
+      ) : (
+        <div className="h-full w-full rounded-[1.6rem]" />
+      )}
+    </AnimatePresence>
+  );
+});
+
+const BattleStage = memo(({
   selectedPet,
   combo,
   displayCombo,
@@ -226,8 +388,6 @@ const BattleStage = ({
   lastRemoval,
   shotSequence,
   impactSequence,
-  bannerText,
-  feedback,
 }: {
   selectedPet: any;
   combo: number;
@@ -237,12 +397,8 @@ const BattleStage = ({
   lastRemoval: number;
   shotSequence: number;
   impactSequence: number;
-  bannerText: string | null;
-  feedback: 'correct' | 'wrong' | null;
 }) => {
   const [cameraShakePulse, setCameraShakePulse] = useState(0);
-  const showCombo = displayCombo >= 3;
-  const recentClearStart = Math.max(0, clearedBlocks - lastRemoval);
   const showImpact = shotTier !== 'idle' && shotTier !== 'break';
   const chargeDuration = getChargeDuration(shotTier);
   const isBreakHit = shotTier === 'break';
@@ -250,15 +406,6 @@ const BattleStage = ({
   const breakFeedback = getBreakFeedbackProfile(breakSourceTier);
   const cameraShake = getCameraShakeProfile(shotTier);
   const petScalePeak = shotTier === 'final' ? 1.3 : shotTier === 'super' ? 1.2 : shotTier === 'boost' ? 1.12 : 1.05;
-  const petGlow =
-    shotTier === 'final'
-      ? 'drop-shadow-[0_0_36px_rgba(251,146,60,1)]'
-      : shotTier === 'super'
-      ? 'drop-shadow-[0_0_26px_rgba(250,204,21,0.92)]'
-      : shotTier === 'boost'
-      ? 'drop-shadow-[0_0_20px_rgba(251,146,60,0.82)]'
-      : 'drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]';
-
   useEffect(() => {
     if (!cameraShake.enabled || impactSequence === 0) return;
 
@@ -266,6 +413,18 @@ const BattleStage = ({
     const timeout = setTimeout(() => setCameraShakePulse(0), cameraShake.duration * 1000);
     return () => clearTimeout(timeout);
   }, [cameraShake.duration, cameraShake.enabled, impactSequence]);
+
+  const petGlowStyle = useMemo(
+    () =>
+      shotTier === 'final'
+        ? { filter: 'drop-shadow(0 0 36px rgba(251,146,60,1))' }
+        : shotTier === 'super'
+        ? { filter: 'drop-shadow(0 0 26px rgba(250,204,21,0.92))' }
+        : shotTier === 'boost'
+        ? { filter: 'drop-shadow(0 0 20px rgba(251,146,60,0.82))' }
+        : { filter: 'drop-shadow(0 0 12px rgba(251,191,36,0.5))' },
+    [shotTier],
+  );
 
   return (
     <div className="relative w-full h-full overflow-visible transition-all">
@@ -286,7 +445,7 @@ const BattleStage = ({
             : { duration: 0.2 }
         }
       >
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {showImpact && (
           <motion.div
             key={`impact-${shotSequence}-${shotTier}`}
@@ -305,6 +464,7 @@ const BattleStage = ({
             exit={{ opacity: 0 }}
             transition={{ duration: chargeDuration + 0.62, times: [0, 0.62, 0.72, 0.9, 1], ease: 'easeOut' }}
             className="pointer-events-none absolute right-[26%] top-[56%] z-20 h-20 w-20 rounded-full bg-[radial-gradient(circle,rgba(255,251,235,0.98),rgba(254,240,138,0.9)_34%,rgba(251,146,60,0.52)_62%,transparent_100%)]"
+            style={{ willChange: 'transform, opacity' }}
           >
             <motion.div
               initial={{ opacity: 0, scaleX: 0.2 }}
@@ -314,12 +474,13 @@ const BattleStage = ({
               }}
               transition={{ duration: chargeDuration + 0.62, times: [0, 0.64, 0.76, 1], ease: 'easeOut' }}
               className="absolute left-1/2 top-1/2 h-5 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,rgba(251,146,60,0)_0%,rgba(251,191,36,0.75)_42%,rgba(255,251,235,0.96)_100%)]"
+              style={{ willChange: 'transform, opacity' }}
             />
           </motion.div>
         )}
       </AnimatePresence>
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {shotTier === 'final' && (
           <motion.div
             key={`final-burst-${shotSequence}`}
@@ -328,6 +489,7 @@ const BattleStage = ({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.95, ease: 'easeOut' }}
             className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_72%_54%,rgba(255,251,235,0.85),rgba(254,240,138,0.42)_22%,rgba(251,146,60,0.18)_45%,transparent_72%)]"
+            style={{ willChange: 'opacity' }}
           />
         )}
       </AnimatePresence>
@@ -347,25 +509,7 @@ const BattleStage = ({
           />
 
           <div className="relative z-10 flex h-full w-full min-h-0 items-stretch justify-stretch pr-1">
-            <div className="grid h-full w-full min-h-0 grid-cols-5 grid-rows-7 gap-x-0 gap-y-0 place-items-stretch">
-              {Array.from({ length: TOTAL_BATTLE_BLOCKS }).map((_, index) => {
-                const clearRank = BLOCK_CLEAR_RANK[index];
-                const cleared = clearRank < clearedBlocks;
-                const justCleared = cleared && clearRank >= recentClearStart;
-                const clearDelay = justCleared ? (clearRank - recentClearStart) * 0.055 : 0;
-
-                return (
-                  <BattleBlock
-                    key={index}
-                    index={index}
-                    cleared={cleared}
-                    justCleared={justCleared}
-                    shotTier={shotTier}
-                    clearDelay={clearDelay}
-                  />
-                );
-              })}
-            </div>
+            <BattleBlockGrid clearedBlocks={clearedBlocks} lastRemoval={lastRemoval} shotTier={shotTier} />
           </div>
         </div>
 
@@ -373,35 +517,7 @@ const BattleStage = ({
           <div className="grid h-full min-h-0 grid-rows-[minmax(84px,0.34fr)_minmax(132px,0.66fr)] gap-2">
             <div className="flex min-h-0 items-stretch">
               <div className="flex h-full w-full items-center justify-end rounded-[1.8rem] px-0 py-1">
-                <AnimatePresence mode="wait">
-                  {showCombo ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: -12, scale: 0.92, filter: 'blur(8px)' }}
-                      animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-                      exit={{ opacity: 0, y: -12, scale: 0.84, filter: 'blur(10px)' }}
-                      transition={{ duration: 0.2, ease: 'easeOut' }}
-                      className="relative flex min-h-[88px] w-fit items-center justify-end gap-2 px-1 py-2 text-right"
-                    >
-                      <span className="relative z-10 text-[clamp(1.32rem,2.2vw,1.72rem)] font-black italic leading-none tracking-tight text-[#ff7a18] drop-shadow-[0_3px_0_rgba(255,242,184,0.95)]">
-                        combo
-                      </span>
-                      <AnimatePresence mode="popLayout" initial={false}>
-                        <motion.span
-                          key={displayCombo}
-                          initial={{ opacity: 0, y: -8, scale: 0.94, filter: 'blur(6px)' }}
-                          animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-                          exit={{ opacity: 0, y: 8, scale: 0.9, filter: 'blur(6px)' }}
-                          transition={{ duration: 0.18, ease: 'easeOut' }}
-                          className="relative z-10 min-w-[3.4rem] text-left text-[clamp(1.5rem,2.42vw,1.98rem)] font-black italic leading-none tracking-tight text-[#ff4f7a] drop-shadow-[0_3px_0_rgba(255,243,176,0.98)]"
-                        >
-                          {`x${displayCombo}`}
-                        </motion.span>
-                      </AnimatePresence>
-                    </motion.div>
-                  ) : (
-                    <div className="h-full w-full rounded-[1.6rem]" />
-                  )}
-                </AnimatePresence>
+                <ComboHud displayCombo={displayCombo} />
               </div>
             </div>
 
@@ -458,9 +574,10 @@ const BattleStage = ({
                         ease: ['easeOut', 'easeInOut', 'easeIn', 'easeOut', 'easeInOut', 'easeOut'],
                       }
                 }
-                className={`relative flex h-[clamp(8.5rem,23vw,11.7rem)] w-[clamp(8.5rem,23vw,11.7rem)] items-center justify-center self-end ${petGlow}`}
+                className="relative flex h-[clamp(8.5rem,23vw,11.7rem)] w-[clamp(8.5rem,23vw,11.7rem)] items-center justify-center self-end"
+                style={{ ...petGlowStyle, willChange: 'transform' }}
               >
-                <AnimatePresence mode="wait">
+                <AnimatePresence>
                   {showImpact && (
                     <motion.div
                       key={`pet-charge-${shotSequence}-${shotTier}`}
@@ -472,10 +589,11 @@ const BattleStage = ({
                       exit={{ opacity: 0 }}
                       transition={{ duration: chargeDuration, ease: 'easeOut', times: [0, 0.28, 0.72, 1] }}
                       className="pointer-events-none absolute inset-0 rounded-[2.6rem] bg-[radial-gradient(circle,rgba(255,250,205,0.96),rgba(254,240,138,0.42)_44%,rgba(251,146,60,0)_78%)]"
+                      style={{ willChange: 'transform, opacity' }}
                     />
                   )}
                 </AnimatePresence>
-                <AnimatePresence mode="wait">
+                <AnimatePresence>
                   {isBreakHit && (
                     <motion.div
                       key={`pet-break-${shotSequence}`}
@@ -484,15 +602,16 @@ const BattleStage = ({
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.5, ease: 'easeOut', times: [0, 0.18, 0.52, 1] }}
                       className="pointer-events-none absolute rounded-[3rem] border-2 border-red-300/80 bg-[radial-gradient(circle,rgba(254,202,202,0.76),rgba(248,113,113,0.42)_40%,rgba(220,38,38,0.16)_68%,transparent_100%)] shadow-[0_0_52px_rgba(248,113,113,0.8)]"
-                      style={{ inset: -breakFeedback.overlayInset }}
+                      style={{ inset: -breakFeedback.overlayInset, willChange: 'transform, opacity' }}
                     />
                   )}
                 </AnimatePresence>
                 <img
-                  src={selectedPet?.image ?? fireFoxImage}
+                  src={fireFoxImage}
                   alt={selectedPet?.name ?? '火尾狐'}
                   draggable={false}
-                  className="relative z-10 h-full w-full object-contain select-none drop-shadow-[0_10px_18px_rgba(255,255,255,0.18)]"
+                  className="relative z-10 h-full w-full object-contain select-none"
+                  style={{ filter: 'drop-shadow(0 10px 18px rgba(255,255,255,0.18))' }}
                 />
               </motion.div>
             </div>
@@ -502,7 +621,7 @@ const BattleStage = ({
       </motion.div>
     </div>
   );
-};
+});
 
 export default function QuizScreen({
   gradeId = '1',
@@ -530,18 +649,14 @@ export default function QuizScreen({
   const [clearedBlocks, setClearedBlocks] = useState(0);
   const [lastRemoval, setLastRemoval] = useState(0);
   const [shotTier, setShotTier] = useState<ShotTier>('idle');
-  const [battleBanner, setBattleBanner] = useState<string | null>(null);
   const [shotSequence, setShotSequence] = useState(0);
   const [impactSequence, setImpactSequence] = useState(0);
 
   // 从新的数据源获取关卡数据
-  const gradeLevels = allLevelsData[gradeId as keyof typeof allLevelsData];
-  const levelInfo = gradeLevels?.[levelId];
-  const questions = levelInfo?.questions || [];
+  const gradeLevels = useMemo(() => allLevelsData[gradeId as keyof typeof allLevelsData], [gradeId]);
+  const levelInfo = useMemo(() => gradeLevels?.[levelId], [gradeLevels, levelId]);
+  const questions = useMemo(() => levelInfo?.questions || [], [levelInfo]);
   const question = questions[currentIndex];
-
-  // 添加日志
-  console.log('Current question:', currentIndex, question);
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -556,7 +671,6 @@ export default function QuizScreen({
     setClearedBlocks(0);
     setLastRemoval(0);
     setShotTier('idle');
-    setBattleBanner(null);
     setShotSequence(0);
     setImpactSequence(0);
   }, [gradeId, levelId]);
@@ -568,19 +682,12 @@ export default function QuizScreen({
       const newAnswers = isVertical
         ? Array(question.answerLength).fill('')
         : [''];
-      console.log('Initializing answers:', newAnswers);
       setAnswers(newAnswers);
       setFeedback(null);
       setSelectedChoice(null);
       setMultiVerticalStep(1); // 重置多重竖式步骤
     }
   }, [currentIndex]);
-
-  useEffect(() => {
-    if (!battleBanner) return;
-    const timeout = setTimeout(() => setBattleBanner(null), 1200);
-    return () => clearTimeout(timeout);
-  }, [battleBanner]);
 
   const finishLevel = (newCorrectCount: number, newCombo: number) => {
     const timeTaken = Math.floor((Date.now() - startTime) / 1000);
@@ -614,7 +721,6 @@ export default function QuizScreen({
     setMaxCombo((m: number) => Math.max(m, newCombo));
     setCorrectCount(newCorrectCount);
     setShotTier(tier);
-    setBattleBanner(null);
     setLastRemoval(0);
     setShotSequence((prev) => prev + 1);
 
@@ -634,7 +740,6 @@ export default function QuizScreen({
     setDisplayCombo(0);
     setShotTier('break');
     setLastRemoval(0);
-    setBattleBanner(null);
 
     setTimeout(() => {
       resetAnswers();
@@ -825,7 +930,7 @@ export default function QuizScreen({
     return -1;
   };
 
-  const activeIndex = getActiveIndex();
+  const activeIndex = useMemo(() => getActiveIndex(), [answers, feedback, multiVerticalStep, question]);
 
   const renderNumberComparison = () => {
     return (
@@ -1227,8 +1332,6 @@ export default function QuizScreen({
             lastRemoval={lastRemoval}
             shotSequence={shotSequence}
             impactSequence={impactSequence}
-            bannerText={battleBanner}
-            feedback={feedback}
           />
         </motion.div>
 
