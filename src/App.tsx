@@ -107,7 +107,7 @@ export default function App() {
 
   return (
     <div className="w-full h-screen bg-gray-100 flex justify-center items-center overflow-hidden font-sans p-4">
-      <div className="w-[768px] h-[1024px] max-w-full max-h-full bg-white relative shadow-xl overflow-hidden rounded-[2rem]">
+      <div className="w-[768px] h-[1024px] max-w-full max-h-full bg-white relative shadow-xl overflow-visible rounded-[2rem]">
         {currentScreen === 'map' && (
           <MapScreen
             gradeId={currentGrade}
