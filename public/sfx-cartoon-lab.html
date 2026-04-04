@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cartoon SFX Lab</title>
+    <style>
+      :root {
+        --bg-top: #dff6ff;
+        --bg-bottom: #fff0bd;
+        --ink: #24324a;
+        --subtle: #5f6f86;
+        --panel: rgba(255, 255, 255, 0.78);
+        --panel-border: rgba(255, 255, 255, 0.72);
+        --accent: #ff8f36;
+        --accent-2: #ff4d7d;
+        --accent-3: #5da8ff;
+        --success: #2bb673;
+        --shadow: rgba(87, 121, 171, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Trebuchet MS", "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.86), transparent 22%),
+          radial-gradient(circle at 82% 22%, rgba(255, 255, 255, 0.72), transparent 20%),
+          linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+      }
+
+      .page {
+        width: min(1180px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 28px 0 40px;
+      }
+
+      .hero {
+        margin-bottom: 24px;
+        padding: 28px 30px;
+        border-radius: 32px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.64));
+        border: 1px solid var(--panel-border);
+        box-shadow: 0 24px 60px var(--shadow);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.85);
+        color: var(--subtle);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 16px 0 8px;
+        font-size: clamp(36px, 5vw, 58px);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+      }
+
+      .accent {
+        color: var(--accent-2);
+        text-shadow: 0 4px 0 rgba(255, 233, 160, 0.82);
+      }
+
+      .hero p {
+        margin: 0;
+        max-width: 760px;
+        font-size: 17px;
+        line-height: 1.7;
+        color: var(--subtle);
+      }
+
+      .controls,
+      .variant-grid,
+      .legend-grid {
+        display: grid;
+        gap: 18px;
+      }
+
+      .controls {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        margin-bottom: 22px;
+      }
+
+      .panel {
+        padding: 20px;
+        border-radius: 28px;
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        box-shadow: 0 18px 36px rgba(116, 148, 194, 0.14);
+        backdrop-filter: blur(12px);
+      }
+
+      .panel h2,
+      .panel h3 {
+        margin: 0 0 12px;
+      }
+
+      .panel p {
+        margin: 0;
+        color: var(--subtle);
+        line-height: 1.6;
+      }
+
+      .master-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      button {
+        border: 0;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .button {
+        padding: 12px 18px;
+        border-radius: 18px;
+        background: linear-gradient(180deg, #fff, #fce8ba);
+        color: var(--ink);
+        font-weight: 900;
+        box-shadow: 0 10px 0 rgba(241, 192, 99, 0.32), 0 14px 24px rgba(170, 131, 36, 0.14);
+        transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+      }
+
+      .button:hover {
+        transform: translateY(-1px);
+        filter: saturate(1.06);
+      }
+
+      .button:active {
+        transform: translateY(4px);
+        box-shadow: 0 5px 0 rgba(241, 192, 99, 0.32), 0 8px 14px rgba(170, 131, 36, 0.14);
+      }
+
+      .button.alt {
+        background: linear-gradient(180deg, #fff9ff, #ffd4e3);
+        box-shadow: 0 10px 0 rgba(255, 123, 168, 0.25), 0 14px 24px rgba(215, 92, 140, 0.14);
+      }
+
+      .button.cool {
+        background: linear-gradient(180deg, #f8fdff, #d8f0ff);
+        box-shadow: 0 10px 0 rgba(106, 167, 216, 0.24), 0 14px 24px rgba(85, 128, 191, 0.14);
+      }
+
+      .button.success {
+        background: linear-gradient(180deg, #ebfff5, #b9f4d9);
+        box-shadow: 0 10px 0 rgba(65, 178, 116, 0.22), 0 14px 24px rgba(59, 155, 100, 0.14);
+      }
+
+      .variant-grid {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      }
+
+      .variant {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .variant::before {
+        content: "";
+        position: absolute;
+        inset: auto -28px -36px auto;
+        width: 120px;
+        height: 120px;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.92), transparent 70%);
+        opacity: 0.7;
+        pointer-events: none;
+      }
+
+      .chip-row,
+      .variant-actions,
+      .tier-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.82);
+        color: var(--subtle);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .chip .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .variant-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .variant-title h3 {
+        font-size: 28px;
+        letter-spacing: -0.04em;
+      }
+
+      .variant-title .emoji {
+        font-size: 32px;
+      }
+
+      .variant p {
+        min-height: 78px;
+        margin-bottom: 16px;
+      }
+
+      .variant-actions {
+        margin-bottom: 14px;
+      }
+
+      .tier-row {
+        margin-top: 8px;
+      }
+
+      .tier-button {
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.86);
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 900;
+        box-shadow: inset 0 -2px 0 rgba(255, 230, 180, 0.85), 0 10px 18px rgba(103, 136, 178, 0.12);
+      }
+
+      .legend-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        margin-top: 22px;
+      }
+
+      .legend-item strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 15px;
+      }
+
+      .status {
+        position: sticky;
+        bottom: 18px;
+        margin-top: 22px;
+        padding: 14px 18px;
+        border-radius: 18px;
+        background: rgba(36, 50, 74, 0.92);
+        color: #fff4d8;
+        font-weight: 800;
+        box-shadow: 0 18px 28px rgba(36, 50, 74, 0.22);
+      }
+
+      @media (max-width: 720px) {
+        .page {
+          width: min(100vw - 20px, 100%);
+          padding-top: 18px;
+        }
+
+        .hero,
+        .panel {
+          padding: 18px;
+          border-radius: 24px;
+        }
+
+        h1 {
+          font-size: 34px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="eyebrow">SFX Taste Test · Cartoon Charge / Burst</div>
+        <h1>关卡演出音效试听页 <span class="accent">卡通爽感型</span></h1>
+        <p>
+          这页专门聚焦“萌系但很爽”的战斗音效。每套方案都保留同样的结构：
+          <strong>蓄力</strong>、<strong>爆炸</strong>、<strong>连播</strong> 和 <strong>四档梯度</strong>。
+          你点一下就能直接试听，不依赖外部音频文件，全部在浏览器里实时合成。
+        </p>
+      </section>
+
+      <section class="controls">
+        <article class="panel">
+          <h2>怎么听更快</h2>
+          <p>推荐先点每套的“连播试听”，快速判断整体人格；喜欢哪套后，再点 `normal / boost / super / final` 听梯度拉开的感觉。</p>
+          <div class="master-actions">
+            <button class="button success" data-action="play-all-showcase">连续试听全部方案</button>
+            <button class="button cool" data-action="stop-all">停止所有声音</button>
+          </div>
+        </article>
+        <article class="panel">
+          <h2>当前方向</h2>
+          <p>这次不做冷硬科幻，也不做史诗厚重。重点是“蓄力有弹性、爆炸有砰感、升级时明显更爽”，但整体仍然适合你现在的宠物和宝石画风。</p>
+        </article>
+      </section>
+
+      <section class="variant-grid" id="variantGrid"></section>
+
+      <section class="legend-grid">
+        <article class="panel legend-item">
+          <strong>normal</strong>
+          <p>轻快、小体积，适合普通命中，不抢答题节奏。</p>
+        </article>
+        <article class="panel legend-item">
+          <strong>boost</strong>
+          <p>比 normal 更厚、更弹，听起来像小技能升级。</p>
+        </article>
+        <article class="panel legend-item">
+          <strong>super</strong>
+          <p>蓄力更明显，爆炸更大，开始有“要来大招了”的抬升。</p>
+        </article>
+        <article class="panel legend-item">
+          <strong>final</strong>
+          <p>不拖沓，但最有收招感，应该让人直觉觉得“爽到了”。</p>
+        </article>
+      </section>
+
+      <div class="status" id="status">准备就绪。第一次点击时浏览器会解锁音频上下文。</div>
+    </main>
+
+    <script>
+      const variants = [
+        {
+          id: "bouncy-pop",
+          emoji: "🍬",
+          name: "糖豆弹爆",
+          summary: "蓄力像糖果吸气，爆炸像圆润的软糖砰开。最偏可爱，爽感来自弹性和亮度。",
+          colors: ["#ff9a65", "#ff5d8f", "#ffe08f"],
+          charge: { start: 210, end: 660, duration: 0.28, wobble: 18, attack: 0.01, release: 0.1, wave: "triangle" },
+          burst: { base: 190, snap: 820, drop: 120, noise: 0.2, decay: 0.28, punch: 0.9, tail: 0.09, sparkle: 1180 },
+        },
+        {
+          id: "spring-boom",
+          emoji: "🧸",
+          name: "弹簧熊爆",
+          summary: "蓄力更有回弹感，像玩具被压到极限后放开；爆炸更厚一点，适合强调“击中感”。",
+          colors: ["#ffb25b", "#ff7b54", "#ffdb7f"],
+          charge: { start: 180, end: 520, duration: 0.34, wobble: 12, attack: 0.015, release: 0.12, wave: "sine" },
+          burst: { base: 160, snap: 640, drop: 100, noise: 0.28, decay: 0.32, punch: 1.1, tail: 0.12, sparkle: 920 },
+        },
+        {
+          id: "pinball-star",
+          emoji: "⭐",
+          name: "星闪弹球",
+          summary: "蓄力会更亮、更跳，爆炸偏“啪嗒 + 星星四散”的感觉。更适合连击和宝石场景。",
+          colors: ["#63b9ff", "#ffe26c", "#ff7fc8"],
+          charge: { start: 260, end: 740, duration: 0.22, wobble: 24, attack: 0.008, release: 0.08, wave: "square" },
+          burst: { base: 210, snap: 1040, drop: 140, noise: 0.18, decay: 0.22, punch: 0.84, tail: 0.07, sparkle: 1460 },
+        },
+        {
+          id: "puff-blast",
+          emoji: "☁️",
+          name: "云朵胖爆",
+          summary: "蓄力比较软糯，爆炸像一团空气被猛地挤开。体感最“胖”，尤其适合 super / final。",
+          colors: ["#ffca68", "#ff8e8e", "#fff3a8"],
+          charge: { start: 170, end: 480, duration: 0.36, wobble: 10, attack: 0.02, release: 0.13, wave: "triangle" },
+          burst: { base: 130, snap: 560, drop: 90, noise: 0.34, decay: 0.38, punch: 1.22, tail: 0.15, sparkle: 860 },
+        },
+      ];
+
+      const tierProfiles = {
+        normal: { gain: 0.78, duration: 0.92, burstGain: 0.84, sparkleGain: 0.12, label: "Normal" },
+        boost: { gain: 0.92, duration: 1.02, burstGain: 1.02, sparkleGain: 0.17, label: "Boost" },
+        super: { gain: 1.05, duration: 1.12, burstGain: 1.18, sparkleGain: 0.22, label: "Super" },
+        final: { gain: 1.18, duration: 1.22, burstGain: 1.34, sparkleGain: 0.3, label: "Final" },
+      };
+
+      const statusEl = document.getElementById("status");
+      const variantGrid = document.getElementById("variantGrid");
+      let audioContext;
+      let masterGain;
+      const activeNodes = new Set();
+
+      const setStatus = (text) => {
+        statusEl.textContent = text;
+      };
+
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      const ensureAudioContext = async () => {
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          masterGain = audioContext.createGain();
+          masterGain.gain.value = 0.88;
+          masterGain.connect(audioContext.destination);
+        }
+
+        if (audioContext.state === "suspended") {
+          await audioContext.resume();
+        }
+      };
+
+      const cleanupNode = (node) => {
+        if (!node) return;
+        try {
+          node.disconnect();
+        } catch {}
+        activeNodes.delete(node);
+      };
+
+      const trackNode = (node) => {
+        activeNodes.add(node);
+        return node;
+      };
+
+      const stopAll = () => {
+        activeNodes.forEach((node) => {
+          try {
+            if (typeof node.stop === "function") {
+              node.stop();
+            } else {
+              node.disconnect();
+            }
+          } catch {}
+        });
+        activeNodes.clear();
+        setStatus("已停止所有试听。");
+      };
+
+      const createNoiseBuffer = (ctx, amount = 0.2) => {
+        const size = ctx.sampleRate * 0.6;
+        const buffer = ctx.createBuffer(1, size, ctx.sampleRate);
+        const channel = buffer.getChannelData(0);
+        for (let i = 0; i < size; i += 1) {
+          channel[i] = (Math.random() * 2 - 1) * amount;
+        }
+        return buffer;
+      };
+
+      const noiseBufferCache = new WeakMap();
+
+      const getNoiseBuffer = (ctx, amount) => {
+        const key = `${amount.toFixed(2)}`;
+        let bucket = noiseBufferCache.get(ctx);
+        if (!bucket) {
+          bucket = new Map();
+          noiseBufferCache.set(ctx, bucket);
+        }
+        if (!bucket.has(key)) {
+          bucket.set(key, createNoiseBuffer(ctx, amount));
+        }
+        return bucket.get(key);
+      };
+
+      const playCharge = async (variant, tier) => {
+        await ensureAudioContext();
+        const now = audioContext.currentTime;
+        const profile = tierProfiles[tier];
+        const duration = variant.charge.duration * profile.duration;
+        const oscillator = trackNode(audioContext.createOscillator());
+        const mod = trackNode(audioContext.createOscillator());
+        const modGain = trackNode(audioContext.createGain());
+        const gain = trackNode(audioContext.createGain());
+        const filter = trackNode(audioContext.createBiquadFilter());
+
+        oscillator.type = variant.charge.wave;
+        oscillator.frequency.setValueAtTime(variant.charge.start, now);
+        oscillator.frequency.exponentialRampToValueAtTime(variant.charge.end * (1 + (profile.gain - 0.78) * 0.18), now + duration);
+
+        mod.type = "sine";
+        mod.frequency.setValueAtTime(variant.charge.wobble, now);
+        mod.frequency.linearRampToValueAtTime(variant.charge.wobble * 1.6, now + duration);
+
+        modGain.gain.setValueAtTime(10, now);
+        modGain.gain.linearRampToValueAtTime(26, now + duration);
+
+        filter.type = "lowpass";
+        filter.Q.value = 2.4;
+        filter.frequency.setValueAtTime(900, now);
+        filter.frequency.linearRampToValueAtTime(2400, now + duration);
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(0.18 * profile.gain, now + variant.charge.attack);
+        gain.gain.exponentialRampToValueAtTime(0.24 * profile.gain, now + duration * 0.75);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration + variant.charge.release);
+
+        mod.connect(modGain);
+        modGain.connect(oscillator.frequency);
+        oscillator.connect(filter);
+        filter.connect(gain);
+        gain.connect(masterGain);
+
+        oscillator.start(now);
+        mod.start(now);
+        oscillator.stop(now + duration + variant.charge.release + 0.02);
+        mod.stop(now + duration + variant.charge.release + 0.02);
+
+        oscillator.onended = () => {
+          cleanupNode(oscillator);
+          cleanupNode(mod);
+          cleanupNode(modGain);
+          cleanupNode(gain);
+          cleanupNode(filter);
+        };
+
+        return duration * 1000;
+      };
+
+      const playBurst = async (variant, tier) => {
+        await ensureAudioContext();
+        const now = audioContext.currentTime;
+        const profile = tierProfiles[tier];
+
+        const thump = trackNode(audioContext.createOscillator());
+        const snap = trackNode(audioContext.createOscillator());
+        const sparkle = trackNode(audioContext.createOscillator());
+        const thumpGain = trackNode(audioContext.createGain());
+        const snapGain = trackNode(audioContext.createGain());
+        const sparkleGain = trackNode(audioContext.createGain());
+        const thumpFilter = trackNode(audioContext.createBiquadFilter());
+        const noiseSource = trackNode(audioContext.createBufferSource());
+        const noiseGain = trackNode(audioContext.createGain());
+        const noiseFilter = trackNode(audioContext.createBiquadFilter());
+
+        thump.type = "sine";
+        thump.frequency.setValueAtTime(variant.burst.base, now);
+        thump.frequency.exponentialRampToValueAtTime(variant.burst.drop, now + variant.burst.decay);
+
+        snap.type = "triangle";
+        snap.frequency.setValueAtTime(variant.burst.snap, now);
+        snap.frequency.exponentialRampToValueAtTime(variant.burst.drop * 2, now + variant.burst.tail);
+
+        sparkle.type = "square";
+        sparkle.frequency.setValueAtTime(variant.burst.sparkle, now + 0.01);
+        sparkle.frequency.exponentialRampToValueAtTime(variant.burst.sparkle * 0.62, now + variant.burst.tail + 0.08);
+
+        thumpFilter.type = "lowpass";
+        thumpFilter.frequency.value = 560;
+        thumpFilter.Q.value = 1.2;
+
+        noiseFilter.type = "bandpass";
+        noiseFilter.frequency.value = 1280;
+        noiseFilter.Q.value = 0.8;
+
+        thumpGain.gain.setValueAtTime(0.0001, now);
+        thumpGain.gain.linearRampToValueAtTime(0.28 * variant.burst.punch * profile.burstGain, now + 0.012);
+        thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + variant.burst.decay + 0.02);
+
+        snapGain.gain.setValueAtTime(0.0001, now);
+        snapGain.gain.linearRampToValueAtTime(0.22 * profile.burstGain, now + 0.006);
+        snapGain.gain.exponentialRampToValueAtTime(0.0001, now + variant.burst.tail + 0.07);
+
+        sparkleGain.gain.setValueAtTime(0.0001, now + 0.01);
+        sparkleGain.gain.linearRampToValueAtTime(profile.sparkleGain, now + 0.02);
+        sparkleGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+
+        noiseGain.gain.setValueAtTime(0.0001, now);
+        noiseGain.gain.linearRampToValueAtTime(variant.burst.noise * profile.burstGain, now + 0.008);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + variant.burst.decay + 0.08);
+
+        noiseSource.buffer = getNoiseBuffer(audioContext, 0.7);
+
+        thump.connect(thumpFilter);
+        thumpFilter.connect(thumpGain);
+        thumpGain.connect(masterGain);
+
+        snap.connect(snapGain);
+        snapGain.connect(masterGain);
+
+        sparkle.connect(sparkleGain);
+        sparkleGain.connect(masterGain);
+
+        noiseSource.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(masterGain);
+
+        thump.start(now);
+        snap.start(now);
+        sparkle.start(now + 0.01);
+        noiseSource.start(now);
+
+        thump.stop(now + variant.burst.decay + 0.04);
+        snap.stop(now + variant.burst.tail + 0.08);
+        sparkle.stop(now + 0.22);
+        noiseSource.stop(now + variant.burst.decay + 0.1);
+
+        thump.onended = () => {
+          cleanupNode(thump);
+          cleanupNode(thumpGain);
+          cleanupNode(thumpFilter);
+        };
+        snap.onended = () => {
+          cleanupNode(snap);
+          cleanupNode(snapGain);
+        };
+        sparkle.onended = () => {
+          cleanupNode(sparkle);
+          cleanupNode(sparkleGain);
+        };
+        noiseSource.onended = () => {
+          cleanupNode(noiseSource);
+          cleanupNode(noiseGain);
+          cleanupNode(noiseFilter);
+        };
+
+        return Math.max((variant.burst.decay + 0.1) * 1000, 260);
+      };
+
+      const playSequence = async (variant, tier) => {
+        const chargeMs = await playCharge(variant, tier);
+        await sleep(Math.max(40, chargeMs - 40));
+        await playBurst(variant, tier);
+      };
+
+      const playTierSweep = async (variant) => {
+        for (const tier of ["normal", "boost", "super", "final"]) {
+          setStatus(`正在试听 ${variant.name} · ${tierProfiles[tier].label}`);
+          await playSequence(variant, tier);
+          await sleep(280);
+        }
+        setStatus(`已完成 ${variant.name} 的四档试听。`);
+      };
+
+      const createVariantCard = (variant) => {
+        const card = document.createElement("article");
+        card.className = "panel variant";
+
+        card.innerHTML = `
+          <div class="variant-title">
+            <div>
+              <h3>${variant.name}</h3>
+              <div class="chip-row">
+                <span class="chip"><span class="dot" style="background:${variant.colors[0]}"></span>蓄力偏亮</span>
+                <span class="chip"><span class="dot" style="background:${variant.colors[1]}"></span>爆炸偏甜</span>
+              </div>
+            </div>
+            <div class="emoji">${variant.emoji}</div>
+          </div>
+          <p>${variant.summary}</p>
+          <div class="variant-actions">
+            <button class="button" data-play="sequence">连播试听</button>
+            <button class="button alt" data-play="charge">只听蓄力</button>
+            <button class="button cool" data-play="burst">只听爆炸</button>
+            <button class="button success" data-play="sweep">四档连听</button>
+          </div>
+          <div class="tier-row">
+            <button class="tier-button" data-tier="normal">normal</button>
+            <button class="tier-button" data-tier="boost">boost</button>
+            <button class="tier-button" data-tier="super">super</button>
+            <button class="tier-button" data-tier="final">final</button>
+          </div>
+        `;
+
+        card.querySelectorAll("[data-play]").forEach((button) => {
+          button.addEventListener("click", async () => {
+            const action = button.dataset.play;
+            setStatus(`正在试听 ${variant.name} · ${action}`);
+            if (action === "charge") await playCharge(variant, "super");
+            if (action === "burst") await playBurst(variant, "super");
+            if (action === "sequence") await playSequence(variant, "super");
+            if (action === "sweep") await playTierSweep(variant);
+          });
+        });
+
+        card.querySelectorAll("[data-tier]").forEach((button) => {
+          button.addEventListener("click", async () => {
+            const tier = button.dataset.tier;
+            setStatus(`正在试听 ${variant.name} · ${tierProfiles[tier].label}`);
+            await playSequence(variant, tier);
+          });
+        });
+
+        return card;
+      };
+
+      variants.forEach((variant) => variantGrid.appendChild(createVariantCard(variant)));
+
+      document.querySelector('[data-action="stop-all"]').addEventListener("click", stopAll);
+      document.querySelector('[data-action="play-all-showcase"]').addEventListener("click", async () => {
+        for (const variant of variants) {
+          setStatus(`连续试听中：${variant.name}`);
+          await playSequence(variant, "super");
+          await sleep(220);
+        }
+        setStatus("全部方案试听完成。");
+      });
+    </script>
+  </body>
+</html>
