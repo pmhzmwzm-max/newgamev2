@@ -181,7 +181,12 @@ export default function PetUnlockModal({
                     }}
                     className="w-40 h-40 mx-auto bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl border-4 border-white/50 mb-6"
                   >
-                    <span className="text-8xl">{pet.emoji}</span>
+                    <img
+                      src={pet.image}
+                      alt={pet.name}
+                      draggable={false}
+                      className="h-[78%] w-[78%] select-none object-contain drop-shadow-[0_12px_24px_rgba(255,255,255,0.18)]"
+                    />
                   </motion.div>
 
                   {/* 宠物名称 */}

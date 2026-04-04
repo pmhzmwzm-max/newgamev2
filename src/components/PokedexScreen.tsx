@@ -76,7 +76,12 @@ export default function PokedexScreen({
               : 'linear-gradient(180deg,#eef2f7,#d9e0e8)',
           }}
         >
-          {pet.emoji}
+          <img
+            src={pet.image}
+            alt={isUnlocked ? pet.name : '未知伙伴'}
+            draggable={false}
+            className="h-[88%] w-[88%] select-none object-contain"
+          />
         </div>
 
         <div className={`mb-0.5 text-[12px] font-black ${isUnlocked ? 'text-slate-700' : 'text-slate-400'}`}>
@@ -142,8 +147,13 @@ export default function PokedexScreen({
                 </div>
 
                 <div className="flex flex-1 items-center justify-center">
-                  <div className="flex h-[138px] w-[138px] items-center justify-center rounded-full border-4 border-white/45 bg-white/25 text-[76px] shadow-[inset_0_12px_24px_rgba(255,255,255,0.28),0_14px_24px_rgba(180,106,10,0.18)]">
-                    {activePet.emoji}
+                  <div className="flex h-[138px] w-[138px] items-center justify-center rounded-full border-4 border-white/45 bg-white/25 shadow-[inset_0_12px_24px_rgba(255,255,255,0.28),0_14px_24px_rgba(180,106,10,0.18)]">
+                    <img
+                      src={activePet.image}
+                      alt={activePet.name}
+                      draggable={false}
+                      className="h-[82%] w-[82%] select-none object-contain drop-shadow-[0_10px_20px_rgba(255,255,255,0.18)]"
+                    />
                   </div>
                 </div>
 

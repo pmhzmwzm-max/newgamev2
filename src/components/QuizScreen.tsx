@@ -3,6 +3,9 @@ import { ChevronLeft, Delete, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { allLevelsData } from '../data/questions';
 import { getBreakFeedbackProfile, getCameraShakeProfile, getChargeDuration, getExplosionProfile, getRemovalCount, getShotTier, getShotTiming, type ShotTier } from './quizTiming';
+import fireFoxImage from '../../UI v2.0/火尾狐.png';
+import blockGemImage from '../../UI v2.0/方块宝石.png';
+import quizBattleBackground from '../../UI v2.0/关卡内背景.png';
 
 const TOTAL_BATTLE_BLOCKS = 35;
 const BATTLE_BLOCK_COLUMNS = 5;
@@ -181,18 +184,14 @@ const BattleBlock: React.FC<BattleBlockProps> = ({
             repeatType: 'mirror',
             ease: 'easeInOut',
           }}
-          className="relative h-[84%] w-[84%] max-h-full max-w-full"
+          className="relative h-[98%] w-[122%] max-h-full max-w-none overflow-visible"
         >
-          <div
-            className="relative h-full w-full overflow-hidden rounded-[1rem] shadow-[inset_0_-4px_0_rgba(234,88,12,0.28),0_6px_12px_rgba(133,96,32,0.16)]"
-            style={{
-              background:
-                'linear-gradient(180deg, #FFFCE0 0%, #FFF3A5 32%, #FFE14A 60%, #FFB54B 100%)',
-            }}
-          >
-            <div className="absolute inset-x-[14%] top-[9%] h-[18%] rounded-full bg-white/50 blur-[2px]" />
-            <div className="absolute inset-x-0 bottom-0 h-[22%] bg-[linear-gradient(180deg,rgba(255,170,54,0)_0%,rgba(255,159,67,0.52)_100%)]" />
-          </div>
+          <img
+            src={blockGemImage}
+            alt=""
+            draggable={false}
+            className="h-full w-full scale-x-[1.04] scale-y-[1.36] object-fill select-none drop-shadow-[0_10px_18px_rgba(49,104,201,0.22)]"
+          />
         </motion.div>
       )}
 
@@ -202,18 +201,14 @@ const BattleBlock: React.FC<BattleBlockProps> = ({
             initial={{ scale: 1, opacity: 1, rotate: 0 }}
             animate={{ scale: [1, 1.08, 0.2], opacity: [1, 1, 0], rotate: [0, -6, 8] }}
             transition={{ duration: 0.44, delay: clearDelay, ease: 'easeOut' }}
-            className="absolute h-[84%] w-[84%] max-h-full max-w-full"
+            className="absolute h-[98%] w-[122%] max-h-full max-w-none overflow-visible"
           >
-            <div
-              className="relative h-full w-full overflow-hidden rounded-[1rem] shadow-[inset_0_-4px_0_rgba(234,88,12,0.28),0_8px_14px_rgba(133,96,32,0.2)]"
-              style={{
-                background:
-                  'linear-gradient(180deg, #FFFCE0 0%, #FFF3A5 32%, #FFE14A 60%, #FFB54B 100%)',
-              }}
-            >
-              <div className="absolute inset-x-[14%] top-[9%] h-[18%] rounded-full bg-white/60 blur-[2px]" />
-              <div className="absolute inset-x-0 bottom-0 h-[24%] bg-[linear-gradient(180deg,rgba(255,170,54,0)_0%,rgba(255,159,67,0.62)_100%)]" />
-            </div>
+            <img
+              src={blockGemImage}
+              alt=""
+              draggable={false}
+              className="h-full w-full scale-x-[1.04] scale-y-[1.36] object-fill select-none drop-shadow-[0_12px_20px_rgba(49,104,201,0.24)]"
+            />
           </motion.div>
           <BlockExplosion delay={clearDelay} tier={shotTier} />
         </>
@@ -352,7 +347,7 @@ const BattleStage = ({
           />
 
           <div className="relative z-10 flex h-full w-full min-h-0 items-stretch justify-stretch pr-1">
-            <div className="grid h-full w-full min-h-0 grid-cols-5 grid-rows-7 gap-1.5 place-items-stretch">
+            <div className="grid h-full w-full min-h-0 grid-cols-5 grid-rows-7 gap-x-0 gap-y-0 place-items-stretch">
               {Array.from({ length: TOTAL_BATTLE_BLOCKS }).map((_, index) => {
                 const clearRank = BLOCK_CLEAR_RANK[index];
                 const cleared = clearRank < clearedBlocks;
@@ -387,7 +382,7 @@ const BattleStage = ({
                       transition={{ duration: 0.2, ease: 'easeOut' }}
                       className="relative flex min-h-[88px] w-fit items-center justify-end gap-2 px-1 py-2 text-right"
                     >
-                      <span className="relative z-10 text-[clamp(1.2rem,2vw,1.55rem)] font-black italic leading-none tracking-tight text-white/92 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                      <span className="relative z-10 text-[clamp(1.32rem,2.2vw,1.72rem)] font-black italic leading-none tracking-tight text-[#ff7a18] drop-shadow-[0_3px_0_rgba(255,242,184,0.95)]">
                         combo
                       </span>
                       <AnimatePresence mode="popLayout" initial={false}>
@@ -397,7 +392,7 @@ const BattleStage = ({
                           animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
                           exit={{ opacity: 0, y: 8, scale: 0.9, filter: 'blur(6px)' }}
                           transition={{ duration: 0.18, ease: 'easeOut' }}
-                          className="relative z-10 min-w-[3.2rem] text-left text-[clamp(1.35rem,2.2vw,1.8rem)] font-black italic leading-none tracking-tight text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.28)]"
+                          className="relative z-10 min-w-[3.4rem] text-left text-[clamp(1.5rem,2.42vw,1.98rem)] font-black italic leading-none tracking-tight text-[#ff4f7a] drop-shadow-[0_3px_0_rgba(255,243,176,0.98)]"
                         >
                           {`x${displayCombo}`}
                         </motion.span>
@@ -463,7 +458,7 @@ const BattleStage = ({
                         ease: ['easeOut', 'easeInOut', 'easeIn', 'easeOut', 'easeInOut', 'easeOut'],
                       }
                 }
-                className={`relative flex h-[clamp(8.5rem,23vw,11.7rem)] w-[clamp(8.5rem,23vw,11.7rem)] items-center justify-center self-end rounded-[2.6rem] border-4 border-white/75 text-[clamp(4rem,8vw,5.85rem)] shadow-2xl ${petGlow} ${selectedPet?.color ?? 'bg-yellow-300'} ${selectedPet?.shadow ?? 'shadow-yellow-300/50'}`}
+                className={`relative flex h-[clamp(8.5rem,23vw,11.7rem)] w-[clamp(8.5rem,23vw,11.7rem)] items-center justify-center self-end ${petGlow}`}
               >
                 <AnimatePresence mode="wait">
                   {showImpact && (
@@ -493,9 +488,12 @@ const BattleStage = ({
                     />
                   )}
                 </AnimatePresence>
-                <div className="absolute -top-3 left-7 h-12 w-10 rotate-[-12deg] rounded-t-full rounded-b-lg bg-white/25" />
-                <div className="absolute -top-3 right-7 h-12 w-10 rotate-[12deg] rounded-t-full rounded-b-lg bg-white/25" />
-                <span className="relative z-10">{selectedPet?.emoji ?? '🍮'}</span>
+                <img
+                  src={selectedPet?.image ?? fireFoxImage}
+                  alt={selectedPet?.name ?? '火尾狐'}
+                  draggable={false}
+                  className="relative z-10 h-full w-full object-contain select-none drop-shadow-[0_10px_18px_rgba(255,255,255,0.18)]"
+                />
               </motion.div>
             </div>
           </div>
@@ -1185,22 +1183,32 @@ export default function QuizScreen({
   };
 
   return (
-    <div className="w-full h-full bg-gradient-to-br from-[#4facfe] to-[#00f2fe] flex flex-col relative overflow-visible">
+    <div
+      className="relative flex h-full w-full flex-col overflow-visible bg-[#93cdf4]"
+      style={{
+        backgroundImage: `url(${quizBattleBackground})`,
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: 'cover',
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 text-white shrink-0">
-        <button onClick={onBack} className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-white/30">
+      <div className="flex items-center justify-between p-4 text-[#25344d] shrink-0">
+        <button onClick={onBack} className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#d97d2f] bg-gradient-to-b from-[#ffe487] to-[#ffbf52] text-[#7b3b12] shadow-[0_8px_0_rgba(191,114,37,0.26),0_12px_24px_rgba(121,59,18,0.14)] active:translate-y-[2px] active:shadow-[0_5px_0_rgba(191,114,37,0.24),0_8px_16px_rgba(121,59,18,0.12)]">
           <ChevronLeft size={28} />
         </button>
         <div className="flex-1 mx-6">
-          <div className="h-4 bg-white/30 rounded-full overflow-hidden relative border border-white/20">
+          <div className="relative h-4 overflow-hidden rounded-full border-2 border-[#6ca7d8] bg-[#d8f0ff] shadow-[0_6px_14px_rgba(71,131,188,0.18),inset_0_2px_5px_rgba(255,255,255,0.65)]">
             <motion.div
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-300 to-orange-400"
+              className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#4f85db] via-[#4e79c8] to-[#6a67d8]"
               initial={{ width: `${(currentIndex / questions.length) * 100}%` }}
               animate={{ width: `${((currentIndex) / questions.length) * 100}%` }}
             />
           </div>
         </div>
-        <div className="font-bold text-lg bg-white/20 px-4 py-2 rounded-full border border-white/20">{currentIndex + 1}/{questions.length}</div>
+        <div className="rounded-full border-2 border-[#6ca7d8] bg-gradient-to-b from-[#f8fdff] to-[#dff2ff] px-4 py-2 text-lg font-black text-[#24436a] shadow-[0_8px_0_rgba(108,167,216,0.28),0_12px_22px_rgba(71,131,188,0.12)]">
+          {currentIndex + 1}/{questions.length}
+        </div>
       </div>
 
       {/* Main Area */}

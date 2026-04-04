@@ -73,7 +73,12 @@ export default function ResultScreen({ stats, puzzlePieces, onBack, onNextLevel,
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className={`w-20 h-20 ${nextPet.color} rounded-2xl flex items-center justify-center shadow-lg border-3 border-white/60 relative overflow-hidden`}>
-                <div className="text-5xl filter brightness-0 opacity-50">{nextPet.emoji}</div>
+                <img
+                  src={nextPet.image}
+                  alt={nextPet.name}
+                  draggable={false}
+                  className="h-[76%] w-[76%] select-none object-contain opacity-50 brightness-0"
+                />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                   <Lock className="text-white w-7 h-7" />
                 </div>

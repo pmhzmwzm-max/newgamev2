@@ -9,7 +9,7 @@ import QuizScreen from './components/QuizScreen';
 import ResultScreen from './components/ResultScreen';
 import PokedexScreen from './components/PokedexScreen';
 import PetUnlockModal from './components/PetUnlockModal';
-import { petsData } from './data/pets';
+import { INITIAL_PET_ID, petsData } from './data/pets';
 
 type Screen = 'map' | 'quiz' | 'result';
 type GradeKey = 'k' | '1' | '2' | '3';
@@ -38,7 +38,8 @@ export default function App() {
   const [currentLevelId, setCurrentLevelId] = useState<number>(1);
   const [selectedPetId, setSelectedPetId] = useState<number>(() => {
     const saved = localStorage.getItem('selectedPetId');
-    return saved ? parseInt(saved, 10) : 0;
+    const parsed = saved ? parseInt(saved, 10) : INITIAL_PET_ID;
+    return petsData.some((pet) => pet.id === parsed) ? parsed : INITIAL_PET_ID;
   });
   const [newlyUnlockedPetId, setNewlyUnlockedPetId] = useState<number | null>(null);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
@@ -46,6 +47,12 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('selectedPetId', selectedPetId.toString());
+  }, [selectedPetId]);
+
+  useEffect(() => {
+    if (!petsData.some((pet) => pet.id === selectedPetId)) {
+      setSelectedPetId(INITIAL_PET_ID);
+    }
   }, [selectedPetId]);
 
   const [gameData, setGameData] = useState<GameData>(() => {
