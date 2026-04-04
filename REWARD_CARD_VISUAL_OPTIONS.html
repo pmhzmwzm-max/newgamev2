@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>奖励卡片视觉方案</title>
+  <style>
+    :root {
+      --stage-image: url('./UI v2.0/火尾狐.png');
+      --card-w: 420px;
+      --card-h: 760px;
+      --radius-xl: 36px;
+      --radius-lg: 28px;
+      --shadow-soft: 0 34px 80px rgba(33, 14, 63, 0.22);
+      --shadow-light: 0 26px 60px rgba(133, 108, 194, 0.18);
+      --text-main: #ffffff;
+      --text-soft: rgba(255, 255, 255, 0.78);
+      --ink: #2c2143;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: #251833;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(255, 208, 116, 0.26), transparent 24%),
+        linear-gradient(180deg, #fcf7ff 0%, #f8f1ff 50%, #f5ece9 100%);
+    }
+
+    .page {
+      width: min(1500px, calc(100vw - 40px));
+      margin: 0 auto;
+      padding: 28px 0 60px;
+    }
+
+    .hero {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 26px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      width: fit-content;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(106, 85, 148, 0.16);
+      color: #8a69b4;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      box-shadow: 0 10px 24px rgba(122, 91, 168, 0.08);
+      backdrop-filter: blur(12px);
+    }
+
+    h1 {
+      margin: 0;
+      font-family: "Baskerville", "STKaiti", serif;
+      font-size: clamp(38px, 6vw, 64px);
+      line-height: 0.95;
+      font-weight: 700;
+      color: #2e2149;
+    }
+
+    .subcopy {
+      max-width: 860px;
+      font-size: 16px;
+      line-height: 1.75;
+      color: rgba(46, 33, 73, 0.72);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 6px 0 30px;
+    }
+
+    .pill {
+      appearance: none;
+      border: 1px solid rgba(116, 86, 161, 0.16);
+      background: rgba(255,255,255,0.82);
+      border-radius: 999px;
+      padding: 11px 18px;
+      font-size: 14px;
+      font-weight: 900;
+      color: #6f5497;
+      cursor: pointer;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+      box-shadow: 0 14px 24px rgba(116, 86, 161, 0.08);
+    }
+
+    .pill:hover { transform: translateY(-1px); }
+
+    .pill.active {
+      background: linear-gradient(135deg, #8b69f3, #d57af7);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+      align-items: start;
+    }
+
+    .teaser-lab {
+      margin: 6px 0 34px;
+      display: grid;
+      gap: 16px;
+      padding: 22px;
+      border-radius: 30px;
+      background: rgba(255,255,255,0.62);
+      border: 1px solid rgba(135, 107, 187, 0.12);
+      box-shadow: 0 22px 44px rgba(133, 108, 194, 0.12);
+      backdrop-filter: blur(10px);
+    }
+
+    .teaser-lab-title {
+      font-family: "Baskerville", "STKaiti", serif;
+      font-size: 28px;
+      line-height: 1;
+      color: #302347;
+    }
+
+    .teaser-lab-copy {
+      font-size: 14px;
+      line-height: 1.7;
+      color: rgba(48, 35, 71, 0.72);
+      max-width: 900px;
+    }
+
+    .teaser-lab-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .teaser-demo {
+      position: relative;
+      min-height: 148px;
+      border-radius: 26px;
+      overflow: hidden;
+      padding: 20px;
+      background:
+        radial-gradient(circle at 18% 22%, rgba(255, 229, 155, 0.18), transparent 20%),
+        linear-gradient(180deg, #2a194c 0%, #1b1135 100%);
+      box-shadow: 0 18px 34px rgba(39, 18, 75, 0.18);
+    }
+
+    .teaser-demo::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 18% 18%, rgba(255,255,255,0.82) 0 1.4px, transparent 1.9px),
+        radial-gradient(circle at 77% 21%, rgba(255,224,156,0.78) 0 1.6px, transparent 2px),
+        radial-gradient(circle at 70% 76%, rgba(255,255,255,0.7) 0 1.2px, transparent 1.6px);
+      opacity: .8;
+      pointer-events: none;
+    }
+
+    .teaser-demo-name {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 14px;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      font-weight: 900;
+      color: rgba(255,255,255,0.7);
+      text-transform: uppercase;
+    }
+
+    .teaser-demo-stage {
+      position: relative;
+      z-index: 1;
+      min-height: 78px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+
+    .teaser-demo-text {
+      position: relative;
+      z-index: 1;
+      font-size: 28px;
+      line-height: 1.24;
+      font-weight: 900;
+      color: #fff8ef;
+    }
+
+    .highlight-marker .teaser-demo-text {
+      display: inline;
+      padding: 0 .2em;
+      background:
+        linear-gradient(180deg, transparent 0 34%, rgba(255, 199, 74, 0.14) 34% 42%, rgba(255, 199, 74, 0.52) 42% 72%, rgba(255, 199, 74, 0.14) 72% 78%, transparent 78%),
+        linear-gradient(90deg, transparent 0%, rgba(255, 205, 96, 0.08) 10%, rgba(255, 212, 117, 0.78) 22%, rgba(255, 221, 158, 0.92) 50%, rgba(255, 212, 117, 0.78) 78%, rgba(255, 205, 96, 0.08) 90%, transparent 100%);
+      border-radius: 18px;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
+    .highlight-glow .teaser-demo-stage::before {
+      content: "";
+      position: absolute;
+      width: 82%;
+      height: 74px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(255, 173, 76, 0.38) 0%, rgba(255, 173, 76, 0.16) 42%, transparent 74%);
+      filter: blur(10px);
+    }
+
+    .highlight-glow .teaser-demo-text {
+      text-shadow:
+        0 0 10px rgba(255, 180, 89, 0.16),
+        0 0 22px rgba(255, 180, 89, 0.12),
+        0 2px 6px rgba(0,0,0,0.24);
+    }
+
+    .highlight-lightband .teaser-demo-stage::before {
+      content: "";
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      top: 50%;
+      height: 42px;
+      transform: translateY(-50%);
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 206, 108, 0.12) 14%, rgba(255, 221, 157, 0.72) 50%, rgba(255, 206, 108, 0.12) 86%, transparent 100%);
+      filter: blur(3px);
+    }
+
+    .highlight-lightband .teaser-demo-stage::after {
+      content: "✦";
+      position: absolute;
+      right: 14%;
+      top: 30%;
+      font-size: 14px;
+      color: rgba(255, 237, 186, 0.92);
+      text-shadow: 0 0 14px rgba(255, 220, 131, 0.32);
+    }
+
+    .option {
+      display: grid;
+      gap: 16px;
+    }
+
+    .option-copy {
+      display: grid;
+      gap: 8px;
+      padding: 0 8px;
+    }
+
+    .option-tag {
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: #9675bc;
+    }
+
+    .option-title {
+      font-family: "Baskerville", "STKaiti", serif;
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 700;
+      color: #2e2149;
+    }
+
+    .option-note {
+      font-size: 14px;
+      line-height: 1.65;
+      color: rgba(46, 33, 73, 0.74);
+    }
+
+    .demo {
+      position: relative;
+      width: min(100%, var(--card-w));
+      height: var(--card-h);
+      margin: 0 auto;
+      overflow: hidden;
+      border-radius: 42px;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .floating-stars::before,
+    .floating-stars::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 14% 19%, rgba(255,255,255,0.9) 0 1.4px, transparent 1.8px),
+        radial-gradient(circle at 78% 13%, rgba(255,230,167,0.9) 0 1.8px, transparent 2.2px),
+        radial-gradient(circle at 86% 45%, rgba(255,255,255,0.82) 0 1.1px, transparent 1.6px),
+        radial-gradient(circle at 28% 75%, rgba(255,245,198,0.86) 0 1.5px, transparent 2px),
+        radial-gradient(circle at 63% 82%, rgba(255,255,255,0.74) 0 1.2px, transparent 1.7px);
+      opacity: .7;
+    }
+
+    .reward-shell {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      padding: 28px 24px 24px;
+      position: relative;
+    }
+
+    .reward-top {
+      min-height: 214px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .reward-top.hidden {
+      min-height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .reward-content {
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+      text-align: center;
+      width: 100%;
+    }
+
+    .mascot-wrap {
+      width: 136px;
+      height: 136px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      animation: breathe 2.6s ease-in-out infinite;
+    }
+
+    .mascot-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 18px 24px rgba(255, 146, 39, 0.34));
+    }
+
+    .placeholder {
+      width: 136px;
+      height: 136px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      white-space: pre-line;
+      font-size: 16px;
+      line-height: 1.32;
+      font-weight: 900;
+      padding: 18px;
+    }
+
+    .reward-title {
+      font-size: 32px;
+      line-height: 1.14;
+      font-weight: 900;
+      max-width: 92%;
+    }
+
+    .teaser {
+      margin-bottom: 16px;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 18px 22px;
+      position: relative;
+    }
+
+    .teaser.fill {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .teaser-text {
+      margin: 0 auto;
+      max-width: 90%;
+      font-weight: 900;
+    }
+
+    .exp-panel {
+      position: relative;
+      margin-top: auto;
+      padding: 26px 18px 18px;
+    }
+
+    .exp-chip {
+      position: absolute;
+      top: 0;
+      right: 14px;
+      transform: translateY(-50%);
+      z-index: 10;
+      padding: 11px 16px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 900;
+      animation: pulseChip 1.7s ease-in-out infinite;
+    }
+
+    .exp-bar {
+      position: relative;
+      height: 24px;
+      margin-bottom: 18px;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .exp-bar-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: var(--progress, 62%);
+      border-radius: inherit;
+    }
+
+    .exp-bar-text {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    .exp-body {
+      display: grid;
+      grid-template-columns: 82px 1fr;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .silhouette {
+      position: relative;
+      width: 82px;
+      height: 82px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .silhouette img {
+      width: 82%;
+      height: 82%;
+      object-fit: contain;
+      opacity: .48;
+      filter: brightness(0);
+    }
+
+    .silhouette .lock {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+    }
+
+    .exp-title {
+      margin-bottom: 6px;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .exp-copy {
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .actions {
+      display: grid;
+      gap: 12px;
+      padding: 0 24px 24px;
+    }
+
+    .primary,
+    .secondary {
+      appearance: none;
+      border: 0;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .primary {
+      padding: 18px 20px;
+      border-radius: 999px;
+      font-size: 22px;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .secondary {
+      background: transparent;
+      padding: 6px 10px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      opacity: .86;
+    }
+
+    .glass {
+      background:
+        radial-gradient(circle at 18% 16%, rgba(255,199,112,0.22), transparent 18%),
+        radial-gradient(circle at 80% 12%, rgba(130,182,255,0.18), transparent 18%),
+        linear-gradient(180deg, #2b1b54 0%, #271447 44%, #170d30 100%);
+      box-shadow: 0 40px 90px rgba(17, 8, 39, 0.34);
+    }
+
+    .glass .screen {
+      color: var(--text-main);
+    }
+
+    .glass .card-surface {
+      position: absolute;
+      inset: 14px;
+      border-radius: 34px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.22);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.28),
+        0 24px 48px rgba(10, 4, 30, 0.22);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .glass .mascot-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,165,70,0.46) 0%, rgba(255,165,70,0.1) 48%, transparent 72%);
+      filter: blur(8px);
+      z-index: -1;
+    }
+
+    .glass .placeholder {
+      border-radius: 28px;
+      border: 1px dashed rgba(255,255,255,0.42);
+      background: rgba(255,255,255,0.08);
+      color: #fff4d1;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.16);
+    }
+
+    .glass .reward-title {
+      text-shadow: 0 4px 16px rgba(0,0,0,0.24);
+    }
+
+    .glass .teaser {
+      border-radius: 24px;
+      color: #fffdf2;
+      background: rgba(16, 10, 34, 0.24);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .glass .teaser-text {
+      font-size: 27px;
+      line-height: 1.22;
+      color: #ffefce;
+    }
+
+    .glass .exp-panel {
+      border-radius: 26px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.16);
+    }
+
+    .glass .exp-chip {
+      background: linear-gradient(180deg, #ffe894 0%, #ffcb57 100%);
+      color: #6b4300;
+      box-shadow: 0 10px 22px rgba(255, 185, 62, 0.26);
+    }
+
+    .glass .exp-bar {
+      background: rgba(7, 5, 18, 0.34);
+    }
+
+    .glass .exp-bar-fill {
+      background: linear-gradient(90deg, #ffb14d 0%, #ffcf52 50%, #fff19b 100%);
+    }
+
+    .glass .exp-bar-text {
+      color: #542f00;
+    }
+
+    .glass .silhouette {
+      border-radius: 24px;
+      background: rgba(9, 6, 22, 0.28);
+    }
+
+    .glass .exp-copy,
+    .glass .secondary {
+      color: var(--text-soft);
+    }
+
+    .glass .primary {
+      background: linear-gradient(180deg, #ff9e34 0%, #ff8427 100%);
+      box-shadow:
+        0 10px 0 #d36012,
+        0 0 22px rgba(255, 151, 47, 0.32);
+    }
+
+    .soft {
+      background:
+        radial-gradient(circle at 15% 16%, rgba(255, 255, 255, 0.88), transparent 20%),
+        linear-gradient(180deg, #f5efff 0%, #fdeee5 100%);
+      box-shadow: var(--shadow-light);
+    }
+
+    .soft .screen {
+      color: var(--ink);
+    }
+
+    .soft .card-surface {
+      position: absolute;
+      inset: 18px;
+      border-radius: 34px;
+      background: rgba(255,255,255,0.96);
+      box-shadow:
+        0 26px 54px rgba(167, 141, 215, 0.22),
+        0 0 0 1px rgba(233, 224, 255, 0.72);
+    }
+
+    .soft .reward-top {
+      border-bottom: 1px solid rgba(210, 200, 233, 0.55);
+      padding-bottom: 14px;
+    }
+
+    .soft .reward-group { gap: 10px; }
+
+    .soft .mascot-wrap {
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #fffefc 0%, #fff6f0 100%);
+      box-shadow: 0 16px 30px rgba(255, 168, 89, 0.18);
+    }
+
+    .soft .placeholder {
+      border-radius: 26px;
+      border: 1px dashed rgba(193, 178, 228, 0.78);
+      background: #f7f4ff;
+      color: #7d62aa;
+    }
+
+    .soft .reward-title {
+      color: #44325f;
+      text-shadow: none;
+    }
+
+    .soft .teaser {
+      border-top: 1px solid rgba(226, 217, 247, 0.8);
+      border-bottom: 1px solid rgba(226, 217, 247, 0.8);
+      color: #5d4882;
+    }
+
+    .soft .teaser-text {
+      font-size: 24px;
+      line-height: 1.26;
+    }
+
+    .soft .exp-panel {
+      border-radius: 26px;
+      background: #fffaf8;
+      box-shadow: inset 0 0 0 1px rgba(236, 226, 255, 0.72);
+    }
+
+    .soft .exp-chip {
+      background: linear-gradient(180deg, #ffe585 0%, #ffd26b 100%);
+      color: #7a5700;
+      box-shadow: 0 8px 18px rgba(255, 199, 90, 0.24);
+    }
+
+    .soft .exp-bar {
+      background: #eee7f7;
+    }
+
+    .soft .exp-bar-fill {
+      background: linear-gradient(90deg, #ffc15b 0%, #ff9f58 44%, #ffd36f 100%);
+    }
+
+    .soft .exp-bar-text {
+      color: #684e90;
+    }
+
+    .soft .silhouette {
+      border-radius: 24px;
+      background: #f3f1f7;
+      box-shadow: inset 0 0 0 1px rgba(220, 214, 233, 0.78);
+    }
+
+    .soft .exp-copy,
+    .soft .secondary {
+      color: rgba(68, 50, 95, 0.74);
+    }
+
+    .soft .primary {
+      background: linear-gradient(180deg, #8f6af3 0%, #7e58e0 100%);
+      box-shadow: 0 10px 0 #6545c0;
+    }
+
+    .dark {
+      background:
+        radial-gradient(circle at 50% 16%, rgba(255, 160, 52, 0.12), transparent 18%),
+        radial-gradient(circle at 16% 12%, rgba(127, 95, 255, 0.12), transparent 16%),
+        linear-gradient(180deg, #120b22 0%, #0e0918 50%, #090612 100%);
+      box-shadow: 0 40px 90px rgba(3, 2, 8, 0.5);
+    }
+
+    .dark .screen {
+      color: var(--text-main);
+    }
+
+    .dark .card-surface {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 36%, rgba(255, 149, 38, 0.12), transparent 24%),
+        linear-gradient(180deg, rgba(255,255,255,0.02), transparent 28%);
+    }
+
+    .dark .reward-shell {
+      padding-top: 52px;
+    }
+
+    .dark .reward-top {
+      min-height: 248px;
+      margin-bottom: 10px;
+    }
+
+    .dark .reward-top.hidden {
+      min-height: 0;
+      margin: 0;
+    }
+
+    .dark .mascot-wrap::before {
+      content: "";
+      position: absolute;
+      width: 196px;
+      height: 196px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, rgba(255, 151, 47, 0.38) 0%, rgba(255, 151, 47, 0.14) 38%, transparent 70%);
+      filter: blur(12px);
+      z-index: -1;
+    }
+
+    .dark .mascot-wrap::after {
+      content: "";
+      position: absolute;
+      width: 178px;
+      height: 178px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 158, 53, 0.26);
+      box-shadow: 0 0 24px rgba(255, 145, 39, 0.18);
+    }
+
+    .dark .placeholder {
+      border-radius: 999px;
+      border: 1px dashed rgba(255, 173, 93, 0.32);
+      background: rgba(255, 140, 40, 0.08);
+      color: #ffdcb8;
+    }
+
+    .dark .reward-title {
+      max-width: 94%;
+      text-shadow: 0 8px 18px rgba(0,0,0,0.45);
+    }
+
+    .dark .teaser {
+      min-height: 86px;
+      color: #fff7ea;
+      background: transparent;
+    }
+
+    .dark .teaser.fill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dark .teaser-text {
+      font-size: 26px;
+      line-height: 1.28;
+      text-shadow: 0 4px 14px rgba(255, 151, 47, 0.18);
+    }
+
+    .dark .exp-panel {
+      background: transparent;
+      border-radius: 0;
+      padding-left: 6px;
+      padding-right: 6px;
+    }
+
+    .dark .exp-chip {
+      background: linear-gradient(180deg, #ffdc77 0%, #ffbf47 100%);
+      color: #5c3f07;
+      box-shadow: 0 10px 24px rgba(255, 192, 69, 0.24);
+    }
+
+    .dark .exp-bar {
+      height: 10px;
+      margin-bottom: 24px;
+      background: rgba(134, 118, 191, 0.16);
+      box-shadow: 0 0 18px rgba(86, 63, 152, 0.16);
+    }
+
+    .dark .exp-bar-fill {
+      background: linear-gradient(90deg, #ff9428 0%, #ffce5d 46%, #fff2a1 100%);
+      box-shadow: 0 0 18px rgba(255, 145, 38, 0.5);
+    }
+
+    .dark .exp-bar-text {
+      top: 18px;
+      inset-inline: 0;
+      bottom: auto;
+      height: auto;
+      color: rgba(255,255,255,0.76);
+    }
+
+    .dark .silhouette {
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    .dark .exp-copy,
+    .dark .secondary {
+      color: rgba(255,255,255,0.74);
+    }
+
+    .dark .primary {
+      background: linear-gradient(180deg, #f08a32 0%, #db6b1d 100%);
+      box-shadow:
+        0 10px 0 #b14d10,
+        0 0 26px rgba(255, 138, 50, 0.24);
+    }
+
+    .hidden { display: none !important; }
+
+    @keyframes breathe {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-8px) scale(1.04); }
+    }
+
+    @keyframes pulseChip {
+      0%, 100% { transform: translateY(-50%) scale(1); }
+      50% { transform: translateY(-50%) scale(1.08); }
+    }
+
+    @media (max-width: 1320px) {
+      .board { grid-template-columns: 1fr; }
+      .option { justify-items: center; }
+      .option-copy { max-width: var(--card-w); }
+      .teaser-lab-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">Reward Card Direction Lab</div>
+      <h1>奖励卡片三方案<br />直接看脸选风格</h1>
+      <div class="subcopy">
+        这份页只做一件事：把你刚给的三种方向直接画出来。三套都用同一组信息结构，方便判断哪套最适合“宠物成长 + 进化奖励”这条链路。上方可切 `有奖励` / `无奖励` / `终局预告`，横向比较同一状态下的差异。
+      </div>
+    </section>
+
+    <section class="toolbar" id="toolbar">
+      <button class="pill active" data-state="reward">有奖励状态</button>
+      <button class="pill" data-state="tease">无奖励状态</button>
+      <button class="pill" data-state="finale">终局预告</button>
+    </section>
+
+    <section class="teaser-lab">
+      <div class="teaser-lab-title">预告模块弱化方案预览</div>
+      <div class="teaser-lab-copy">
+        这里专门预览“没有边框，但还能轻微突出一句话”的 3 种方向。它们都比现在正式卡片里的模块更轻，只是强调方式不同：一个像荧光笔扫过，一个像暖光托底，一个像细光带划过。
+      </div>
+      <div class="teaser-lab-grid">
+        <article class="teaser-demo highlight-marker">
+          <div class="teaser-demo-name">渐隐荧光笔</div>
+          <div class="teaser-demo-stage">
+            <div class="teaser-demo-text">还差1关，发现新地图！</div>
+          </div>
+        </article>
+
+        <article class="teaser-demo highlight-glow">
+          <div class="teaser-demo-name">局部光斑托底</div>
+          <div class="teaser-demo-stage">
+            <div class="teaser-demo-text">还差1关，发现新地图！</div>
+          </div>
+        </article>
+
+        <article class="teaser-demo highlight-lightband">
+          <div class="teaser-demo-name">细短光带</div>
+          <div class="teaser-demo-stage">
+            <div class="teaser-demo-text">还差1关，发现新地图！</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="board" id="board"></section>
+  </main>
+
+  <script>
+    const foxImage = './UI v2.0/火尾狐.png';
+
+    const states = {
+      reward: {
+        rewardLabel: '发现新地图：终点圣坛',
+        rewardPlaceholder: '发现新地图\\n终点圣坛',
+        rewardImage: false,
+        teaserText: '还差2关，能力将升级！',
+        expLabel: 'exp 686/780',
+        expGain: '+20',
+        nextStage: '下一形态：火尾狐·圣焰',
+        evoText: '还差94经验进化',
+        progress: '88%'
+      },
+      tease: {
+        rewardLabel: '',
+        rewardPlaceholder: '',
+        rewardImage: false,
+        teaserText: '还差1关，发现新地图！',
+        expLabel: 'exp 190/334',
+        expGain: '+14',
+        nextStage: '下一形态：火尾狐·曜焰',
+        evoText: '还差144经验进化',
+        progress: '56%'
+      },
+      finale: {
+        rewardLabel: '',
+        rewardPlaceholder: '',
+        rewardImage: false,
+        teaserText: '159关，解锁隐藏形态',
+        expLabel: 'exp 786/786',
+        expGain: '+20',
+        nextStage: '最终形态：火尾狐·圣焰',
+        evoText: '前50关最终形态已完成',
+        progress: '100%'
+      }
+    };
+
+    const variants = [
+      {
+        cls: 'glass',
+        name: '方案一',
+        title: '星空毛玻璃风',
+        note: '半透明玻璃主卡叠在深紫星空上，模块靠模糊和高光区分，不靠粗暴色块。更现代，也最轻盈。'
+      },
+      {
+        cls: 'soft',
+        name: '方案二',
+        title: '极简留白卡片风',
+        note: '更适合儿童 / 教育向。通过留白、分割线和柔光阴影划区，画面干净，没有压迫感。'
+      },
+      {
+        cls: 'dark',
+        name: '方案三',
+        title: '魔法暗黑风',
+        note: '强调“进化”的高级感。卡片感弱化，主体像悬浮在秘境星空里，冲击力最强。'
+      }
+    ];
+
+    const board = document.getElementById('board');
+
+    function rewardBlock(state) {
+      const showReward = Boolean(state.rewardLabel);
+      return `
+        <div class="reward-top ${showReward ? '' : 'hidden'}">
+          <div class="reward-content">
+            <div class="mascot-wrap">
+              ${state.rewardImage
+                ? `<img src="${foxImage}" alt="reward" />`
+                : `<div class="placeholder">${state.rewardPlaceholder}</div>`}
+            </div>
+            <div class="reward-title">${state.rewardLabel}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function buildVariantCard(variant, stateKey) {
+      const state = states[stateKey];
+      const showReward = Boolean(state.rewardLabel);
+      return `
+        <article class="option">
+          <div class="option-copy">
+            <div class="option-tag">${variant.name}</div>
+            <div class="option-title">${variant.title}</div>
+            <div class="option-note">${variant.note}</div>
+          </div>
+
+          <div class="demo ${variant.cls} floating-stars" style="--progress:${state.progress}">
+            <div class="card-surface"></div>
+            <div class="screen">
+              <div class="reward-shell">
+                ${rewardBlock(state)}
+
+                <div class="teaser ${showReward ? '' : 'fill'}">
+                  <div class="teaser-text">${state.teaserText}</div>
+                </div>
+
+                <div class="exp-panel">
+                  <div class="exp-chip">经验 ${state.expGain}</div>
+                  <div class="exp-bar">
+                    <div class="exp-bar-fill"></div>
+                    <div class="exp-bar-text">${state.expLabel}</div>
+                  </div>
+
+                  <div class="exp-body">
+                    <div class="silhouette">
+                      <img src="${foxImage}" alt="next stage" />
+                      <div class="lock">🔒</div>
+                    </div>
+                    <div>
+                      <div class="exp-title">${state.nextStage}</div>
+                      <div class="exp-copy">${state.evoText}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="primary">我知道了</button>
+                <button class="secondary">查看图鉴</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function render(stateKey) {
+      board.innerHTML = variants.map((variant) => buildVariantCard(variant, stateKey)).join('');
+      document.querySelectorAll('.pill').forEach((button) => {
+        button.classList.toggle('active', button.dataset.state === stateKey);
+      });
+    }
+
+    document.getElementById('toolbar').addEventListener('click', (event) => {
+      const button = event.target.closest('.pill');
+      if (!button) return;
+      render(button.dataset.state);
+    });
+
+    render('reward');
+  </script>
+</body>
+</html>

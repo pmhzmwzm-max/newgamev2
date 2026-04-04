@@ -1,0 +1,1878 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>成长链调试台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #eef7ff;
+      --panel: rgba(255,255,255,0.86);
+      --line: rgba(45, 73, 118, 0.10);
+      --ink: #21324d;
+      --copy: #51627b;
+      --soft: #7c8ca5;
+      --sky: #5dc8ff;
+      --sky-deep: #3d94ff;
+      --mint: #7ef0ce;
+      --gold: #ffd761;
+      --orange: #ff9258;
+      --pink: #ff5c8a;
+      --violet: #8b78ff;
+      --font-display: "Fredoka", sans-serif;
+      --font-body: "Noto Sans SC", sans-serif;
+      --shadow: 0 28px 70px rgba(62, 104, 164, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(93, 200, 255, 0.18), transparent 24%),
+        radial-gradient(circle at 90% 10%, rgba(255, 215, 97, 0.12), transparent 18%),
+        linear-gradient(180deg, #f8fcff 0%, #edf6ff 100%);
+    }
+
+    .page {
+      max-width: 1540px;
+      margin: 0 auto;
+      padding: 28px 24px 36px;
+    }
+
+    .hero {
+      margin-bottom: 20px;
+      padding: 26px 28px;
+      border-radius: 32px;
+      background:
+        radial-gradient(circle at 18% 14%, rgba(255,255,255,0.5), transparent 20%),
+        linear-gradient(135deg, rgba(93, 200, 255, 0.16), rgba(126, 240, 206, 0.14));
+      border: 1px solid rgba(93, 148, 255, 0.14);
+      box-shadow: 0 20px 54px rgba(74, 132, 202, 0.08);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(61, 148, 255, 0.10);
+      color: #1566c3;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-family: var(--font-display);
+      font-size: 40px;
+      line-height: 1.05;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 92ch;
+      color: var(--copy);
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .metric {
+      padding: 14px 12px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(255,255,255,0.84);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.88);
+    }
+
+    .metric b {
+      display: block;
+      margin-bottom: 6px;
+      font-family: var(--font-display);
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .metric span {
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--soft);
+      font-weight: 700;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      border-radius: 30px;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.72);
+    }
+
+    .card-head strong {
+      display: block;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .card-head span {
+      display: block;
+      margin-top: 4px;
+      color: var(--soft);
+      font-size: 12px;
+    }
+
+    .control-panel {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+      max-height: calc(100vh - 130px);
+      overflow: auto;
+    }
+
+    .section {
+      padding: 14px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,251,255,0.92));
+      display: grid;
+      gap: 10px;
+    }
+
+    .section h2 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .row,
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label,
+    .mini-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--soft);
+    }
+
+    select,
+    input[type="range"],
+    input[type="number"] {
+      width: 100%;
+      font-family: inherit;
+    }
+
+    select,
+    input[type="number"] {
+      border: 1px solid rgba(76, 114, 173, 0.14);
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: white;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      accent-color: #ff8a59;
+    }
+
+    .page-tabs,
+    .state-tabs,
+    .quick-levels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tab,
+    .chip {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: rgba(36, 64, 102, 0.06);
+      color: var(--copy);
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: 150ms ease;
+      font-family: inherit;
+    }
+
+    .tab.active,
+    .chip.active {
+      color: white;
+      background: linear-gradient(135deg, var(--orange), var(--pink));
+      box-shadow: 0 10px 22px rgba(255, 92, 138, 0.22);
+    }
+
+    .chip {
+      padding: 8px 12px;
+      font-size: 11px;
+    }
+
+    .kv {
+      display: grid;
+      gap: 8px;
+    }
+
+    .kv-item {
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid var(--line);
+    }
+
+    .kv-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .kv-item span {
+      color: var(--copy);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .preview-panel {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .preview-note {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .preview-note .kv-item { min-height: 86px; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .phone-shell {
+      border-radius: 38px;
+      border: 8px solid rgba(255,255,255,0.54);
+      background: linear-gradient(180deg, #69c6ff 0%, #8ad5ff 26%, #f4f8ff 100%);
+      box-shadow: 0 38px 90px rgba(63, 109, 172, 0.24);
+      min-height: 1080px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .side-info {
+      display: grid;
+      gap: 10px;
+    }
+
+    .side-info .kv-item {
+      background: rgba(255,255,255,0.88);
+    }
+
+    .focus-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .focus-new { background: rgba(126,240,206,0.20); color: #0e7a68; }
+    .focus-reward { background: rgba(255,215,97,0.24); color: #9b6800; }
+    .focus-evo { background: rgba(139,120,255,0.18); color: #5945cc; }
+    .focus-finale { background: rgba(255,92,138,0.16); color: #b51b53; }
+
+    .map-view {
+      position: relative;
+      height: 1080px;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    .map-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 9% 78%, rgba(252, 182, 197, 0.85), transparent 4.5%),
+        radial-gradient(circle at 14% 12%, rgba(255, 211, 91, 0.9), transparent 5.5%),
+        radial-gradient(circle at 87% 18%, rgba(125, 211, 252, 0.82), transparent 4.5%),
+        radial-gradient(circle at 90% 80%, rgba(255, 209, 85, 0.7), transparent 6%),
+        linear-gradient(180deg, rgba(255,255,255,0.22), transparent 14%),
+        linear-gradient(180deg, #ffd7ca 0%, #ffd8cb 100%);
+      overflow: hidden;
+    }
+
+    .map-bg::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(90deg, rgba(247, 170, 162, 0.18) 0 4.6%, rgba(255, 225, 212, 0.08) 4.6% 9.2%),
+        repeating-linear-gradient(180deg, rgba(242, 169, 160, 0.08) 0 3.8%, transparent 3.8% 7.6%);
+      opacity: 0.78;
+    }
+
+    .map-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 7% 87%, #a6da56 0 6%, transparent 6.2%),
+        radial-gradient(circle at 12% 83%, #7bc341 0 5.2%, transparent 5.4%),
+        radial-gradient(circle at 17% 16%, #a6da56 0 5.4%, transparent 5.6%),
+        radial-gradient(circle at 10% 11%, #82c93f 0 6.5%, transparent 6.7%),
+        radial-gradient(circle at 88% 87%, #a6da56 0 6%, transparent 6.2%),
+        radial-gradient(circle at 93% 84%, #7bc341 0 5.2%, transparent 5.4%),
+        radial-gradient(circle at 88% 11%, #a6da56 0 6%, transparent 6.2%),
+        radial-gradient(circle at 82% 16%, #82c93f 0 5.6%, transparent 5.8%);
+      opacity: 0.82;
+    }
+
+    .map-scene {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .scene-candy,
+    .scene-shop,
+    .scene-arch,
+    .scene-lollipop {
+      position: absolute;
+    }
+
+    .scene-candy {
+      top: 110px;
+      left: 62px;
+      width: 140px;
+      height: 128px;
+      border-radius: 28px;
+      background:
+        repeating-linear-gradient(90deg, #fff0dc 0 14px, #ffcbc0 14px 28px),
+        linear-gradient(180deg, #ffe9d9 0 38%, #ffb39f 38% 100%);
+      box-shadow: 0 12px 24px rgba(183, 108, 88, 0.16);
+    }
+
+    .scene-candy::before {
+      content: "";
+      position: absolute;
+      top: -24px;
+      left: 16px;
+      width: 108px;
+      height: 46px;
+      border-radius: 999px 999px 18px 18px;
+      background:
+        radial-gradient(circle at 50% 10px, #ffc7b4 0 10px, transparent 11px),
+        #fff5c9;
+      box-shadow: inset 0 -4px 0 rgba(255,255,255,0.42);
+    }
+
+    .scene-shop {
+      top: 88px;
+      right: 54px;
+      width: 126px;
+      height: 116px;
+      border-radius: 0 0 24px 24px;
+      background:
+        repeating-linear-gradient(90deg, #ffe37b 0 18px, #96dcff 18px 36px),
+        linear-gradient(180deg, transparent 0 28%, #fff8fb 28% 72%, #ffd0c4 72% 100%);
+      box-shadow: 0 12px 24px rgba(123, 159, 191, 0.16);
+    }
+
+    .scene-shop::before {
+      content: "";
+      position: absolute;
+      inset: -8px 8px auto;
+      height: 22px;
+      border-radius: 12px 12px 6px 6px;
+      background: linear-gradient(180deg, #ffe8a6, #95ddff);
+    }
+
+    .scene-arch {
+      top: 20px;
+      right: 54px;
+      width: 306px;
+      height: 88px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #fffef8, #fff6dd);
+      border: 4px solid #c99450;
+      box-shadow: 0 10px 22px rgba(151, 116, 76, 0.20);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #623a12;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      z-index: 3;
+    }
+
+    .scene-arch::before {
+      content: "🐾";
+      position: absolute;
+      left: 18px;
+      width: 66px;
+      height: 66px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 34px;
+      background: linear-gradient(180deg, #eef7ff, #b9dbff);
+      border: 4px solid #9bc567;
+      color: #5687bf;
+      box-shadow: 0 8px 16px rgba(103, 148, 76, 0.20);
+    }
+
+    .scene-lollipop {
+      right: 34px;
+      bottom: 134px;
+      width: 84px;
+      height: 84px;
+      border-radius: 999px;
+      background: repeating-radial-gradient(circle, #ff9eab 0 8px, #ffd7dc 8px 16px);
+      opacity: 0.92;
+    }
+
+    .scene-lollipop::after {
+      content: "";
+      position: absolute;
+      left: 38px;
+      top: 74px;
+      width: 8px;
+      height: 54px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #91d8ff, #5ba4ef);
+    }
+
+    .map-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 16px;
+      display: flex;
+      justify-content: flex-end;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .book-btn {
+      width: 0;
+      height: 0;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      box-shadow: none;
+      pointer-events: auto;
+    }
+
+    .book-btn span,
+    .book-btn em { display: none; }
+
+    .map-scroll {
+      position: absolute;
+      inset: 84px 0 0 0;
+      overflow-y: auto;
+      padding-bottom: 80px;
+      scrollbar-width: none;
+    }
+
+    .map-scroll::-webkit-scrollbar { display: none; }
+
+    .map-canvas {
+      position: relative;
+      height: 1680px;
+      width: 100%;
+    }
+
+    .path-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .level-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+    }
+
+    .level-title {
+      position: absolute;
+      left: 50%;
+      top: calc(100% + 8px);
+      transform: translateX(-50%);
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.94);
+      border: 1px solid rgba(255,255,255,0.82);
+      box-shadow: 0 8px 18px rgba(75, 109, 165, 0.18);
+      color: #66738a;
+      font-size: 14px;
+      font-weight: 900;
+      white-space: nowrap;
+      z-index: 4;
+    }
+
+    .level-node {
+      position: relative;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      border: 4px solid rgba(255,255,255,0.92);
+      color: white;
+      font-family: var(--font-display);
+      font-size: 30px;
+      font-weight: 700;
+      transition: transform 140ms ease, filter 140ms ease;
+    }
+
+    .level-node:hover {
+      transform: scale(1.08) translateY(-2px);
+    }
+
+    .level-node.unlocked,
+    .level-node.completed,
+    .level-node.current {
+      width: 110px;
+      height: 110px;
+      border-radius: 999px;
+    }
+
+    .level-node.unlocked {
+      background: linear-gradient(135deg, #8ed2ff, #4096ff);
+      box-shadow: 0 10px 0 #1976d2, 0 12px 22px rgba(0,0,0,0.15);
+    }
+
+    .level-node.completed {
+      background: linear-gradient(135deg, #88e49a, #3eb866);
+      box-shadow: 0 10px 0 #2e7d32, 0 12px 22px rgba(0,0,0,0.15);
+    }
+
+    .level-node.current {
+      background: linear-gradient(135deg, #ffd85f, #ff9738);
+      box-shadow: 0 12px 0 #e65100, 0 0 0 8px rgba(255,255,255,0.16), 0 12px 28px rgba(0,0,0,0.20);
+      filter: drop-shadow(0 0 16px rgba(255,193,7,0.52));
+    }
+
+    .level-node.locked {
+      width: 108px;
+      height: 108px;
+      border: 3px solid rgba(255,255,255,0.55);
+      border-radius: 999px;
+      background: linear-gradient(180deg, #96a2b6, #768296);
+      color: rgba(75, 83, 96, 0.96);
+      box-shadow: inset 0 6px 0 rgba(255,255,255,0.20), 0 8px 0 #a7b1c3;
+      font-size: 30px;
+      cursor: default;
+    }
+
+    .node-core {
+      position: relative;
+      z-index: 2;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.18);
+      font-size: 38px;
+    }
+
+    .node-core.lock {
+      font-size: 42px;
+      opacity: 0.92;
+    }
+
+    .node-highlight {
+      position: absolute;
+      top: 14px;
+      left: 22px;
+      width: 24px;
+      height: 10px;
+      background: rgba(255,255,255,0.42);
+      border-radius: 999px;
+      transform: rotate(-18deg);
+    }
+
+    .node-shadow-base {
+      position: absolute;
+      top: calc(100% - 16px);
+      left: 50%;
+      width: 88px;
+      height: 18px;
+      border-radius: 999px;
+      transform: translateX(-50%);
+      background: rgba(38, 76, 126, 0.22);
+      filter: blur(1px);
+      z-index: 1;
+    }
+
+    .level-pin.current .node-shadow-base { background: rgba(230, 98, 0, 0.28); }
+    .level-pin.completed .node-shadow-base { background: rgba(46, 125, 50, 0.22); }
+
+    .current-avatar {
+      position: absolute;
+      top: -12px;
+      left: 26px;
+      width: 70px;
+      height: 70px;
+      border-radius: 999px;
+      transform: none;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 44% 44%, #3d2511 0 4px, transparent 4.5px),
+        radial-gradient(circle at 58% 44%, #3d2511 0 4px, transparent 4.5px),
+        radial-gradient(circle at 51% 58%, #f4cb93 0 12px, transparent 12.5px),
+        radial-gradient(circle at 50% 62%, #b86b2f 0 8px, transparent 8.5px),
+        linear-gradient(180deg, #845227, #5d3518);
+      border: 3px solid white;
+      box-shadow: 0 10px 18px rgba(65, 94, 143, 0.22);
+      z-index: 5;
+      animation: bob 1.2s infinite ease-in-out;
+    }
+
+    .node-complete {
+      position: absolute;
+      top: -4px;
+      right: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: #33b255;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 16px;
+      font-weight: 900;
+      border: 3px solid white;
+      box-shadow: 0 8px 16px rgba(54, 136, 70, 0.28);
+      z-index: 4;
+    }
+
+    .node-badge {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      min-width: 34px;
+      height: 34px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: white;
+      color: #ff7f42;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 8px 18px rgba(64, 92, 148, 0.20);
+      font-size: 16px;
+      font-weight: 900;
+      white-space: nowrap;
+      z-index: 4;
+    }
+
+    .node-badge.preview {
+      background: linear-gradient(135deg, #ffef9f, #ffd15f);
+      color: #9b6400;
+    }
+
+    .map-return-current,
+    .map-level-zero {
+      position: absolute;
+      z-index: 6;
+      border: 1px solid rgba(255,255,255,0.65);
+      backdrop-filter: blur(6px);
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .map-return-current {
+      left: 50%;
+      bottom: 26px;
+      transform: translateX(-50%);
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.74);
+      color: #5f6d84;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(67, 98, 150, 0.12);
+    }
+
+    .map-level-zero {
+      right: 24px;
+      bottom: 24px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.86);
+      color: #68768b;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(67, 98, 150, 0.14);
+    }
+
+    .result-view {
+      position: relative;
+      min-height: 1080px;
+      padding: 26px 22px 30px;
+      background:
+        radial-gradient(circle at 20% 12%, rgba(255,255,255,0.22), transparent 18%),
+        linear-gradient(180deg, #a881f3 0%, #8d7cff 38%, #73d4ff 100%);
+      overflow: hidden;
+    }
+
+    .stars {
+      position: absolute;
+      inset: 0;
+      opacity: 0.18;
+      background-image:
+        radial-gradient(circle, #fff 1.2px, transparent 1.2px),
+        radial-gradient(circle, #fff 1px, transparent 1px);
+      background-size: 64px 64px, 92px 92px;
+      background-position: 0 0, 22px 18px;
+    }
+
+    .result-title {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      color: white;
+      font-family: var(--font-display);
+      font-size: 48px;
+      line-height: 1;
+      margin: 10px 0 24px;
+      text-shadow: 0 4px 0 #ff7a7a, 0 8px 12px rgba(0,0,0,0.18);
+    }
+
+    .result-stack {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .stat-card {
+      padding: 18px 20px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.92);
+      box-shadow: 0 18px 38px rgba(59, 68, 146, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .stat-main {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .stat-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 24px;
+      background: linear-gradient(180deg, #8bd6ff, #41a2ff);
+    }
+
+    .stat-card strong {
+      display: block;
+      font-size: 20px;
+      color: #5f6f88;
+    }
+
+    .stat-card b {
+      font-family: var(--font-display);
+      font-size: 38px;
+      color: #ff7c44;
+      line-height: 1;
+    }
+
+    .action-stack {
+      display: grid;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 18px;
+      font-family: inherit;
+      font-size: 22px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2cc4f5, #419fff);
+      color: white;
+      box-shadow: 0 10px 0 rgba(27, 130, 194, 0.18);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.96);
+      color: #596983;
+      box-shadow: 0 10px 0 rgba(217, 225, 235, 0.78);
+    }
+
+    .link-lite {
+      text-align: center;
+      color: rgba(255,255,255,0.82);
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .reward-overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .reward-overlay::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(64, 33, 121, 0.44), rgba(24, 111, 173, 0.22));
+      backdrop-filter: blur(4px);
+    }
+
+    .fireworks {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .fireworks span {
+      position: absolute;
+      font-size: 26px;
+      animation: float 3s infinite ease-in-out;
+      opacity: 0.86;
+    }
+
+    .fireworks span:nth-child(1) { top: 12%; left: 14%; animation-delay: 0s; }
+    .fireworks span:nth-child(2) { top: 20%; right: 16%; animation-delay: .4s; }
+    .fireworks span:nth-child(3) { top: 42%; left: 10%; animation-delay: .8s; }
+    .fireworks span:nth-child(4) { top: 44%; right: 12%; animation-delay: 1.2s; }
+    .fireworks span:nth-child(5) { bottom: 22%; left: 18%; animation-delay: 1.6s; }
+    .fireworks span:nth-child(6) { bottom: 14%; right: 16%; animation-delay: 2s; }
+
+    .reward-modal {
+      position: relative;
+      z-index: 1;
+      width: 372px;
+      padding: 6px;
+      border-radius: 42px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.50), rgba(255,255,255,0.16));
+      box-shadow: 0 30px 88px rgba(42, 44, 123, 0.36);
+      transform: rotate(-6deg);
+    }
+
+    .reward-inner {
+      position: relative;
+      overflow: hidden;
+      border-radius: 38px;
+      padding: 26px 22px 22px;
+      background: linear-gradient(180deg, rgba(255,188,94,0.96), rgba(255,129,88,0.96));
+      color: white;
+      text-align: center;
+    }
+
+    .reward-inner::before,
+    .reward-inner::after {
+      content: "✨";
+      position: absolute;
+      font-size: 36px;
+      opacity: 0.30;
+    }
+
+    .reward-inner::before { top: 14px; left: 18px; }
+    .reward-inner::after { bottom: 16px; right: 18px; }
+
+    .reward-avatar {
+      width: 138px;
+      height: 138px;
+      margin: 0 auto 14px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 58px;
+      background: rgba(255,255,255,0.26);
+      border: 4px solid rgba(255,255,255,0.34);
+      box-shadow: inset 0 18px 26px rgba(255,255,255,0.18);
+    }
+
+    .reward-inner h3 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.08;
+      font-weight: 900;
+    }
+
+    .reward-inner p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.72;
+      color: rgba(255,255,255,0.94);
+    }
+
+    .reward-new {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.18);
+      text-align: left;
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 800;
+    }
+
+    .reward-new.hidden { display: none; }
+
+    .growth-module {
+      position: relative;
+      margin-top: 14px;
+      padding: 16px 14px 14px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.18);
+      text-align: left;
+    }
+
+    .exp-badge {
+      position: absolute;
+      top: -12px;
+      left: 14px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: #ffe36d;
+      color: #885500;
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 10px 20px rgba(255,227,109,0.28);
+      animation: pop 1.2s infinite ease-in-out;
+    }
+
+    .growth-head {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .shadow-form {
+      width: 74px;
+      height: 74px;
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      background: rgba(11, 16, 32, 0.28);
+      color: rgba(0,0,0,0.72);
+      font-size: 36px;
+      filter: saturate(0) brightness(0.3);
+    }
+
+    .growth-head strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .growth-head span {
+      display: block;
+      font-size: 12px;
+      line-height: 1.62;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .growth-bar {
+      height: 14px;
+      margin-top: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.24);
+    }
+
+    .growth-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #fff3b6, #ffffff 36%, #7ef0ce 100%);
+      transform-origin: left center;
+      animation: glide 1.9s ease-out infinite;
+    }
+
+    .mystery-box {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(82, 35, 117, 0.24);
+      font-size: 12px;
+      line-height: 1.7;
+      font-weight: 800;
+      text-align: left;
+    }
+
+    .pokedex-view {
+      min-height: 1080px;
+      padding: 22px;
+      background:
+        radial-gradient(circle at 22% 14%, rgba(255,255,255,0.42), transparent 18%),
+        linear-gradient(180deg, #fff8e4 0%, #ffeaa9 22%, #ffd282 100%);
+    }
+
+    .dex-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      gap: 12px;
+    }
+
+    .dex-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .dex-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      color: white;
+      background: linear-gradient(180deg, #ffce68, #ff995c);
+      box-shadow: inset 0 -8px 0 rgba(185, 106, 45, 0.16);
+    }
+
+    .dex-grid {
+      display: grid;
+      grid-template-columns: 230px minmax(0, 1fr);
+      gap: 14px;
+      min-height: 960px;
+    }
+
+    .dex-focus,
+    .dex-list {
+      border-radius: 28px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.8);
+      box-shadow: 0 18px 40px rgba(181, 121, 51, 0.14);
+    }
+
+    .dex-focus {
+      background: linear-gradient(180deg, #ffb858, #ff965e);
+      color: white;
+    }
+
+    .focus-avatar {
+      width: 150px;
+      height: 150px;
+      margin: 18px auto 16px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 64px;
+      background: rgba(255,255,255,0.24);
+      border: 4px solid rgba(255,255,255,0.28);
+    }
+
+    .dex-list {
+      background: rgba(255,255,255,0.90);
+      display: grid;
+      gap: 10px;
+    }
+
+    .evo-stage {
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.82);
+      border: 1px solid var(--line);
+    }
+
+    .evo-stage.locked {
+      opacity: 0.56;
+      filter: grayscale(0.24);
+    }
+
+    .evo-avatar {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      background: linear-gradient(180deg, #fff7d6, #ffd279);
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .status.current { background: rgba(126,240,206,0.22); color: #127766; }
+    .status.done { background: rgba(61,148,255,0.14); color: #0f66c1; }
+    .status.locked { background: rgba(124,140,164,0.16); color: #607085; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(10deg); }
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-8px); }
+    }
+
+    @keyframes pop {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    @keyframes glide {
+      0% { width: var(--bar-start, 40%); }
+      35% { width: var(--bar-end, 52%); }
+      100% { width: var(--bar-end, 52%); }
+    }
+
+    @media (max-width: 1280px) {
+      .layout,
+      .workspace,
+      .preview-note,
+      .metrics,
+      .dex-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .control-panel { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="eyebrow">Frontend Debug Lab</div>
+      <h1>前50关成长链调试台</h1>
+      <p>
+        这不是 PRD，而是一个纯前端状态实验页。没有数据接口，直接内置 1-50 关数据。你可以逐关切换，看地图页、完成页、宠物图鉴三块的真实前端形状。
+        约束写死：地图页只在当前实际效果上优化关卡 icon，完成页保留当前统计卡与按钮，额外奖励全部统一走原“获得新宠物”那张旋转弹卡。
+      </p>
+      <div class="metrics">
+        <div class="metric"><b>50</b><span>逐关内置数据，可直接跳关调试。</span></div>
+        <div class="metric"><b>3</b><span>页面模式：地图页、完成页、宠物图鉴。</span></div>
+        <div class="metric"><b>1</b><span>奖励卡只有一个形态，不再分裂多套壳子。</span></div>
+        <div class="metric"><b>0</b><span>不接接口，不改游戏页，不引入新系统。</span></div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="card">
+        <div class="card-head">
+          <strong>调试控制台</strong>
+          <span>逐关切换、页面切换、弹卡开关、状态覆盖</span>
+        </div>
+        <div class="control-panel">
+          <div class="section">
+            <h2>页面模式</h2>
+            <div class="page-tabs" id="pageTabs"></div>
+          </div>
+
+          <div class="section">
+            <h2>关卡调试</h2>
+            <div class="field">
+              <label for="levelRange">当前关卡</label>
+              <input id="levelRange" type="range" min="1" max="50" value="37">
+            </div>
+            <div class="row" style="grid-template-columns:1fr 110px;align-items:end;">
+              <div class="field">
+                <label for="levelNumber">数字输入</label>
+                <input id="levelNumber" type="number" min="1" max="50" value="37">
+              </div>
+              <div class="kv-item">
+                <strong>当前</strong>
+                <span id="levelCurrent">第37关</span>
+              </div>
+            </div>
+            <div class="quick-levels" id="quickLevels"></div>
+          </div>
+
+          <div class="section">
+            <h2>完成页调试</h2>
+            <div class="field">
+              <label for="resultState">奖励卡状态</label>
+              <select id="resultState">
+                <option value="auto">自动跟随当前关卡</option>
+                <option value="new_reward">强制：新奖励</option>
+                <option value="next_reward">强制：下一资源更近</option>
+                <option value="next_evolution">强制：下一进化更近</option>
+                <option value="finale">强制：终局</option>
+              </select>
+            </div>
+            <div class="field">
+              <label><input id="showModal" type="checkbox" checked> 显示奖励弹卡</label>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>当前关卡数据</h2>
+            <div class="kv" id="levelFacts"></div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="card">
+        <div class="card-head">
+          <strong>状态预览</strong>
+          <span>设备区只放会落地的页面内容；解释与边界都在右侧信息区。</span>
+        </div>
+        <div class="preview-panel">
+          <div class="preview-note">
+            <div class="kv-item"><strong>当前页面</strong><span id="notePage"></span></div>
+            <div class="kv-item"><strong>当前状态</strong><span id="noteState"></span></div>
+            <div class="kv-item"><strong>边界提醒</strong><span id="noteBoundary"></span></div>
+          </div>
+
+          <div class="workspace">
+            <div class="phone-shell" id="phoneShell"></div>
+            <aside class="side-info">
+              <div class="kv-item">
+                <strong>地图页原则</strong>
+                <span>贴当前 `MapScreen` 形状，只改节点 icon。路径、背景、云朵、右上图鉴按钮都不碰。</span>
+              </div>
+              <div class="kv-item">
+                <strong>完成页原则</strong>
+                <span>保留 `ResultScreen` 的统计卡和按钮。额外奖励统一复用 `PetUnlockModal` 的旋转礼花卡。</span>
+              </div>
+              <div class="kv-item">
+                <strong>奖励卡抓手</strong>
+                <span>新奖励可隐藏；成长模块显示“下一形态”与神秘剪影；经验值并入左上角角标；底部统一放“n关后获得xxx”。</span>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const petForms = [
+      { id: 0, name: "蛋", icon: "🥚", unlockLevel: 0, threshold: 0 },
+      { id: 1, name: "形态1", icon: "🐣", unlockLevel: 1, threshold: 10 },
+      { id: 2, name: "形态2", icon: "🦊", unlockLevel: 3, threshold: 30 },
+      { id: 3, name: "形态3", icon: "🐯", unlockLevel: 8, threshold: 94 },
+      { id: 4, name: "形态4", icon: "🦁", unlockLevel: 15, threshold: 184 },
+      { id: 5, name: "形态5", icon: "🐺", unlockLevel: 25, threshold: 334 },
+      { id: 6, name: "形态6", icon: "🐲", unlockLevel: 38, threshold: 548 },
+      { id: 7, name: "形态7", icon: "🦄", unlockLevel: 50, threshold: 780 }
+    ];
+
+    const levelNodes = [
+      { id: 1, top: 240, left: 50 }, { id: 2, top: 228, left: 30 }, { id: 3, top: 222, left: 55 },
+      { id: 4, top: 216, left: 70 }, { id: 5, top: 210, left: 40 }, { id: 6, top: 202, left: 25 },
+      { id: 7, top: 194, left: 45 }, { id: 8, top: 188, left: 65 }, { id: 9, top: 182, left: 35 },
+      { id: 10, top: 174, left: 55 }, { id: 11, top: 168, left: 75 }, { id: 12, top: 162, left: 45 },
+      { id: 13, top: 154, left: 28 }, { id: 14, top: 148, left: 58 }, { id: 15, top: 142, left: 38 },
+      { id: 16, top: 134, left: 22 }, { id: 17, top: 128, left: 48 }, { id: 18, top: 122, left: 68 },
+      { id: 19, top: 116, left: 42 }, { id: 20, top: 110, left: 60 }, { id: 21, top: 102, left: 32 },
+      { id: 22, top: 96, left: 52 }, { id: 23, top: 90, left: 72 }, { id: 24, top: 84, left: 45 },
+      { id: 25, top: 78, left: 28 }, { id: 26, top: 70, left: 50 }, { id: 27, top: 64, left: 35 },
+      { id: 28, top: 58, left: 60 }, { id: 29, top: 52, left: 42 }, { id: 30, top: 46, left: 65 },
+      { id: 31, top: 38, left: 38 }, { id: 32, top: 32, left: 55 }, { id: 33, top: 26, left: 25 },
+      { id: 34, top: 20, left: 48 }, { id: 35, top: 14, left: 70 }, { id: 36, top: 6, left: 42 },
+      { id: 37, top: 0, left: 30 }, { id: 38, top: -6, left: 58 }, { id: 39, top: -12, left: 40 },
+      { id: 40, top: -18, left: 65 }, { id: 41, top: -26, left: 35 }, { id: 42, top: -32, left: 52 },
+      { id: 43, top: -38, left: 22 }, { id: 44, top: -44, left: 48 }, { id: 45, top: -50, left: 68 },
+      { id: 46, top: -58, left: 38 }, { id: 47, top: -64, left: 55 }, { id: 48, top: -70, left: 42 },
+      { id: 49, top: -76, left: 60 }, { id: 50, top: -82, left: 50 }
+    ];
+
+    const levels = [
+      { level: 1, gem: "蓝晶", exp: 10, total: 10, meter: "10/30", toEvolution: 20, reward: "蛋孵化为初始宠物（形态1）", nextReward: "1关后获得攻击特效：橙光I", focus: "new_reward", rewardType: "evolution", rewardIcon: "🐣", nextRewardShort: "橙光I" },
+      { level: 2, gem: "蓝晶", exp: 10, total: 20, meter: "20/30", toEvolution: 10, reward: "攻击特效：橙光I", nextReward: "1关后宠物进化为形态2", focus: "new_reward", rewardType: "sfx", rewardIcon: "✨", nextRewardShort: "形态2" },
+      { level: 3, gem: "蓝晶", exp: 10, total: 30, meter: "30/94", toEvolution: 64, reward: "宠物进化为形态2", nextReward: "2关后获得攻击特效：橙光II", focus: "new_reward", rewardType: "evolution", rewardIcon: "🦊", nextRewardShort: "橙光II" },
+      { level: 4, gem: "蓝晶", exp: 10, total: 40, meter: "40/94", toEvolution: 54, reward: "", nextReward: "1关后获得攻击特效：橙光II", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "橙光II" },
+      { level: 5, gem: "蓝晶", exp: 10, total: 50, meter: "50/94", toEvolution: 44, reward: "攻击特效：橙光II", nextReward: "1关后宝石升级为青晶", focus: "new_reward", rewardType: "sfx", rewardIcon: "✨", nextRewardShort: "青晶" },
+      { level: 6, gem: "青晶", exp: 12, total: 62, meter: "62/94", toEvolution: 32, reward: "宝石升级：青晶", nextReward: "1关后解锁背景：花园小径", focus: "new_reward", rewardType: "gem", rewardIcon: "💎", nextRewardShort: "花园小径" },
+      { level: 7, gem: "青晶", exp: 12, total: 74, meter: "74/94", toEvolution: 20, reward: "背景切换：花园小径", nextReward: "1关后宠物进化为形态3", focus: "new_reward", rewardType: "bg", rewardIcon: "🖼️", nextRewardShort: "形态3" },
+      { level: 8, gem: "青晶", exp: 12, total: 86, meter: "86/184", toEvolution: 98, reward: "宠物进化为形态3", nextReward: "1关后获得攻击特效：橙光III", focus: "new_reward", rewardType: "evolution", rewardIcon: "🐯", nextRewardShort: "橙光III" },
+      { level: 9, gem: "青晶", exp: 12, total: 98, meter: "98/184", toEvolution: 86, reward: "攻击特效：橙光III", nextReward: "2关后获得攻击特效：赤橙I", focus: "new_reward", rewardType: "sfx", rewardIcon: "✨", nextRewardShort: "赤橙I" },
+      { level: 10, gem: "青晶", exp: 12, total: 110, meter: "110/184", toEvolution: 74, reward: "", nextReward: "1关后获得攻击特效：赤橙I", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "赤橙I" },
+      { level: 11, gem: "青晶", exp: 12, total: 122, meter: "122/184", toEvolution: 62, reward: "攻击特效：赤橙I", nextReward: "2关后宝石升级：紫晶", focus: "new_reward", rewardType: "sfx", rewardIcon: "✨", nextRewardShort: "紫晶" },
+      { level: 12, gem: "青晶", exp: 12, total: 134, meter: "134/184", toEvolution: 50, reward: "", nextReward: "1关后宝石升级：紫晶", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "紫晶" },
+      { level: 13, gem: "紫晶", exp: 14, total: 148, meter: "148/184", toEvolution: 36, reward: "宝石升级：紫晶", nextReward: "1关后获得攻击特效：赤橙II", focus: "new_reward", rewardType: "gem", rewardIcon: "💎", nextRewardShort: "赤橙II" },
+      { level: 14, gem: "紫晶", exp: 14, total: 162, meter: "162/184", toEvolution: 22, reward: "攻击特效：赤橙II", nextReward: "1关后宠物进化为形态4", focus: "new_reward", rewardType: "sfx", rewardIcon: "✨", nextRewardShort: "形态4" },
+      { level: 15, gem: "紫晶", exp: 14, total: 176, meter: "176/334", toEvolution: 158, reward: "宠物进化为形态4", nextReward: "2关后解锁背景：森林空地", focus: "new_reward", rewardType: "evolution", rewardIcon: "🦁", nextRewardShort: "森林空地" },
+      { level: 16, gem: "紫晶", exp: 14, total: 190, meter: "190/334", toEvolution: 144, reward: "", nextReward: "1关后解锁背景：森林空地", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "森林空地" },
+      { level: 17, gem: "紫晶", exp: 14, total: 204, meter: "204/334", toEvolution: 130, reward: "背景切换：森林空地", nextReward: "2关后获得攻击特效：紫光I", focus: "new_reward", rewardType: "bg", rewardIcon: "🖼️", nextRewardShort: "紫光I" },
+      { level: 18, gem: "紫晶", exp: 14, total: 218, meter: "218/334", toEvolution: 116, reward: "", nextReward: "1关后获得攻击特效：紫光I", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "紫光I" },
+      { level: 19, gem: "紫晶", exp: 14, total: 232, meter: "232/334", toEvolution: 102, reward: "攻击特效：紫光I", nextReward: "2关后宝石升级：赤晶", focus: "new_reward", rewardType: "sfx", rewardIcon: "✨", nextRewardShort: "赤晶" },
+      { level: 20, gem: "紫晶", exp: 14, total: 246, meter: "246/334", toEvolution: 88, reward: "", nextReward: "1关后宝石升级：赤晶", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "赤晶" },
+      { level: 21, gem: "赤晶", exp: 16, total: 262, meter: "262/334", toEvolution: 72, reward: "宝石升级：赤晶", nextReward: "2关后获得攻击特效：紫光II", focus: "new_reward", rewardType: "gem", rewardIcon: "💎", nextRewardShort: "紫光II" },
+      { level: 22, gem: "赤晶", exp: 16, total: 278, meter: "278/334", toEvolution: 56, reward: "", nextReward: "1关后获得攻击特效：紫光II", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "紫光II" },
+      { level: 23, gem: "赤晶", exp: 16, total: 294, meter: "294/334", toEvolution: 40, reward: "攻击特效：紫光II", nextReward: "2关后宠物进化为形态5", focus: "new_reward", rewardType: "sfx", rewardIcon: "✨", nextRewardShort: "形态5" },
+      { level: 24, gem: "赤晶", exp: 16, total: 310, meter: "310/334", toEvolution: 24, reward: "", nextReward: "1关后宠物进化为形态5", focus: "next_evolution", rewardType: "none", rewardIcon: "", nextRewardShort: "形态5" },
+      { level: 25, gem: "赤晶", exp: 16, total: 326, meter: "326/548", toEvolution: 222, reward: "宠物进化为形态5", nextReward: "1关后解锁背景：暮色林地", focus: "new_reward", rewardType: "evolution", rewardIcon: "🐺", nextRewardShort: "暮色林地" },
+      { level: 26, gem: "赤晶", exp: 16, total: 342, meter: "342/548", toEvolution: 206, reward: "背景切换：暮色林地", nextReward: "2关后获得攻击特效：蓝白I", focus: "new_reward", rewardType: "bg", rewardIcon: "🖼️", nextRewardShort: "蓝白I" },
+      { level: 27, gem: "赤晶", exp: 16, total: 358, meter: "358/548", toEvolution: 190, reward: "", nextReward: "1关后获得攻击特效：蓝白I", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "蓝白I" },
+      { level: 28, gem: "赤晶", exp: 16, total: 374, meter: "374/548", toEvolution: 174, reward: "攻击特效：蓝白I", nextReward: "3关后宝石升级：金晶", focus: "new_reward", rewardType: "sfx", rewardIcon: "✨", nextRewardShort: "金晶" },
+      { level: 29, gem: "赤晶", exp: 16, total: 390, meter: "390/548", toEvolution: 158, reward: "", nextReward: "2关后宝石升级：金晶", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "金晶" },
+      { level: 30, gem: "赤晶", exp: 16, total: 406, meter: "406/548", toEvolution: 142, reward: "", nextReward: "1关后宝石升级：金晶", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "金晶" },
+      { level: 31, gem: "金晶", exp: 18, total: 424, meter: "424/548", toEvolution: 124, reward: "宝石升级：金晶", nextReward: "2关后获得攻击特效：蓝白II", focus: "new_reward", rewardType: "gem", rewardIcon: "💎", nextRewardShort: "蓝白II" },
+      { level: 32, gem: "金晶", exp: 18, total: 442, meter: "442/548", toEvolution: 106, reward: "", nextReward: "1关后获得攻击特效：蓝白II", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "蓝白II" },
+      { level: 33, gem: "金晶", exp: 18, total: 460, meter: "460/548", toEvolution: 88, reward: "攻击特效：蓝白II", nextReward: "2关后解锁背景：夜色秘境", focus: "new_reward", rewardType: "sfx", rewardIcon: "✨", nextRewardShort: "夜色秘境" },
+      { level: 34, gem: "金晶", exp: 18, total: 478, meter: "478/548", toEvolution: 70, reward: "", nextReward: "1关后解锁背景：夜色秘境", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "夜色秘境" },
+      { level: 35, gem: "金晶", exp: 18, total: 496, meter: "496/548", toEvolution: 52, reward: "背景切换：夜色秘境", nextReward: "2关后获得攻击特效：金白I", focus: "new_reward", rewardType: "bg", rewardIcon: "🖼️", nextRewardShort: "金白I" },
+      { level: 36, gem: "金晶", exp: 18, total: 514, meter: "514/548", toEvolution: 34, reward: "", nextReward: "1关后获得攻击特效：金白I", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "金白I" },
+      { level: 37, gem: "金晶", exp: 18, total: 532, meter: "532/548", toEvolution: 16, reward: "攻击特效：金白I", nextReward: "1关后宠物进化为形态6", focus: "new_reward", rewardType: "sfx", rewardIcon: "✨", nextRewardShort: "形态6" },
+      { level: 38, gem: "金晶", exp: 18, total: 550, meter: "550/780", toEvolution: 230, reward: "宠物进化为形态6", nextReward: "2关后虹晶预告", focus: "new_reward", rewardType: "evolution", rewardIcon: "🐲", nextRewardShort: "虹晶预告" },
+      { level: 39, gem: "金晶", exp: 18, total: 568, meter: "568/780", toEvolution: 212, reward: "", nextReward: "1关后虹晶预告", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "虹晶预告" },
+      { level: 40, gem: "金晶", exp: 18, total: 586, meter: "586/780", toEvolution: 194, reward: "虹晶预告 / 宝石高亮变化", nextReward: "1关后宝石升级：虹晶", focus: "new_reward", rewardType: "gem", rewardIcon: "💎", nextRewardShort: "虹晶" },
+      { level: 41, gem: "虹晶", exp: 20, total: 606, meter: "606/780", toEvolution: 174, reward: "宝石升级：虹晶", nextReward: "2关后获得攻击特效：金白II", focus: "new_reward", rewardType: "gem", rewardIcon: "💎", nextRewardShort: "金白II" },
+      { level: 42, gem: "虹晶", exp: 20, total: 626, meter: "626/780", toEvolution: 154, reward: "", nextReward: "1关后获得攻击特效：金白II", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "金白II" },
+      { level: 43, gem: "虹晶", exp: 20, total: 646, meter: "646/780", toEvolution: 134, reward: "攻击特效：金白II", nextReward: "2关后解锁背景：终点圣坛", focus: "new_reward", rewardType: "sfx", rewardIcon: "✨", nextRewardShort: "终点圣坛" },
+      { level: 44, gem: "虹晶", exp: 20, total: 666, meter: "666/780", toEvolution: 114, reward: "", nextReward: "1关后解锁背景：终点圣坛", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "终点圣坛" },
+      { level: 45, gem: "虹晶", exp: 20, total: 686, meter: "686/780", toEvolution: 94, reward: "背景切换：终点圣坛", nextReward: "2关后获得攻击特效：白金终章光", focus: "new_reward", rewardType: "bg", rewardIcon: "🖼️", nextRewardShort: "白金终章光" },
+      { level: 46, gem: "虹晶", exp: 20, total: 706, meter: "706/780", toEvolution: 74, reward: "", nextReward: "1关后获得攻击特效：白金终章光", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "白金终章光" },
+      { level: 47, gem: "虹晶", exp: 20, total: 726, meter: "726/780", toEvolution: 54, reward: "攻击特效：白金终章光", nextReward: "3关后宠物进化为最终形态7", focus: "new_reward", rewardType: "sfx", rewardIcon: "✨", nextRewardShort: "形态7" },
+      { level: 48, gem: "虹晶", exp: 20, total: 746, meter: "746/780", toEvolution: 34, reward: "", nextReward: "2关后宠物进化为最终形态7", focus: "next_reward", rewardType: "none", rewardIcon: "", nextRewardShort: "形态7" },
+      { level: 49, gem: "虹晶", exp: 20, total: 766, meter: "766/780", toEvolution: 14, reward: "", nextReward: "1关后宠物进化为最终形态7", focus: "next_evolution", rewardType: "none", rewardIcon: "", nextRewardShort: "形态7" },
+      { level: 50, gem: "虹晶", exp: 20, total: 786, meter: "786/786", toEvolution: 0, reward: "宠物进化为最终形态7", nextReward: "前50关成长链完成", focus: "finale", rewardType: "evolution", rewardIcon: "🦄", nextRewardShort: "成长链完成" }
+    ];
+
+    const pageInfo = {
+      map: {
+        label: "地图页",
+        boundary: "直接贴 MapScreen 实装形状，只改关卡节点 icon。"
+      },
+      result: {
+        label: "完成页",
+        boundary: "保留 ResultScreen 统计卡与按钮，只叠加原弹卡。"
+      },
+      pokedex: {
+        label: "宠物图鉴",
+        boundary: "围绕成长链重排，不引入新系统。"
+      }
+    };
+
+    const state = {
+      page: "map",
+      level: 37,
+      resultState: "auto",
+      showModal: true
+    };
+
+    const pageTabs = document.getElementById("pageTabs");
+    const quickLevels = document.getElementById("quickLevels");
+    const levelRange = document.getElementById("levelRange");
+    const levelNumber = document.getElementById("levelNumber");
+    const resultState = document.getElementById("resultState");
+    const showModal = document.getElementById("showModal");
+    const levelCurrent = document.getElementById("levelCurrent");
+    const levelFacts = document.getElementById("levelFacts");
+    const phoneShell = document.getElementById("phoneShell");
+    const notePage = document.getElementById("notePage");
+    const noteState = document.getElementById("noteState");
+    const noteBoundary = document.getElementById("noteBoundary");
+
+    function getLevelData(level) {
+      return levels.find((item) => item.level === level) || levels[0];
+    }
+
+    function getCurrentForm(level) {
+      return petForms.slice().reverse().find((form) => level >= form.unlockLevel) || petForms[0];
+    }
+
+    function getNextForm(level) {
+      return petForms.find((form) => level < form.unlockLevel) || petForms[petForms.length - 1];
+    }
+
+    function getUnlockedLevels(level) {
+      const unlocked = [0];
+      for (let i = 1; i <= Math.min(50, level); i += 1) {
+        unlocked.push(i);
+      }
+      return unlocked;
+    }
+
+    function getFocusClass(focus) {
+      return focus === "new_reward" ? "focus-new"
+        : focus === "next_reward" ? "focus-reward"
+        : focus === "next_evolution" ? "focus-evo"
+        : "focus-finale";
+    }
+
+    function getRenderResultState(levelData) {
+      return state.resultState === "auto" ? levelData.focus : state.resultState;
+    }
+
+    function renderPageTabs() {
+      pageTabs.innerHTML = Object.entries(pageInfo).map(([key, item]) => `
+        <button class="tab ${state.page === key ? "active" : ""}" data-page="${key}">${item.label}</button>
+      `).join("");
+    }
+
+    function renderQuickLevels() {
+      [1, 7, 8, 15, 24, 25, 37, 38, 49, 50].forEach((level) => {
+        const button = document.createElement("button");
+        button.className = `chip ${state.level === level ? "active" : ""}`;
+        button.textContent = `${level}关`;
+        button.onclick = () => updateLevel(level);
+        quickLevels.appendChild(button);
+      });
+    }
+
+    function updateLevel(level) {
+      const clamped = Math.max(1, Math.min(50, Number(level) || 1));
+      state.level = clamped;
+      levelRange.value = clamped;
+      levelNumber.value = clamped;
+      render();
+    }
+
+    function renderFacts(levelData) {
+      const currentForm = getCurrentForm(levelData.level);
+      const nextForm = getNextForm(levelData.level);
+      const resultFocus = getRenderResultState(levelData);
+      levelCurrent.textContent = `第${levelData.level}关`;
+      levelFacts.innerHTML = `
+        <div class="kv-item"><strong>当前资源</strong><span>${levelData.reward || "无新奖励"}</span></div>
+        <div class="kv-item"><strong>下一资源</strong><span>${levelData.nextReward}</span></div>
+        <div class="kv-item"><strong>成长进度</strong><span>${currentForm.name} → ${nextForm.name} · ${levelData.meter}</span></div>
+        <div class="kv-item"><strong>完成页焦点</strong><span><i class="focus-chip ${getFocusClass(resultFocus)}">${resultFocus}</i></span></div>
+      `;
+    }
+
+    function renderMap(levelData) {
+      const unlockedLevels = getUnlockedLevels(levelData.level);
+      return `
+        <div class="map-view">
+          <div class="map-bg"></div>
+          <div class="map-scene">
+            <div class="scene-candy"></div>
+            <div class="scene-shop"></div>
+            <div class="scene-arch">宠物图鉴</div>
+            <div class="scene-lollipop"></div>
+          </div>
+          <div class="map-top"><div class="book-btn"><span>📘</span><em>图鉴</em></div></div>
+          <div class="map-scroll" id="mapScroll">
+            <div class="map-canvas">
+              <svg class="path-layer" viewBox="0 0 100 1044" preserveAspectRatio="none" aria-hidden="true">
+                <path d="${buildPathD()}" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" transform="translate(0.2, 0.2)"/>
+                <path d="${buildPathD()}" fill="none" stroke="#8D6E63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="${buildPathD()}" fill="none" stroke="#A1887F" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.2 1"/>
+              </svg>
+              ${levelNodes.map((node) => renderNode(node, unlockedLevels)).join("")}
+            </div>
+          </div>
+          <button class="map-return-current" data-action="return-current">返回当前关卡</button>
+          <button class="map-level-zero" data-action="goto-zero">第0关</button>
+        </div>
+      `;
+    }
+
+    function buildPathD() {
+      let d = "";
+      levelNodes.forEach((current, index) => {
+        const x = current.left;
+        const y = current.top + 804;
+        if (index === 0) {
+          d += `M ${x} ${y}`;
+        } else {
+          const prev = levelNodes[index - 1];
+          const prevY = prev.top + 804;
+          const deltaX = current.left - prev.left;
+          const midY = (prevY + y) / 2;
+          const cp1x = prev.left + deltaX * 0.3;
+          const cp1y = prevY - (prevY - y) * 0.2;
+          const cp2x = current.left - deltaX * 0.3;
+          const cp2y = midY;
+          d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x} ${y}`;
+        }
+      });
+      return d;
+    }
+
+    function getNodeClass(levelItem) {
+      if (levelItem.rewardType === "evolution") return "evolution";
+      if (levelItem.rewardType === "sfx" || levelItem.rewardType === "gem" || levelItem.rewardType === "bg") return "reward";
+      if ([7, 14, 24, 37, 49].includes(levelItem.level)) return "preview";
+      return "";
+    }
+
+    function getNodeBadge(levelItem) {
+      if (levelItem.rewardType === "evolution") return "★";
+      if (levelItem.rewardType === "gem") return "💎";
+      if (levelItem.rewardType === "bg") return "🖼";
+      if (levelItem.rewardType === "sfx") return "✨";
+      if ([7, 14, 24, 37, 49].includes(levelItem.level)) return "!";
+      return "";
+    }
+
+    function getLevelTitle(levelItem) {
+      if (levelItem.level === 1) return "1. 第1关";
+      if (levelItem.level % 5 === 0) return `${levelItem.level}. 第${levelItem.level}关`;
+      return "";
+    }
+
+    function renderNode(node, unlockedLevels) {
+      const levelItem = getLevelData(node.id);
+      const highestUnlocked = Math.max(...unlockedLevels, 0);
+      const isUnlocked = unlockedLevels.includes(node.id);
+      const isCurrent = highestUnlocked === node.id && isUnlocked;
+      const isCompleted = unlockedLevels.includes(node.id + 1);
+      const badge = getNodeBadge(levelItem);
+      const title = getLevelTitle(levelItem);
+      const pinClass = isCurrent ? "current" : isCompleted ? "completed" : isUnlocked ? "unlocked" : "locked";
+      const cssTopPercent = ((node.top + 804) / 1044) * 100;
+      return `
+        <div class="level-pin ${pinClass}" style="left:${node.left}%;top:${cssTopPercent}%">
+          ${title ? `<div class="level-title">${title}</div>` : ""}
+          ${isCurrent ? `<div class="current-avatar"></div>` : ""}
+          <div class="node-shadow-base"></div>
+          <button
+            class="level-node ${pinClass}"
+            data-level="${node.id}"
+            title="第${node.id}关"
+            ${isUnlocked ? "" : "disabled"}
+          >
+            ${isCompleted ? `<span class="node-complete">✓</span>` : ""}
+            <span class="node-core ${isUnlocked ? "" : "lock"}">${isUnlocked ? node.id : "🔒"}</span>
+            ${isUnlocked ? `<span class="node-highlight"></span>` : ""}
+            ${isUnlocked && badge ? `<span class="node-badge ${[7, 14, 24, 37, 49].includes(levelItem.level) ? "preview" : ""}">${badge}</span>` : ""}
+          </button>
+        </div>
+      `;
+    }
+
+    function renderResult(levelData) {
+      const renderState = getRenderResultState(levelData);
+      const currentForm = getCurrentForm(levelData.level);
+      const nextForm = getNextForm(levelData.level);
+      const modalData = getRewardModalData(levelData, renderState, nextForm);
+      return `
+        <div class="result-view">
+          <div class="stars"></div>
+          <div class="result-title">${getEmotionalText(levelData.level)}</div>
+          <div class="result-stack">
+            <div class="stat-card">
+              <div class="stat-main"><div class="stat-icon">⏱</div><strong>闯关时间</strong></div>
+              <b>00:28</b>
+            </div>
+            <div class="stat-card">
+              <div class="stat-main"><div class="stat-icon" style="background:linear-gradient(180deg,#ffbf57,#ff8f52)">✓</div><strong>正确率</strong></div>
+              <b>100%</b>
+            </div>
+            <div class="stat-card">
+              <div class="stat-main"><div class="stat-icon" style="background:linear-gradient(180deg,#af98ff,#8670ff)">⚡</div><strong>最高连击</strong></div>
+              <b>10连</b>
+            </div>
+            <div class="action-stack">
+              <button class="btn-primary">下一关</button>
+              <button class="btn-secondary">返回路线</button>
+              <div class="link-lite">查看图鉴</div>
+            </div>
+          </div>
+          ${state.showModal ? renderRewardModal(modalData, currentForm, nextForm) : ""}
+        </div>
+      `;
+    }
+
+    function getEmotionalText(level) {
+      if (level === 50) return "最终爆发！";
+      if ([8, 15, 25, 38].includes(level)) return "伙伴成长完成！";
+      if ([7, 14, 24, 37, 49].includes(level)) return "再来一关！";
+      return "闯关成功！";
+    }
+
+    function getRewardModalData(levelData, renderState, nextForm) {
+      const base = {
+        avatar: levelData.rewardIcon || "🎁",
+        title: levelData.reward ? levelData.reward : "很快又有新东西！",
+        copy: "所有额外奖励与提示都统一走这张原“获得新宠物”风格的旋转礼花卡，不再拆多套壳子。",
+        newReward: levelData.reward,
+        exp: levelData.exp,
+        nextForm,
+        progressText: `下一形态：${nextForm.name} · ${levelData.meter} · 还差 ${levelData.toEvolution} 经验`,
+        progressStart: getProgress(levelData.level, false),
+        progressEnd: getProgress(levelData.level, true),
+        mystery: levelData.nextReward
+      };
+
+      if (renderState === "new_reward") {
+        return {
+          ...base,
+          title: levelData.reward || "获得新奖励！",
+          avatar: levelData.rewardIcon || "🎉",
+          copy: "新奖励有则显示，无则不显示。奖励说明放在卡片顶部，成长模块继续推动下一形态。",
+          newReward: levelData.reward
+        };
+      }
+
+      if (renderState === "next_reward") {
+        return {
+          ...base,
+          avatar: "🎁",
+          title: "很快又有新东西！",
+          copy: "进化还远时，不硬推遥远目标。直接用“n关后获得xxx”把玩家继续往下拉。",
+          newReward: ""
+        };
+      }
+
+      if (renderState === "next_evolution") {
+        return {
+          ...base,
+          avatar: "🧬",
+          title: "再来一关，宠物就会进化",
+          copy: "成长模块显示具体下一形态，而不是最终形态兜底。经验值单独模块取消，只保留左上角经验角标与进度条动效。",
+          newReward: ""
+        };
+      }
+
+      return {
+        ...base,
+        avatar: "🦄",
+        title: "宠物进化为最终形态7",
+        copy: "第50关也不换卡壳，仍然用这张礼花卡完成终局高潮。只是内容切到前50关成长链完成。",
+        newReward: levelData.reward,
+        progressText: "前50关成长链完成 · 786 / 786",
+        mystery: "后续仍可继续挑战更高关卡"
+      };
+    }
+
+    function getProgress(level, end) {
+      const levelData = getLevelData(level);
+      const nextForm = getNextForm(level);
+      if (!nextForm || nextForm.threshold === 0) return "100%";
+      const total = nextForm.threshold;
+      const current = levelData.total - levelData.exp;
+      const next = levelData.total;
+      const ratio = Math.max(0, Math.min(1, (end ? next : current) / total));
+      return `${Math.round(ratio * 100)}%`;
+    }
+
+    function renderRewardModal(modalData, currentForm, nextForm) {
+      const rewardClass = modalData.newReward ? "" : "hidden";
+      return `
+        <div class="reward-overlay">
+          <div class="fireworks">
+            <span>✨</span><span>🎉</span><span>⭐</span><span>💫</span><span>🎊</span><span>✨</span>
+          </div>
+          <div class="reward-modal">
+            <div class="reward-inner">
+              <div class="reward-avatar">${modalData.avatar}</div>
+              <h3>${modalData.title}</h3>
+              <p>${modalData.copy}</p>
+              <div class="reward-new ${rewardClass}">
+                <strong style="display:block;margin-bottom:4px;">新奖励</strong>
+                ${modalData.newReward || ""}
+              </div>
+              <div class="growth-module">
+                <div class="exp-badge">经验 +${modalData.exp}</div>
+                <div class="growth-head">
+                  <div class="shadow-form">${modalData.nextForm.icon}</div>
+                  <div>
+                    <strong>宠物成长 · 下一形态</strong>
+                    <span>${modalData.progressText}</span>
+                  </div>
+                </div>
+                <div class="growth-bar">
+                  <div class="growth-fill" style="--bar-start:${modalData.progressStart};--bar-end:${modalData.progressEnd};width:${modalData.progressEnd};"></div>
+                </div>
+                <div class="mystery-box">n关后，获得xxx（神秘黑盒奖励）<br>${modalData.mystery}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPokedex(levelData) {
+      const currentForm = getCurrentForm(levelData.level);
+      const nextForm = getNextForm(levelData.level);
+      return `
+        <div class="pokedex-view">
+          <div class="dex-top">
+            <div class="dex-title">
+              <div class="dex-icon">📖</div>
+              <div>
+                <strong style="display:block;font-size:28px;line-height:1.1;">宠物图鉴</strong>
+                <span style="display:block;color:#8e6c3d;font-size:12px;font-weight:700;">长线成长确认页</span>
+              </div>
+            </div>
+            <span class="focus-chip focus-evo">${currentForm.name}</span>
+          </div>
+          <div class="dex-grid">
+            <div class="dex-focus">
+              <div style="font-size:12px;font-weight:900;color:rgba(255,255,255,0.82);">当前出战伙伴</div>
+              <div class="focus-avatar">${currentForm.icon}</div>
+              <div style="text-align:center">
+                <strong style="display:block;font-size:28px;margin-bottom:8px;">${currentForm.name}</strong>
+                <div style="font-size:13px;line-height:1.72;color:rgba(255,255,255,0.94);">
+                  当前关卡：第${levelData.level}关<br>
+                  累计经验：${levelData.total}<br>
+                  下一形态：${nextForm.name}<br>
+                  还差 ${levelData.toEvolution} 经验
+                </div>
+              </div>
+            </div>
+            <div class="dex-list">
+              ${petForms.map((form) => renderDexStage(form, currentForm, levelData)).join("")}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDexStage(form, currentForm, levelData) {
+      const unlocked = levelData.level >= form.unlockLevel;
+      const isCurrent = currentForm.id === form.id;
+      const status = isCurrent ? `<span class="status current">当前形态</span>` :
+        unlocked ? `<span class="status done">已解锁</span>` :
+        `<span class="status locked">还差 ${Math.max(0, form.threshold - levelData.total)}</span>`;
+      return `
+        <div class="evo-stage ${!unlocked ? "locked" : ""}">
+          <div class="evo-avatar">${form.icon}</div>
+          <div>
+            <strong style="display:block;font-size:14px;color:var(--ink);">${form.name} · 第${form.unlockLevel || "初始"}关</strong>
+            <span style="display:block;font-size:12px;line-height:1.6;color:var(--copy);">累计经验阈值：${form.threshold || "起始"}</span>
+          </div>
+          ${status}
+        </div>
+      `;
+    }
+
+    function render() {
+      const levelData = getLevelData(state.level);
+      renderPageTabs();
+      levelRange.value = state.level;
+      levelNumber.value = state.level;
+      renderFacts(levelData);
+
+      notePage.textContent = pageInfo[state.page].label;
+      noteBoundary.textContent = pageInfo[state.page].boundary;
+      noteState.innerHTML = `<span class="focus-chip ${getFocusClass(getRenderResultState(levelData))}">${state.page === "result" ? getRenderResultState(levelData) : "level-" + state.level}</span>`;
+
+      if (state.page === "map") {
+        phoneShell.innerHTML = renderMap(levelData);
+        attachMapNodeClicks();
+        requestAnimationFrame(scrollMapToLevel);
+      } else if (state.page === "result") {
+        phoneShell.innerHTML = renderResult(levelData);
+      } else {
+        phoneShell.innerHTML = renderPokedex(levelData);
+      }
+
+      refreshQuickLevels();
+    }
+
+    function refreshQuickLevels() {
+      [...quickLevels.children].forEach((el) => {
+        el.classList.toggle("active", Number(el.textContent.replace("关", "")) === state.level);
+      });
+    }
+
+    function attachMapNodeClicks() {
+      phoneShell.querySelectorAll(".level-node:not(.locked)").forEach((button) => {
+        button.addEventListener("click", () => updateLevel(Number(button.dataset.level)));
+      });
+      const returnCurrent = phoneShell.querySelector('[data-action="return-current"]');
+      const levelZero = phoneShell.querySelector('[data-action="goto-zero"]');
+      if (returnCurrent) {
+        returnCurrent.addEventListener("click", scrollMapToLevel);
+      }
+      if (levelZero) {
+        levelZero.addEventListener("click", () => updateLevel(1));
+      }
+    }
+
+    function scrollMapToLevel() {
+      const scroll = document.getElementById("mapScroll");
+      const current = phoneShell.querySelector(`.level-node[data-level="${state.level}"]`);
+      if (!scroll || !current) return;
+      const top = current.offsetTop - scroll.clientHeight * 0.45;
+      scroll.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    }
+
+    pageTabs.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-page]");
+      if (!target) return;
+      state.page = target.dataset.page;
+      render();
+    });
+
+    levelRange.addEventListener("input", (event) => updateLevel(event.target.value));
+    levelNumber.addEventListener("change", (event) => updateLevel(event.target.value));
+    resultState.addEventListener("change", (event) => {
+      state.resultState = event.target.value;
+      render();
+    });
+    showModal.addEventListener("change", (event) => {
+      state.showModal = event.target.checked;
+      render();
+    });
+
+    renderQuickLevels();
+    render();
+  </script>
+</body>
+</html>

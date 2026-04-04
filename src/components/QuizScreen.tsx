@@ -656,13 +656,15 @@ export default function QuizScreen({
   levelId,
   selectedPet,
   onFinish,
-  onBack
+  onBack,
+  showDebugTools = false,
 }: {
   gradeId?: string;
   levelId: number;
   selectedPet: any;
   onFinish: (stats: any) => void;
   onBack: () => void;
+  showDebugTools?: boolean;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
@@ -936,6 +938,13 @@ export default function QuizScreen({
         setAnswers(Array(question.answerLength).fill(''));
       });
     }
+  };
+
+  const handleDebugSolveCurrent = () => {
+    if (!question || feedback === 'correct' || feedback === 'wrong') return;
+    void primeBattleSfx();
+    setSelectedChoice(question.answer);
+    registerCorrectAnswer(combo + 1);
   };
 
   useEffect(() => {
@@ -1358,6 +1367,17 @@ export default function QuizScreen({
           {currentIndex + 1}/{questions.length}
         </div>
       </div>
+
+      {showDebugTools && (
+        <div className="absolute right-4 top-20 z-20">
+          <button
+            onClick={handleDebugSolveCurrent}
+            className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-black text-white shadow-[0_8px_0_rgba(5,150,105,0.2)] active:translate-y-[2px]"
+          >
+            一键答对
+          </button>
+        </div>
+      )}
 
       {/* Main Area */}
       <div className="flex-1 min-h-0 flex flex-col px-4 pb-0 pt-1 relative z-10">

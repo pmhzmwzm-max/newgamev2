@@ -1,0 +1,1929 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>前50关成长上瘾机制 PRD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --sky: #72c9ff;
+      --sky-deep: #42a4ff;
+      --mint: #7cefd2;
+      --sun: #ffd55c;
+      --orange: #ff8d51;
+      --rose: #ff5c8a;
+      --violet: #8a72ff;
+      --ink: #20304a;
+      --copy: #44536b;
+      --soft: #7c8ba3;
+      --line: rgba(33, 58, 102, 0.09);
+      --panel: rgba(255, 255, 255, 0.88);
+      --paper: #f5fbff;
+      --font-display: "Fredoka", sans-serif;
+      --font-body: "Noto Sans SC", sans-serif;
+      --shadow: 0 26px 70px rgba(55, 110, 179, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(114, 201, 255, 0.22), transparent 24%),
+        radial-gradient(circle at 85% 10%, rgba(255, 213, 92, 0.14), transparent 20%),
+        linear-gradient(180deg, #f9fdff 0%, #eef7ff 100%);
+    }
+
+    .page {
+      max-width: 1560px;
+      margin: 0 auto;
+      padding: 28px 24px 40px;
+    }
+
+    .hero {
+      border-radius: 32px;
+      padding: 28px 30px;
+      background:
+        radial-gradient(circle at 15% 18%, rgba(255,255,255,0.58), transparent 24%),
+        linear-gradient(135deg, rgba(114, 201, 255, 0.18), rgba(124, 239, 210, 0.16));
+      border: 1px solid rgba(66, 164, 255, 0.16);
+      box-shadow: 0 24px 56px rgba(66, 164, 255, 0.08);
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(66, 164, 255, 0.12);
+      color: #0f72d2;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 16px 0 12px;
+      font-family: var(--font-display);
+      font-size: 42px;
+      line-height: 1.05;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 88ch;
+      color: var(--copy);
+      line-height: 1.8;
+      font-size: 15px;
+    }
+
+    .hero-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .hero-metric {
+      padding: 14px 12px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(255,255,255,0.7);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+
+    .hero-metric b {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+
+    .hero-metric span {
+      color: var(--soft);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 560px minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .card {
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .card-head {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.78);
+    }
+
+    .card-head strong {
+      display: block;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .card-head span {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--soft);
+    }
+
+    .spec {
+      padding: 16px;
+      max-height: calc(100vh - 118px);
+      overflow: auto;
+      display: grid;
+      gap: 14px;
+    }
+
+    .section {
+      padding: 16px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,252,255,0.92));
+    }
+
+    .section h2 {
+      margin: 0 0 10px;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .section p,
+    .section li,
+    .section td,
+    .section th {
+      font-size: 13px;
+      line-height: 1.68;
+      color: var(--copy);
+    }
+
+    .section ul,
+    .section ol {
+      margin: 10px 0 0;
+      padding-left: 20px;
+    }
+
+    .callout {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(114, 201, 255, 0.12), rgba(124, 239, 210, 0.14));
+      border: 1px solid rgba(66, 164, 255, 0.14);
+    }
+
+    .boundary-grid,
+    .pill-grid,
+    .logic-grid,
+    .preview-grid,
+    .legend {
+      display: grid;
+      gap: 10px;
+    }
+
+    .boundary-grid,
+    .pill-grid,
+    .preview-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .boundary-item,
+    .pill,
+    .logic,
+    .preview-item {
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.82);
+    }
+
+    .boundary-item strong,
+    .pill strong,
+    .logic strong,
+    .preview-item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .boundary-item.good {
+      background: linear-gradient(180deg, rgba(124,239,210,0.18), rgba(255,255,255,0.86));
+    }
+
+    .boundary-item.bad {
+      background: linear-gradient(180deg, rgba(255,92,138,0.12), rgba(255,255,255,0.86));
+    }
+
+    .phase-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .phase {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    .phase .tag,
+    .stage .tag {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: white;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .tag.phase-early { background: linear-gradient(135deg, #42a4ff, #59c4ff); }
+    .tag.phase-mid { background: linear-gradient(135deg, #8a72ff, #5f95ff); }
+    .tag.phase-late { background: linear-gradient(135deg, #ff8d51, #ff5c8a); }
+
+    .stage-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: 100px minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    .tag.egg { background: linear-gradient(135deg, #ffd55c, #ffb249); }
+    .tag.grow { background: linear-gradient(135deg, #42a4ff, #7cefd2); }
+    .tag.final { background: linear-gradient(135deg, #ff8d51, #ff5c8a); }
+
+    .dual-table {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 8px 10px;
+      vertical-align: top;
+      border-bottom: 1px solid rgba(33, 58, 102, 0.08);
+      text-align: left;
+    }
+
+    th {
+      font-size: 12px;
+      color: var(--ink);
+      font-weight: 900;
+      background: rgba(114, 201, 255, 0.1);
+      position: sticky;
+      top: 0;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      overflow: auto;
+      max-height: 620px;
+      background: white;
+    }
+
+    .focus-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .focus-new { background: rgba(124,239,210,0.2); color: #157768; }
+    .focus-reward { background: rgba(255,213,92,0.22); color: #9a6900; }
+    .focus-evo { background: rgba(138,114,255,0.18); color: #5641c9; }
+    .focus-finale { background: rgba(255,92,138,0.18); color: #b61851; }
+
+    .prototype {
+      padding: 16px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .mode-tabs,
+    .state-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .mode-tab,
+    .state-tab {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--copy);
+      background: rgba(33, 58, 102, 0.06);
+      cursor: pointer;
+      transition: 160ms ease;
+    }
+
+    .mode-tab.active {
+      color: white;
+      background: linear-gradient(135deg, #42a4ff, #7cefd2);
+      box-shadow: 0 10px 24px rgba(66, 164, 255, 0.2);
+    }
+
+    .state-tab.active {
+      color: white;
+      background: linear-gradient(135deg, #ff8d51, #ff5c8a);
+      box-shadow: 0 10px 24px rgba(255, 92, 138, 0.2);
+    }
+
+    .legend {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.82);
+      font-size: 12px;
+      color: var(--soft);
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .phone {
+      position: relative;
+      min-height: 1080px;
+      border-radius: 36px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #66c5ff 0%, #8ad4ff 26%, #f4f8ff 100%);
+      box-shadow: 0 38px 90px rgba(53, 106, 176, 0.22);
+      border: 8px solid rgba(255,255,255,0.52);
+    }
+
+    .phone.safe {
+      padding: 24px;
+    }
+
+    .note-panel {
+      display: grid;
+      gap: 10px;
+    }
+
+    .note-card {
+      padding: 14px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.88);
+    }
+
+    .note-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .map-shell {
+      position: relative;
+      height: 1030px;
+      border-radius: 30px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.44), transparent 22%),
+        linear-gradient(180deg, #9addff 0%, #6fc7ff 32%, #dff5ff 100%);
+    }
+
+    .map-book {
+      width: 72px;
+      height: 72px;
+      border-radius: 0;
+      display: grid;
+      place-items: center;
+      font-size: 44px;
+      color: white;
+      background: transparent;
+      box-shadow: none;
+      pointer-events: auto;
+    }
+
+    .map-floating-top {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      z-index: 2;
+      display: flex;
+      justify-content: flex-end;
+      pointer-events: none;
+    }
+
+    .map-path {
+      position: absolute;
+      inset: 84px 0 0 0;
+      overflow: hidden;
+    }
+
+    .path-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .node {
+      position: absolute;
+      width: 66px;
+      height: 66px;
+      border-radius: 20px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(180deg, #4aa6ff, #3687ff);
+      box-shadow: 0 14px 24px rgba(56, 128, 231, 0.22);
+      border: 4px solid rgba(255,255,255,0.78);
+      z-index: 1;
+    }
+
+    .node.current {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 10px rgba(255,255,255,0.2), 0 18px 32px rgba(255, 141, 81, 0.22);
+    }
+
+    .node.reward {
+      background: linear-gradient(180deg, #ffbf57, #ff8d51);
+    }
+
+    .node.evolution {
+      background: linear-gradient(180deg, #ab8cff, #6f6bff);
+    }
+
+    .node.preview {
+      background: linear-gradient(180deg, #ff8cb4, #ff6691);
+      animation: pulse 1.6s infinite ease-in-out;
+    }
+
+    .node-tag {
+      position: absolute;
+      left: 50%;
+      bottom: -26px;
+      transform: translateX(-50%);
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.92);
+      color: var(--ink);
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
+      box-shadow: 0 8px 16px rgba(53,106,176,0.12);
+    }
+
+    .node-badge {
+      position: absolute;
+      top: -12px;
+      right: -10px;
+      min-width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      padding: 0 7px;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      color: #ff6e39;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 0 8px 16px rgba(53,106,176,0.14);
+    }
+
+    .result-shell {
+      position: relative;
+      min-height: 1030px;
+      padding: 24px 22px 28px;
+      background:
+        radial-gradient(circle at 20% 12%, rgba(255,255,255,0.2), transparent 18%),
+        linear-gradient(180deg, #af89ff 0%, #8a72ff 36%, #7fddff 100%);
+      overflow: hidden;
+    }
+
+    .result-stars {
+      position: absolute;
+      inset: 0;
+      opacity: 0.22;
+      background-image:
+        radial-gradient(circle, #fff 1.2px, transparent 1.2px),
+        radial-gradient(circle, #fff 1px, transparent 1px);
+      background-size: 64px 64px, 92px 92px;
+      background-position: 0 0, 24px 20px;
+    }
+
+    .result-top {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      color: white;
+      margin-bottom: 18px;
+    }
+
+    .result-top h3 {
+      margin: 0 0 8px;
+      font-size: 38px;
+      font-family: var(--font-display);
+      line-height: 1.05;
+    }
+
+    .result-top p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.88);
+    }
+
+    .result-base {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 16px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .result-stat {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 20px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.92);
+      box-shadow: 0 18px 36px rgba(65, 75, 152, 0.18);
+    }
+
+    .result-stat strong {
+      display: block;
+      font-size: 18px;
+      color: #5f6d83;
+    }
+
+    .result-stat b {
+      font-family: var(--font-display);
+      font-size: 34px;
+      line-height: 1;
+      color: #ff7e43;
+    }
+
+    .stat-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 24px;
+      background: linear-gradient(180deg, #8cd8ff, #42a4ff);
+      flex-shrink: 0;
+    }
+
+    .result-actions {
+      display: grid;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .result-primary,
+    .result-secondary {
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 16px 18px;
+      font-family: inherit;
+      font-weight: 900;
+      font-size: 18px;
+    }
+
+    .result-primary {
+      color: white;
+      background: linear-gradient(135deg, #2cc4f5, #4aa6ff);
+      box-shadow: 0 10px 0 rgba(27, 130, 194, 0.2);
+    }
+
+    .result-secondary {
+      color: #55657d;
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 10px 0 rgba(206, 218, 231, 0.7);
+    }
+
+    .reward-modal {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .reward-modal::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(71, 43, 135, 0.42), rgba(43, 112, 179, 0.28));
+      backdrop-filter: blur(3px);
+    }
+
+    .celebration {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .celebration span {
+      position: absolute;
+      font-size: 24px;
+      opacity: 0.8;
+      animation: float 3s infinite ease-in-out;
+    }
+
+    .celebration span:nth-child(1) { top: 12%; left: 14%; animation-delay: 0s; }
+    .celebration span:nth-child(2) { top: 18%; right: 16%; animation-delay: .4s; }
+    .celebration span:nth-child(3) { top: 38%; left: 10%; animation-delay: .8s; }
+    .celebration span:nth-child(4) { top: 42%; right: 12%; animation-delay: 1.2s; }
+    .celebration span:nth-child(5) { bottom: 18%; left: 20%; animation-delay: 1.6s; }
+    .celebration span:nth-child(6) { bottom: 12%; right: 18%; animation-delay: 2s; }
+
+    .reward-modal-card {
+      position: relative;
+      z-index: 1;
+      width: 368px;
+      padding: 6px;
+      border-radius: 42px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.56), rgba(255,255,255,0.2));
+      box-shadow: 0 30px 80px rgba(47, 48, 128, 0.3);
+      transform: rotate(-6deg);
+    }
+
+    .reward-modal-inner {
+      border-radius: 38px;
+      padding: 26px 22px 22px;
+      background: linear-gradient(180deg, rgba(255,190,98,0.94), rgba(255,127,88,0.94));
+      color: white;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .reward-modal-inner::before,
+    .reward-modal-inner::after {
+      content: "✨";
+      position: absolute;
+      font-size: 34px;
+      opacity: 0.42;
+    }
+
+    .reward-modal-inner::before { top: 16px; left: 18px; }
+    .reward-modal-inner::after { bottom: 18px; right: 20px; }
+
+    .reward-modal-avatar {
+      width: 138px;
+      height: 138px;
+      margin: 0 auto 16px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 58px;
+      background: rgba(255,255,255,0.28);
+      border: 4px solid rgba(255,255,255,0.34);
+      box-shadow: inset 0 18px 26px rgba(255,255,255,0.18);
+    }
+
+    .reward-modal-title {
+      margin: 0 0 10px;
+      font-size: 30px;
+      font-weight: 900;
+      line-height: 1.08;
+    }
+
+    .reward-modal-copy {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.94);
+    }
+
+    .growth-module {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.2);
+      text-align: left;
+      position: relative;
+    }
+
+    .exp-corner {
+      position: absolute;
+      top: -12px;
+      left: 14px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #ffe36d;
+      color: #8a5600;
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 10px 18px rgba(255, 227, 109, 0.24);
+      animation: pop 1.2s infinite ease-in-out;
+    }
+
+    .growth-head {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .mystery-silhouette {
+      width: 72px;
+      height: 72px;
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      background: rgba(11, 18, 32, 0.24);
+      font-size: 34px;
+      filter: saturate(0) brightness(0.2);
+    }
+
+    .growth-bar {
+      height: 14px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.24);
+      margin-top: 10px;
+    }
+
+    .growth-bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #fff1ad, #fff 38%, #7cefd2 100%);
+      animation: slide 1.8s ease-out infinite;
+      transform-origin: left center;
+    }
+
+    .mystery-box {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(83, 36, 119, 0.22);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.6;
+      text-align: left;
+    }
+
+    .reward-card {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 18px;
+      border-radius: 30px;
+      background: rgba(255,255,255,0.92);
+      box-shadow: 0 24px 60px rgba(49, 64, 133, 0.22);
+      display: grid;
+      gap: 14px;
+    }
+
+    .reward-hero {
+      display: grid;
+      grid-template-columns: 108px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      padding: 14px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(255,213,92,0.2), rgba(255,141,81,0.16));
+      border: 1px solid rgba(255, 141, 81, 0.12);
+    }
+
+    .reward-icon {
+      width: 108px;
+      height: 108px;
+      border-radius: 30px;
+      display: grid;
+      place-items: center;
+      font-size: 48px;
+      background: linear-gradient(180deg, #fff5d1, #ffc96a);
+      box-shadow: inset 0 12px 18px rgba(255,255,255,0.46);
+    }
+
+    .reward-copy h4 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      line-height: 1.2;
+      color: var(--ink);
+    }
+
+    .reward-copy p {
+      margin: 0;
+      color: var(--copy);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .meter-card,
+    .exp-card,
+    .action-row,
+    .mini-prompt {
+      padding: 14px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    .meter-bar {
+      height: 16px;
+      border-radius: 999px;
+      background: #edf3ff;
+      overflow: hidden;
+      margin: 10px 0 8px;
+    }
+
+    .meter-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #42a4ff, #7cefd2 50%, #ffd55c);
+    }
+
+    .meter-row,
+    .exp-row,
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .cta {
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 16px;
+      color: white;
+      background: linear-gradient(135deg, #42a4ff, #ff8d51);
+      font-size: 18px;
+      font-weight: 900;
+      font-family: inherit;
+      box-shadow: 0 12px 0 rgba(38, 103, 179, 0.16);
+    }
+
+    .reward-track {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 12px;
+    }
+
+    .reward-stop {
+      padding: 10px 8px;
+      border-radius: 18px;
+      text-align: center;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid var(--line);
+    }
+
+    .reward-stop.active {
+      background: linear-gradient(135deg, rgba(255,213,92,0.24), rgba(255,141,81,0.18));
+      border-color: rgba(255,141,81,0.18);
+    }
+
+    .pokedex-shell {
+      min-height: 1030px;
+      padding: 22px;
+      background:
+        radial-gradient(circle at 20% 14%, rgba(255,255,255,0.44), transparent 18%),
+        linear-gradient(180deg, #fff8e4 0%, #ffe9a8 20%, #ffd081 100%);
+    }
+
+    .dex-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .dex-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .dex-title .icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #ffce68, #ff995c);
+      color: white;
+      font-size: 26px;
+      box-shadow: inset 0 -8px 0 rgba(181, 103, 42, 0.16);
+    }
+
+    .dex-grid {
+      display: grid;
+      grid-template-columns: 228px minmax(0, 1fr);
+      gap: 14px;
+      min-height: 900px;
+    }
+
+    .dex-focus,
+    .dex-list {
+      border-radius: 28px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(255,255,255,0.8);
+      box-shadow: 0 18px 40px rgba(183, 121, 48, 0.14);
+      padding: 16px;
+    }
+
+    .dex-focus {
+      background: linear-gradient(180deg, #ffb856, #ff945c);
+      color: white;
+    }
+
+    .focus-avatar {
+      width: 150px;
+      height: 150px;
+      border-radius: 999px;
+      margin: 18px auto 16px;
+      display: grid;
+      place-items: center;
+      font-size: 64px;
+      background: rgba(255,255,255,0.24);
+      border: 4px solid rgba(255,255,255,0.3);
+    }
+
+    .evolution-line {
+      display: grid;
+      gap: 10px;
+    }
+
+    .evolution-stage {
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.82);
+      border: 1px solid var(--line);
+    }
+
+    .evolution-stage .avatar {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      background: linear-gradient(180deg, #fff7da, #ffd278);
+    }
+
+    .evolution-stage.locked {
+      opacity: 0.56;
+      filter: grayscale(0.26);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .status-current { background: rgba(124,239,210,0.2); color: #157768; }
+    .status-unlocked { background: rgba(66,164,255,0.12); color: #135fbc; }
+    .status-locked { background: rgba(124,139,163,0.16); color: #64748b; }
+
+    .accept-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .accept-item {
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.85);
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--soft);
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(12deg); }
+    }
+
+    @keyframes pop {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    @keyframes slide {
+      0% { width: 64%; }
+      35% { width: 78%; }
+      100% { width: 78%; }
+    }
+
+    @media (max-width: 1300px) {
+      .layout,
+      .workspace,
+      .dual-table,
+      .dex-grid,
+      .boundary-grid,
+      .pill-grid,
+      .legend,
+      .preview-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .spec {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="eyebrow">Growth Retention PRD</div>
+      <h1>前50关成长上瘾机制工作台</h1>
+      <p>
+        这份 HTML PRD 只定义三个允许改动的触点：地图页、完成页、宠物图鉴。主目标不是增加新系统，而是把现有资源重新编排成一条更上瘾的成长链：
+        让孩子持续感到“我又拿到了新东西”，同时持续感到“我离下一次宠物进化不远”。游戏页、答题页、战斗页以及地图路径样式全部明确锁死，不纳入本轮变更范围。
+      </p>
+      <div class="hero-metrics">
+        <div class="hero-metric"><b>50</b><span>本版只完整覆盖前50关，不展开51-159详细节奏。</span></div>
+        <div class="hero-metric"><b>7</b><span>宠物形态阶段，含蛋与最终形态，主驱动全部围绕这条成长链。</span></div>
+        <div class="hero-metric"><b>3</b><span>仅允许优化地图页、完成页、宠物图鉴三类页面触点。</span></div>
+        <div class="hero-metric"><b>0</b><span>不增加新系统资源，不改游戏页，不改地图路径，不改玩法逻辑。</span></div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="card">
+        <div class="card-head">
+          <strong>左栏 · 可执行 PRD</strong>
+          <span>规则边界、逐关资源锚点表、完成页判断逻辑、可改页面验收标准</span>
+        </div>
+        <div class="spec">
+          <div class="section">
+            <h2>1. 核心目标</h2>
+            <div class="callout">
+              <p><strong>主命题：</strong>前50关必须持续制造两种感受：<strong>我又拿到了新东西</strong> 与 <strong>我离下一次进化不远</strong>。</p>
+              <p><strong>主驱动：</strong>宠物形态成长。</p>
+              <p><strong>辅助驱动：</strong>攻击特效颜色、宝石颜色、背景图切换。</p>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>2. 改动边界</h2>
+            <div class="boundary-grid">
+              <div class="boundary-item good">
+                <strong>允许调整</strong>
+                <p>地图页：直接基于当前实际 MapScreen 效果，只优化单个关卡 icon / 角标 / 提示徽记。</p>
+                <p>完成页：保留当前实际结果页的统计卡与按钮，只把额外奖励放进原“获得新宠物”卡片样式里。</p>
+                <p>宠物图鉴：重做成长链展示、当前进度与终点感。</p>
+              </div>
+              <div class="boundary-item bad">
+                <strong>明确禁止</strong>
+                <p>不可调整游戏页 / 答题页 / 战斗页。</p>
+                <p>不可调整地图路径位置、走向、连线样式，以及除关卡 icon 外的地图主体效果。</p>
+                <p>不可新增强化态、装备栏、章节系统、新资源种类。</p>
+              </div>
+            </div>
+            <p class="small" style="margin-top:10px">
+              现有实现边界对应：<span class="mono">src/components/MapScreen.tsx</span>、<span class="mono">src/components/ResultScreen.tsx</span>、<span class="mono">src/components/PokedexScreen.tsx</span>。<span class="mono">src/components/QuizScreen.tsx</span> 不纳入本轮。
+            </p>
+          </div>
+
+          <div class="section">
+            <h2>3. 资源池约束</h2>
+            <div class="pill-grid">
+              <div class="pill"><strong>宠物形态</strong><p>7种，含蛋与最终形态。所有重大高潮都服务于这条主链。</p></div>
+              <div class="pill"><strong>背景</strong><p>只换背景图，不改地图路径和场景结构。</p></div>
+              <div class="pill"><strong>宝石颜色</strong><p>只换颜色，承担阶段升级与“越来越高级”的感受。</p></div>
+              <div class="pill"><strong>攻击特效颜色</strong><p>只换颜色，承担更高频的小奖励，补齐中段空窗。</p></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>4. 前50关三段节奏</h2>
+            <div class="phase-list">
+              <div class="phase">
+                <div class="tag phase-early">1-15关</div>
+                <div>
+                  <p><strong>目标：</strong>快速上钩、快速确认“会一直变化”。</p>
+                  <p><strong>规则：</strong>无奖励关最多连续1关；宠物变化频率高；奖励密度高。</p>
+                </div>
+              </div>
+              <div class="phase">
+                <div class="tag phase-mid">16-35关</div>
+                <div>
+                  <p><strong>目标：</strong>建立稳定追更感。</p>
+                  <p><strong>规则：</strong>无奖励关最多连续2关；继续推进宠物成长；用特效 / 宝石 / 背景填中段空隙。</p>
+                </div>
+              </div>
+              <div class="phase">
+                <div class="tag phase-late">36-50关</div>
+                <div>
+                  <p><strong>目标：</strong>冲刺最终形态。</p>
+                  <p><strong>规则：</strong>无奖励关最多连续3关；奖励间隔可拉长但要强提示；50关必须给最终形态。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>5. 宠物成长主链</h2>
+            <div class="stage-list">
+              <div class="stage"><div class="tag egg">初始</div><div><p><strong>形态0 · 蛋</strong></p><p>进入地图时的起点，不需要任何战斗页改造即可理解成长起源。</p></div></div>
+              <div class="stage"><div class="tag grow">第1关</div><div><p><strong>形态1</strong></p><p>新手脚本孵化，第一关必须立刻兑现，让玩家相信游戏会持续变化。</p></div></div>
+              <div class="stage"><div class="tag grow">第3关</div><div><p><strong>形态2</strong></p><p>前期快速第二次反馈，巩固“成长很近”的预期。</p></div></div>
+              <div class="stage"><div class="tag grow">第8关</div><div><p><strong>形态3</strong></p><p>承接前段高频变化的第一个小高潮。</p></div></div>
+              <div class="stage"><div class="tag grow">第15关</div><div><p><strong>形态4</strong></p><p>前段收束点，明确告诉玩家成长链还会继续。</p></div></div>
+              <div class="stage"><div class="tag grow">第25关</div><div><p><strong>形态5</strong></p><p>中段托举点，用于避免“打到中间没新鲜感”。</p></div></div>
+              <div class="stage"><div class="tag grow">第38关</div><div><p><strong>形态6</strong></p><p>后段冲刺起点，正式进入终局预热。</p></div></div>
+              <div class="stage"><div class="tag final">第50关</div><div><p><strong>形态7 · 最终形态</strong></p><p>本版终点爆点，完成页与图鉴都必须把它当成阶段完成时刻。</p></div></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>6. 经验规则与阈值</h2>
+            <div class="dual-table">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>宝石颜色</th><th>关卡范围</th><th>单关经验</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>蓝晶</td><td>1-5</td><td>10</td></tr>
+                    <tr><td>青晶</td><td>6-12</td><td>12</td></tr>
+                    <tr><td>紫晶</td><td>13-20</td><td>14</td></tr>
+                    <tr><td>赤晶</td><td>21-30</td><td>16</td></tr>
+                    <tr><td>金晶</td><td>31-40</td><td>18</td></tr>
+                    <tr><td>虹晶</td><td>41-50</td><td>20</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>解锁形态</th><th>触发关卡</th><th>累计经验阈值</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>形态1</td><td>1</td><td>新手脚本</td></tr>
+                    <tr><td>形态2</td><td>3</td><td>30</td></tr>
+                    <tr><td>形态3</td><td>8</td><td>94</td></tr>
+                    <tr><td>形态4</td><td>15</td><td>184</td></tr>
+                    <tr><td>形态5</td><td>25</td><td>334</td></tr>
+                    <tr><td>形态6</td><td>38</td><td>548</td></tr>
+                    <tr><td>形态7</td><td>50</td><td>780</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="callout" style="margin-top:12px">
+              <p><strong>累计规则：</strong>经验始终累计，不清零。每次进化后，分子保留当前累计经验，分母切换为下一次进化所需总经验。</p>
+              <p><strong>体验价值：</strong>不让玩家产生“我又重新开始”的挫败感，而是持续确认“我已经积累很多”“我离下一次变化越来越近”。</p>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>7. 完成页主提示判断逻辑</h2>
+            <div class="logic-grid">
+              <div class="logic"><strong>new_reward</strong><p>本关已获得新奖励。展示在原“获得新宠物”旋转礼花卡中，结果页底板不改。</p></div>
+              <div class="logic"><strong>next_reward</strong><p>本关无奖励，且下一资源距离 ≤ 2 关。仍使用同一张礼花卡，只是内容换成“n关后获得xxx（神秘黑盒奖励）”。</p></div>
+              <div class="logic"><strong>next_evolution</strong><p>本关无奖励，下一资源不够近，但下一进化距离 ≤ 20 经验。礼花卡里的成长模块直接展示下一形态剪影与进度推进。</p></div>
+              <div class="logic"><strong>finale</strong><p>第50关仍使用同一张礼花卡形态，只把内容推到终局版本，不再额外设计另一套卡壳结构。</p></div>
+            </div>
+            <p style="margin-top:10px"><strong>统一卡片规则：</strong>额外奖励与提示只允许使用原“获得新宠物”卡片样式（旋转弹出 + 礼花特效）。当前版本不再拆多套奖励卡壳。</p>
+          </div>
+
+          <div class="section">
+            <h2>8. 预热关强化文案</h2>
+            <div class="preview-grid">
+              <div class="preview-item"><strong>预热节点</strong><p>第7、14、24、37、49关是核心预热关，哪怕本关没新奖励，也要强化“再来一关，宠物就会进化”。</p></div>
+              <div class="preview-item"><strong>允许文案</strong><p>“再来一关，宠物就会进化” / “下一关将解锁新形态”。这属于文案强化，不算新增资源。</p></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>9. 前50关资源锚点表</h2>
+            <div class="table-wrap">
+              <table id="milestone-table">
+                <thead>
+                  <tr>
+                    <th>关卡</th>
+                    <th>宝石</th>
+                    <th>本关经验</th>
+                    <th>累计经验</th>
+                    <th>经验条显示</th>
+                    <th>距下次进化</th>
+                    <th>本关新奖励</th>
+                    <th>下一资源目标</th>
+                    <th>主提示焦点</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>10. 可改页面定义</h2>
+            <div class="preview-grid">
+              <div class="preview-item">
+                <strong>地图页</strong>
+                <p>直接读取当前实际地图页效果，只优化单关图标、徽记、角标与资源提示。路径样式、路径位置、背景与整体结构一律不改。</p>
+              </div>
+              <div class="preview-item">
+                <strong>完成页</strong>
+                <p>保留当前实际结果页中的【闯关时间】【正确率】【最高连击】【下一关】【返回路线】。所有额外奖励与提示统一由原“获得新宠物”卡片承载。</p>
+              </div>
+              <div class="preview-item">
+                <strong>宠物图鉴</strong>
+                <p>只围绕7种形态成长链做重构，承担长期成长确认，不承担即时奖励结算。</p>
+              </div>
+              <div class="preview-item">
+                <strong>游戏页</strong>
+                <p>明确不进入本版。任何试玩、战斗、答题反馈、路径战斗逻辑都不在此 PRD 的改造范围内。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>11. 验收标准</h2>
+            <div class="accept-list">
+              <div class="accept-item">明确写死：不改游戏页，只改地图页、完成页、图鉴。</div>
+              <div class="accept-item">明确写死：地图页直接基于当前实际效果，只能增强单个关卡 icon 提示，其他都不能动。</div>
+              <div class="accept-item">完整覆盖前50关三段节奏与7个成长节点。</div>
+              <div class="accept-item">无奖励关不再只是“无”，而是必须有下一资源或下一进化的主提示策略。</div>
+              <div class="accept-item">完成页保留当前统计与按钮，不新增结果页母版；额外奖励统一复用原“获得新宠物”卡片样式。</div>
+              <div class="accept-item">第7、14、24、37、49关必须有预热强化。</div>
+              <div class="accept-item">第50关必须呈现终局高潮，而不是普通奖励卡升级版。</div>
+              <div class="accept-item">地图页、完成页、图鉴形成短期驱动 + 中期驱动 + 长期驱动闭环。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <strong>右栏 · 高保真预览</strong>
+          <span>仅预演允许改动的三类页面：地图页、完成页、宠物图鉴。游戏页完全不出现在预览中。</span>
+        </div>
+        <div class="prototype">
+          <div class="toolbar">
+            <div class="mode-tabs" id="mode-tabs"></div>
+            <div class="state-tabs" id="state-tabs"></div>
+          </div>
+          <div class="legend">
+            <span><i class="dot" style="background:#4aa6ff"></i>普通推进关</span>
+            <span><i class="dot" style="background:#ff9b4b"></i>新资源 / 奖励关</span>
+            <span><i class="dot" style="background:#886fff"></i>宠物进化关</span>
+          </div>
+          <div class="workspace">
+            <div class="phone" id="preview-shell"></div>
+            <aside class="note-panel">
+              <div class="note-card">
+                <strong>当前页面</strong>
+                <div id="note-title" class="small"></div>
+              </div>
+              <div class="note-card">
+                <strong>本状态重点</strong>
+                <div id="note-focus" class="small"></div>
+              </div>
+              <div class="note-card">
+                <strong>实现边界提醒</strong>
+                <div id="note-boundary" class="small"></div>
+              </div>
+              <div class="note-card">
+                <strong>短期 / 中期 / 长期驱动</strong>
+                <div id="note-loop" class="small"></div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const milestoneRows = [
+      { level: 1, gem: "蓝晶", exp: 10, total: 10, meter: "10/30", toEvolution: 20, reward: "蛋孵化为初始宠物（形态1）", nextReward: "2关 · 攻击特效：橙光I", focus: "new_reward" },
+      { level: 2, gem: "蓝晶", exp: 10, total: 20, meter: "20/30", toEvolution: 10, reward: "攻击特效：橙光I", nextReward: "3关 · 宠物进化为形态2", focus: "new_reward" },
+      { level: 3, gem: "蓝晶", exp: 10, total: 30, meter: "30/94", toEvolution: 64, reward: "宠物进化为形态2", nextReward: "5关 · 攻击特效：橙光II", focus: "new_reward" },
+      { level: 4, gem: "蓝晶", exp: 10, total: 40, meter: "40/94", toEvolution: 54, reward: "无", nextReward: "5关 · 攻击特效：橙光II", focus: "next_reward" },
+      { level: 5, gem: "蓝晶", exp: 10, total: 50, meter: "50/94", toEvolution: 44, reward: "攻击特效：橙光II", nextReward: "6关 · 宝石升级：青晶", focus: "new_reward" },
+      { level: 6, gem: "青晶", exp: 12, total: 62, meter: "62/94", toEvolution: 32, reward: "宝石升级：青晶", nextReward: "7关 · 背景切换：花园小径", focus: "new_reward" },
+      { level: 7, gem: "青晶", exp: 12, total: 74, meter: "74/94", toEvolution: 20, reward: "背景切换：花园小径", nextReward: "8关 · 宠物进化为形态3", focus: "new_reward" },
+      { level: 8, gem: "青晶", exp: 12, total: 86, meter: "86/184", toEvolution: 98, reward: "宠物进化为形态3", nextReward: "9关 · 攻击特效：橙光III", focus: "new_reward" },
+      { level: 9, gem: "青晶", exp: 12, total: 98, meter: "98/184", toEvolution: 86, reward: "攻击特效：橙光III", nextReward: "11关 · 攻击特效：赤橙I", focus: "new_reward" },
+      { level: 10, gem: "青晶", exp: 12, total: 110, meter: "110/184", toEvolution: 74, reward: "无", nextReward: "11关 · 攻击特效：赤橙I", focus: "next_reward" },
+      { level: 11, gem: "青晶", exp: 12, total: 122, meter: "122/184", toEvolution: 62, reward: "攻击特效：赤橙I", nextReward: "13关 · 宝石升级：紫晶", focus: "new_reward" },
+      { level: 12, gem: "青晶", exp: 12, total: 134, meter: "134/184", toEvolution: 50, reward: "无", nextReward: "13关 · 宝石升级：紫晶", focus: "next_reward" },
+      { level: 13, gem: "紫晶", exp: 14, total: 148, meter: "148/184", toEvolution: 36, reward: "宝石升级：紫晶", nextReward: "14关 · 攻击特效：赤橙II", focus: "new_reward" },
+      { level: 14, gem: "紫晶", exp: 14, total: 162, meter: "162/184", toEvolution: 22, reward: "攻击特效：赤橙II", nextReward: "15关 · 宠物进化为形态4", focus: "new_reward" },
+      { level: 15, gem: "紫晶", exp: 14, total: 176, meter: "176/334", toEvolution: 158, reward: "宠物进化为形态4", nextReward: "17关 · 背景切换：森林空地", focus: "new_reward" },
+      { level: 16, gem: "紫晶", exp: 14, total: 190, meter: "190/334", toEvolution: 144, reward: "无", nextReward: "17关 · 背景切换：森林空地", focus: "next_reward" },
+      { level: 17, gem: "紫晶", exp: 14, total: 204, meter: "204/334", toEvolution: 130, reward: "背景切换：森林空地", nextReward: "19关 · 攻击特效：紫光I", focus: "new_reward" },
+      { level: 18, gem: "紫晶", exp: 14, total: 218, meter: "218/334", toEvolution: 116, reward: "无", nextReward: "19关 · 攻击特效：紫光I", focus: "next_reward" },
+      { level: 19, gem: "紫晶", exp: 14, total: 232, meter: "232/334", toEvolution: 102, reward: "攻击特效：紫光I", nextReward: "21关 · 宝石升级：赤晶", focus: "new_reward" },
+      { level: 20, gem: "紫晶", exp: 14, total: 246, meter: "246/334", toEvolution: 88, reward: "无", nextReward: "21关 · 宝石升级：赤晶", focus: "next_reward" },
+      { level: 21, gem: "赤晶", exp: 16, total: 262, meter: "262/334", toEvolution: 72, reward: "宝石升级：赤晶", nextReward: "23关 · 攻击特效：紫光II", focus: "new_reward" },
+      { level: 22, gem: "赤晶", exp: 16, total: 278, meter: "278/334", toEvolution: 56, reward: "无", nextReward: "23关 · 攻击特效：紫光II", focus: "next_reward" },
+      { level: 23, gem: "赤晶", exp: 16, total: 294, meter: "294/334", toEvolution: 40, reward: "攻击特效：紫光II", nextReward: "25关 · 宠物进化为形态5", focus: "new_reward" },
+      { level: 24, gem: "赤晶", exp: 16, total: 310, meter: "310/334", toEvolution: 24, reward: "无", nextReward: "25关 · 宠物进化为形态5", focus: "next_evolution" },
+      { level: 25, gem: "赤晶", exp: 16, total: 326, meter: "326/548", toEvolution: 222, reward: "宠物进化为形态5", nextReward: "26关 · 背景切换：暮色林地", focus: "new_reward" },
+      { level: 26, gem: "赤晶", exp: 16, total: 342, meter: "342/548", toEvolution: 206, reward: "背景切换：暮色林地", nextReward: "28关 · 攻击特效：蓝白I", focus: "new_reward" },
+      { level: 27, gem: "赤晶", exp: 16, total: 358, meter: "358/548", toEvolution: 190, reward: "无", nextReward: "28关 · 攻击特效：蓝白I", focus: "next_reward" },
+      { level: 28, gem: "赤晶", exp: 16, total: 374, meter: "374/548", toEvolution: 174, reward: "攻击特效：蓝白I", nextReward: "31关 · 宝石升级：金晶", focus: "new_reward" },
+      { level: 29, gem: "赤晶", exp: 16, total: 390, meter: "390/548", toEvolution: 158, reward: "无", nextReward: "31关 · 宝石升级：金晶", focus: "next_reward" },
+      { level: 30, gem: "赤晶", exp: 16, total: 406, meter: "406/548", toEvolution: 142, reward: "无", nextReward: "31关 · 宝石升级：金晶", focus: "next_reward" },
+      { level: 31, gem: "金晶", exp: 18, total: 424, meter: "424/548", toEvolution: 124, reward: "宝石升级：金晶", nextReward: "33关 · 攻击特效：蓝白II", focus: "new_reward" },
+      { level: 32, gem: "金晶", exp: 18, total: 442, meter: "442/548", toEvolution: 106, reward: "无", nextReward: "33关 · 攻击特效：蓝白II", focus: "next_reward" },
+      { level: 33, gem: "金晶", exp: 18, total: 460, meter: "460/548", toEvolution: 88, reward: "攻击特效：蓝白II", nextReward: "35关 · 背景切换：夜色秘境", focus: "new_reward" },
+      { level: 34, gem: "金晶", exp: 18, total: 478, meter: "478/548", toEvolution: 70, reward: "无", nextReward: "35关 · 背景切换：夜色秘境", focus: "next_reward" },
+      { level: 35, gem: "金晶", exp: 18, total: 496, meter: "496/548", toEvolution: 52, reward: "背景切换：夜色秘境", nextReward: "37关 · 攻击特效：金白I", focus: "new_reward" },
+      { level: 36, gem: "金晶", exp: 18, total: 514, meter: "514/548", toEvolution: 34, reward: "无", nextReward: "37关 · 攻击特效：金白I", focus: "next_reward" },
+      { level: 37, gem: "金晶", exp: 18, total: 532, meter: "532/548", toEvolution: 16, reward: "攻击特效：金白I", nextReward: "38关 · 宠物进化为形态6", focus: "new_reward" },
+      { level: 38, gem: "金晶", exp: 18, total: 550, meter: "550/780", toEvolution: 230, reward: "宠物进化为形态6", nextReward: "40关 · 虹晶预告 / 宝石高亮变化", focus: "new_reward" },
+      { level: 39, gem: "金晶", exp: 18, total: 568, meter: "568/780", toEvolution: 212, reward: "无", nextReward: "40关 · 虹晶预告 / 宝石高亮变化", focus: "next_reward" },
+      { level: 40, gem: "金晶", exp: 18, total: 586, meter: "586/780", toEvolution: 194, reward: "虹晶预告 / 宝石高亮变化", nextReward: "41关 · 宝石升级：虹晶", focus: "new_reward" },
+      { level: 41, gem: "虹晶", exp: 20, total: 606, meter: "606/780", toEvolution: 174, reward: "宝石升级：虹晶", nextReward: "43关 · 攻击特效：金白II", focus: "new_reward" },
+      { level: 42, gem: "虹晶", exp: 20, total: 626, meter: "626/780", toEvolution: 154, reward: "无", nextReward: "43关 · 攻击特效：金白II", focus: "next_reward" },
+      { level: 43, gem: "虹晶", exp: 20, total: 646, meter: "646/780", toEvolution: 134, reward: "攻击特效：金白II", nextReward: "45关 · 背景切换：终点圣坛", focus: "new_reward" },
+      { level: 44, gem: "虹晶", exp: 20, total: 666, meter: "666/780", toEvolution: 114, reward: "无", nextReward: "45关 · 背景切换：终点圣坛", focus: "next_reward" },
+      { level: 45, gem: "虹晶", exp: 20, total: 686, meter: "686/780", toEvolution: 94, reward: "背景切换：终点圣坛", nextReward: "47关 · 攻击特效：白金终章光", focus: "new_reward" },
+      { level: 46, gem: "虹晶", exp: 20, total: 706, meter: "706/780", toEvolution: 74, reward: "无", nextReward: "47关 · 攻击特效：白金终章光", focus: "next_reward" },
+      { level: 47, gem: "虹晶", exp: 20, total: 726, meter: "726/780", toEvolution: 54, reward: "攻击特效：白金终章光", nextReward: "50关 · 宠物进化为最终形态7", focus: "new_reward" },
+      { level: 48, gem: "虹晶", exp: 20, total: 746, meter: "746/780", toEvolution: 34, reward: "无", nextReward: "50关 · 宠物进化为最终形态7", focus: "next_reward" },
+      { level: 49, gem: "虹晶", exp: 20, total: 766, meter: "766/780", toEvolution: 14, reward: "无", nextReward: "50关 · 宠物进化为最终形态7", focus: "next_evolution" },
+      { level: 50, gem: "虹晶", exp: 20, total: 786, meter: "786/786", toEvolution: 0, reward: "宠物进化为最终形态7", nextReward: "前50关成长链完成", focus: "finale" }
+    ];
+
+    const previewModes = {
+      map: {
+        label: "地图页",
+        boundary: "直接基于当前 MapScreen 效果，只动关卡 icon 与资源提示徽记；路径、背景、整体结构都锁死。",
+        loop: "短期：节点值得打。中期：下一资源很近。长期：宠物还会继续进化。",
+        states: {
+          normal: {
+            label: "普通节点",
+            title: "地图页 · 普通推进节点",
+            focus: "预览必须贴当前实装：背景图、云朵、右上图鉴按钮、蜿蜒路径都保留，只准改节点本身。",
+            render: renderMapNormal
+          },
+          reward: {
+            label: "奖励节点",
+            title: "地图页 · 关键奖励节点",
+            focus: "单个关卡 icon 允许加角标 / 徽记 / 资源小图标，让玩家知道这一关能拿什么，其他地图元素一律不动。",
+            render: renderMapReward
+          },
+          warmup: {
+            label: "预热节点",
+            title: "地图页 · 进化前预热节点",
+            focus: "第7、14、24、37、49关的强化提示也只能挂在节点附近，不能顺手发明新的地图信息区。",
+            render: renderMapWarmup
+          }
+        }
+      },
+      result: {
+        label: "完成页",
+        boundary: "保留当前 ResultScreen 的统计卡和两个主按钮，所有额外奖励统一通过原“获得新宠物”旋转礼花卡叠加承载。",
+        loop: "短期：刚得到什么。中期：下一个资源还差几关。长期：离下一次进化还有多远。",
+        states: {
+          reward: {
+            label: "已获新奖励",
+            title: "完成页 · 已获新奖励",
+            focus: "结果页底板不变，只是弹出一张原宠物解锁卡风格的奖励卡；新奖励有则显示，无则整块不显示。",
+            render: renderResultReward
+          },
+          nextReward: {
+            label: "下一资源更近",
+            title: "完成页 · 下一资源更近",
+            focus: "仍用同一张礼花卡，只把卡内文案切成“n关后获得xxx”的神秘黑盒提示，不另做新样式。",
+            render: renderResultNextReward
+          },
+          nextEvolution: {
+            label: "下一进化更近",
+            title: "完成页 · 下一进化更近",
+            focus: "成长模块里直接展示下一形态剪影，而不是最终形态；经验+n 作为左上角角标和进度条动画来表达继续推进。",
+            render: renderResultNextEvolution
+          },
+          evolution: {
+            label: "进化关达成",
+            title: "完成页 · 进化关达成",
+            focus: "进化关仍然走同一张卡片形态，只是卡内主标题和成长模块切成正式进化达成版本。",
+            render: renderResultEvolution
+          },
+          finale: {
+            label: "50关终局",
+            title: "完成页 · 50关最终形态达成",
+            focus: "第50关也不换卡壳，只把同一张礼花卡推到终局文案与终局成长内容，避免风格分裂。",
+            render: renderResultFinale
+          }
+        }
+      },
+      pokedex: {
+        label: "宠物图鉴",
+        boundary: "只围绕成长链重做信息层级，不加新收藏系统，不改成复杂养成仓库。",
+        loop: "短期：我刚进化了。中期：我下一形态还差多少。长期：我整条成长链已经走到哪里。",
+        states: {
+          overview: {
+            label: "成长总览",
+            title: "宠物图鉴 · 7阶段成长总览",
+            focus: "图鉴承担长期成长确认，必须把当前形态、已解锁、未解锁、下一形态差值和最终形态终点感同时展示出来。",
+            render: renderPokedexOverview
+          }
+        }
+      }
+    };
+
+    const focusClass = {
+      new_reward: "focus-new",
+      next_reward: "focus-reward",
+      next_evolution: "focus-evo",
+      finale: "focus-finale"
+    };
+
+    const focusText = {
+      new_reward: "new_reward",
+      next_reward: "next_reward",
+      next_evolution: "next_evolution",
+      finale: "finale"
+    };
+
+    const modeTabsEl = document.getElementById("mode-tabs");
+    const stateTabsEl = document.getElementById("state-tabs");
+    const previewShell = document.getElementById("preview-shell");
+    const noteTitle = document.getElementById("note-title");
+    const noteFocus = document.getElementById("note-focus");
+    const noteBoundary = document.getElementById("note-boundary");
+    const noteLoop = document.getElementById("note-loop");
+
+    let currentMode = "map";
+    let currentState = "normal";
+
+    function renderMilestoneTable() {
+      const tbody = document.querySelector("#milestone-table tbody");
+      tbody.innerHTML = milestoneRows.map((row) => `
+        <tr>
+          <td>${row.level}</td>
+          <td>${row.gem}</td>
+          <td>${row.exp}</td>
+          <td>${row.total}</td>
+          <td>${row.meter}</td>
+          <td>${row.toEvolution}</td>
+          <td>${row.reward}</td>
+          <td>${row.nextReward}</td>
+          <td><span class="focus-chip ${focusClass[row.focus]}">${focusText[row.focus]}</span></td>
+        </tr>
+      `).join("");
+    }
+
+    function renderModeTabs() {
+      modeTabsEl.innerHTML = Object.entries(previewModes).map(([key, mode]) => `
+        <button class="mode-tab ${key === currentMode ? "active" : ""}" data-mode="${key}">${mode.label}</button>
+      `).join("");
+    }
+
+    function renderStateTabs() {
+      const states = previewModes[currentMode].states;
+      stateTabsEl.innerHTML = Object.entries(states).map(([key, state]) => `
+        <button class="state-tab ${key === currentState ? "active" : ""}" data-state="${key}">${state.label}</button>
+      `).join("");
+    }
+
+    function renderPreview() {
+      const mode = previewModes[currentMode];
+      const state = mode.states[currentState];
+      previewShell.innerHTML = state.render();
+      noteTitle.textContent = state.title;
+      noteFocus.textContent = state.focus;
+      noteBoundary.textContent = mode.boundary;
+      noteLoop.textContent = mode.loop;
+    }
+
+    function setMode(modeKey) {
+      currentMode = modeKey;
+      currentState = Object.keys(previewModes[currentMode].states)[0];
+      renderModeTabs();
+      renderStateTabs();
+      renderPreview();
+    }
+
+    function setState(stateKey) {
+      currentState = stateKey;
+      renderStateTabs();
+      renderPreview();
+    }
+
+    modeTabsEl.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-mode]");
+      if (!target) return;
+      setMode(target.dataset.mode);
+    });
+
+    stateTabsEl.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-state]");
+      if (!target) return;
+      setState(target.dataset.state);
+    });
+
+    function renderMapBase(extraNodes) {
+      return `
+        <div class="map-shell">
+          <div class="map-floating-top">
+            <div class="map-book">📘</div>
+          </div>
+          <div class="map-path">
+            <svg class="path-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M16 94 C34 86, 64 88, 78 76 S26 58, 22 46 S78 34, 76 18" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="3.2" stroke-linecap="round"/>
+              <path d="M16 94 C34 86, 64 88, 78 76 S26 58, 22 46 S78 34, 76 18" fill="none" stroke="rgba(66,164,255,0.18)" stroke-width="12" stroke-linecap="round"/>
+            </svg>
+            <div class="node" style="left:12%;top:80%;">33</div>
+            <div class="node reward" style="left:32%;top:72%;"><span>35</span><div class="node-tag">夜色秘境</div></div>
+            <div class="node" style="left:52%;top:78%;">36</div>
+            <div class="node current preview" style="left:66%;top:62%;"><span>37</span><div class="node-badge">!</div><div class="node-tag">预热关</div></div>
+            <div class="node evolution" style="left:45%;top:46%;"><span>38</span><div class="node-badge">★</div><div class="node-tag">进化关</div></div>
+            <div class="node" style="left:26%;top:34%;">39</div>
+            <div class="node reward" style="left:62%;top:22%;"><span>40</span><div class="node-tag">虹晶预告</div></div>
+            ${extraNodes}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMapNormal() {
+      return renderMapBase("");
+    }
+
+    function renderMapReward() {
+      return renderMapBase(
+        `<div class="node reward" style="left:78%;top:8%;"><span>41</span><div class="node-badge">💎</div><div class="node-tag">虹晶解锁</div></div>`
+      );
+    }
+
+    function renderMapWarmup() {
+      return renderMapBase(
+        `<div style="position:absolute;left:40%;top:56%;padding:10px 14px;border-radius:18px;background:rgba(255,255,255,0.92);box-shadow:0 12px 20px rgba(53,106,176,0.12);font-size:12px;font-weight:900;color:#5d44d0;">再来一关，宠物就会进化</div>`
+      );
+    }
+
+    function renderResultFrame(title, subtitle, body) {
+      return `
+        <div class="result-shell">
+          <div class="result-stars"></div>
+          <div class="result-top">
+            <h3>${title}</h3>
+            <p>${subtitle}</p>
+          </div>
+          ${body}
+        </div>
+      `;
+    }
+
+    function renderResultBaseContent() {
+      return `
+        <div class="result-base">
+          <div class="result-stat">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div class="stat-icon">⏱</div>
+              <div><strong>闯关时间</strong></div>
+            </div>
+            <b>00:28</b>
+          </div>
+          <div class="result-stat">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div class="stat-icon" style="background:linear-gradient(180deg,#ffbf57,#ff8d51)">✓</div>
+              <div><strong>正确率</strong></div>
+            </div>
+            <b>100%</b>
+          </div>
+          <div class="result-stat">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div class="stat-icon" style="background:linear-gradient(180deg,#b19bff,#8a72ff)">⚡</div>
+              <div><strong>最高连击</strong></div>
+            </div>
+            <b>10连</b>
+          </div>
+          <div class="result-actions">
+            <button class="result-primary">下一关</button>
+            <button class="result-secondary">返回路线</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRewardModal({ avatar, title, copy, exp, nextForm, progressText, progressWidth, mystery, rewardLine }) {
+      return `
+        <div class="reward-modal">
+          <div class="celebration">
+            <span>✨</span><span>🎉</span><span>⭐</span><span>💫</span><span>✨</span><span>🎊</span>
+          </div>
+          <div class="reward-modal-card">
+            <div class="reward-modal-inner">
+              <div class="reward-modal-avatar">${avatar}</div>
+              <h4 class="reward-modal-title">${title}</h4>
+              <p class="reward-modal-copy">${copy}</p>
+              <div class="growth-module">
+                <div class="exp-corner">经验 +${exp}</div>
+                <div class="growth-head">
+                  <div class="mystery-silhouette">${nextForm}</div>
+                  <div>
+                    <strong style="display:block;font-size:16px;line-height:1.35;">宠物成长 · 下一形态</strong>
+                    <div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.92);">${progressText}</div>
+                  </div>
+                </div>
+                <div class="growth-bar">
+                  <div class="growth-bar-fill" style="width:${progressWidth}"></div>
+                </div>
+                ${rewardLine ? `<div class="mystery-box">${rewardLine}</div>` : ""}
+                <div class="mystery-box">n关后，获得 xxx（神秘黑盒奖励）<br>${mystery}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderResultReward() {
+      return renderResultFrame(
+        "闯关成功！",
+        "完成页底板保持当前实际效果不动，额外奖励通过原“获得新宠物”礼花卡叠加承载。",
+        `
+          ${renderResultBaseContent()}
+          ${renderRewardModal({
+            avatar: "🎇",
+            title: "获得新攻击特效：金白II",
+            copy: "新奖励有则显示，无则整块不显示。这里仍然复用原宠物解锁卡的旋转礼花样式，不另起新壳。",
+            exp: 20,
+            nextForm: "🐲",
+            progressText: "距离下一形态还差 134 经验 · 当前累计经验 646 / 780",
+            progressWidth: "82.8%",
+            mystery: "下一资源目标：2关后获得终点圣坛背景",
+            rewardLine: "新奖励：攻击特效 · 金白II"
+          })}
+        `
+      );
+    }
+
+    function renderResultNextReward() {
+      return renderResultFrame(
+        "闯关成功！",
+        "同一张礼花卡，不换样式；只是把卡内重点切到“下一资源更近”的神秘黑盒提示。",
+        `
+          ${renderResultBaseContent()}
+          ${renderRewardModal({
+            avatar: "🎁",
+            title: "很快又有新东西！",
+            copy: "当进化还远时，不硬推遥远目标。直接用“n关后获得xxx”的神秘黑盒奖励把孩子往下一关拖。",
+            exp: 18,
+            nextForm: "🐲",
+            progressText: "距离下一形态还差 106 经验 · 当前累计经验 442 / 548",
+            progressWidth: "80.6%",
+            mystery: "再过 1 关，获得攻击特效：蓝白II",
+            rewardLine: ""
+          })}
+        `
+      );
+    }
+
+    function renderResultNextEvolution() {
+      return renderResultFrame(
+        "闯关成功！",
+        "奖励卡仍然只有一个形态，只是成长模块切到“下一形态近在眼前”的版本。",
+        `
+          ${renderResultBaseContent()}
+          ${renderRewardModal({
+            avatar: "🧬",
+            title: "再来一关，宠物就会进化",
+            copy: "成长模块必须展示具体下一形态的神秘剪影，而不是直接跳到最终形态；经验值模块独立块取消，改为角标 + 进度条动画。",
+            exp: 20,
+            nextForm: "🦄",
+            progressText: "下一形态：最终形态7 · 还差 14 经验 · 当前累计经验 766 / 780",
+            progressWidth: "98.2%",
+            mystery: "下一关将解锁新形态",
+            rewardLine: ""
+          })}
+        `
+      );
+    }
+
+    function renderResultEvolution() {
+      return renderResultFrame(
+        "闯关成功！",
+        "进化关依然复用同一张礼花卡壳，只是卡内文案和成长模块切到正式进化达成。",
+        `
+          ${renderResultBaseContent()}
+          ${renderRewardModal({
+            avatar: "🐲",
+            title: "宠物进化为形态6",
+            copy: "新形态要成为这张卡的主视觉，但底层结果页结构仍然不动。进化后经验不清零，只切换下一形态阈值。",
+            exp: 18,
+            nextForm: "🦄",
+            progressText: "下一形态：最终形态7 · 当前累计经验 550 / 780",
+            progressWidth: "70.5%",
+            mystery: "接下来：40关虹晶预告，41关虹晶升级，45关终点圣坛",
+            rewardLine: "新奖励：宠物进化为形态6"
+          })}
+        `
+      );
+    }
+
+    function renderResultFinale() {
+      return renderResultFrame(
+        "闯关成功！",
+        "第50关也不额外造新卡壳，而是把同一张礼花卡推进终局版本，保证完成页体验连续。",
+        `
+          ${renderResultBaseContent()}
+          ${renderRewardModal({
+            avatar: "🦄",
+            title: "宠物进化为最终形态7",
+            copy: "同一张礼花卡推进到终局高潮：前50关成长链完成，但完成页骨架与交互仍保持当前版本习惯。",
+            exp: 20,
+            nextForm: "🏆",
+            progressText: "前50关成长链完成 · 当前累计经验 786 / 786",
+            progressWidth: "100%",
+            mystery: "后续仍可继续挑战更高关卡，但本版不展开51-159详细机制",
+            rewardLine: "新奖励：最终形态7"
+          })}
+        `
+      );
+    }
+
+    function renderPokedexOverview() {
+      return `
+        <div class="pokedex-shell">
+          <div class="dex-top">
+            <div class="dex-title">
+              <div class="icon">📖</div>
+              <div>
+                <strong style="display:block;font-size:28px;line-height:1.1;">宠物图鉴</strong>
+                <span class="small" style="color:#8f6d3d;">长期成长确认页，不承担即时奖励结算。</span>
+              </div>
+            </div>
+            <div class="focus-chip focus-evo">成长总览</div>
+          </div>
+          <div class="dex-grid">
+            <div class="dex-focus">
+              <div class="small" style="color:rgba(255,255,255,0.82);font-weight:800;">当前出战伙伴</div>
+              <div class="focus-avatar">🐲</div>
+              <div style="text-align:center">
+                <strong style="display:block;font-size:28px;margin-bottom:8px;">形态6</strong>
+                <div style="font-size:13px;line-height:1.7;color:rgba(255,255,255,0.92);">累计经验 550 / 780<br>下一形态：最终形态7<br>还差 230 经验</div>
+              </div>
+              <div class="mini-prompt" style="margin-top:16px;background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.16);">
+                <strong style="color:white">图鉴职责</strong>
+                <div style="color:rgba(255,255,255,0.88);font-size:12px;line-height:1.7;">把整条成长链可视化，让玩家确认自己不是只打通一关，而是在推进一只宠物的长期成长。</div>
+              </div>
+            </div>
+            <div class="dex-list">
+              <div class="evolution-line">
+                <div class="evolution-stage">
+                  <div class="avatar">🥚</div>
+                  <div><strong>形态0 · 蛋</strong><div class="small">起点形态</div></div>
+                  <div class="status-pill status-unlocked">已解锁</div>
+                </div>
+                <div class="evolution-stage">
+                  <div class="avatar">🐣</div>
+                  <div><strong>形态1 · 第1关孵化</strong><div class="small">让玩家立刻确认成长会持续发生</div></div>
+                  <div class="status-pill status-unlocked">已解锁</div>
+                </div>
+                <div class="evolution-stage">
+                  <div class="avatar">🦊</div>
+                  <div><strong>形态2 · 第3关</strong><div class="small">第二次高频确认变化</div></div>
+                  <div class="status-pill status-unlocked">已解锁</div>
+                </div>
+                <div class="evolution-stage">
+                  <div class="avatar">🐯</div>
+                  <div><strong>形态3 · 第8关</strong><div class="small">前段小高潮</div></div>
+                  <div class="status-pill status-unlocked">已解锁</div>
+                </div>
+                <div class="evolution-stage">
+                  <div class="avatar">🦁</div>
+                  <div><strong>形态4 · 第15关</strong><div class="small">前段收束与继续承诺</div></div>
+                  <div class="status-pill status-unlocked">已解锁</div>
+                </div>
+                <div class="evolution-stage">
+                  <div class="avatar">🐺</div>
+                  <div><strong>形态5 · 第25关</strong><div class="small">中段托举节点</div></div>
+                  <div class="status-pill status-unlocked">已解锁</div>
+                </div>
+                <div class="evolution-stage">
+                  <div class="avatar">🐲</div>
+                  <div><strong>形态6 · 第38关</strong><div class="small">当前所在阶段，正式进入终局冲刺</div></div>
+                  <div class="status-pill status-current">当前形态</div>
+                </div>
+                <div class="evolution-stage locked">
+                  <div class="avatar">🦄</div>
+                  <div><strong>形态7 · 第50关</strong><div class="small">最终形态终点感要明显强于其他节点</div></div>
+                  <div class="status-pill status-locked">还差 230</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    renderMilestoneTable();
+    renderModeTabs();
+    renderStateTabs();
+    renderPreview();
+  </script>
+</body>
+</html>

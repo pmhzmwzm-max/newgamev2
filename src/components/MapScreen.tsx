@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Lock } from 'lucide-react';
 import { motion } from 'motion/react';
 import { allLevelsData } from '../data/questions';
+import { getLevelRewardConfig, type RewardType } from '../data/growthRewards';
 import {
   getHighestUnlockedLevel,
   getLevelProgressRatio,
@@ -10,6 +11,79 @@ import {
 import { primeMapBgm, startMapBgm, stopMapBgm, warmupMapBgm } from './mapBgm';
 
 const MAX_LEVELS = 159;
+
+function getMapRewardType(levelId: number): RewardType | null {
+  if (levelId < 1 || levelId > 50) return null;
+  const config = getLevelRewardConfig(levelId);
+  return config.rewardType === 'none' ? null : config.rewardType;
+}
+
+function RewardTypeIcon({ type, locked = false }: { type: RewardType; locked?: boolean }) {
+  const stroke = locked ? '#FFFFFF' : '#FFFFFF';
+  const fill = locked ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.18)';
+
+  switch (type) {
+    case 'evolution':
+      return (
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path d="M4 12C5.6 8.2 8.8 5.6 13.8 4.4" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
+          <path d="M10.7 3.8L14.6 4L13.9 7.7" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="5" cy="13" r="1.8" fill={stroke} />
+        </svg>
+      );
+    case 'sfx':
+      return (
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path d="M10.6 2.2L5.7 9H9.2L7.5 15.8L12.4 9H8.9L10.6 2.2Z" fill={stroke} stroke={stroke} strokeWidth="1.2" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'gem':
+      return (
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path d="M5 4.2H13L15.3 7.4L9 14.6L2.7 7.4L5 4.2Z" fill={fill} stroke={stroke} strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M6.2 4.4L9 14.2L11.8 4.4" stroke={stroke} strokeWidth="1.3" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'bg':
+      return (
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <rect x="2.2" y="3.2" width="13.6" height="11.2" rx="2.6" fill={fill} stroke={stroke} strokeWidth="1.5" />
+          <path d="M4.6 11.6L7.2 9.2L9.1 10.9L11.8 8.1L13.4 9.7" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="6" cy="6.6" r="1.1" fill={stroke} />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+function LevelRewardBadge({ type, locked = false }: { type: RewardType; locked?: boolean }) {
+  const badgeClass =
+    type === 'evolution'
+      ? 'bg-gradient-to-b from-[#FFD86C] to-[#FFB83A] border-white text-[#7B4F00]'
+      : type === 'sfx'
+      ? 'bg-gradient-to-b from-[#FFA851] to-[#FF7E21] border-white text-white'
+      : type === 'gem'
+      ? 'bg-gradient-to-b from-[#9AB0FF] to-[#6D79FF] border-white text-white'
+      : 'bg-gradient-to-b from-[#7CDCC8] to-[#28B89D] border-white text-white';
+
+  return (
+    <div
+      className={`absolute right-[5px] top-[5px] z-[60] flex h-6 w-6 items-center justify-center rounded-full border-2 shadow-md ${badgeClass}`}
+      title={
+        type === 'evolution'
+          ? '本关奖励：进化'
+          : type === 'sfx'
+          ? '本关奖励：能力升级'
+          : type === 'gem'
+          ? '本关奖励：新宝石'
+          : '本关奖励：新地图'
+      }
+    >
+      <RewardTypeIcon type={type} locked={locked} />
+    </div>
+  );
+}
 
 export default function MapScreen({
   gradeId,
@@ -568,7 +642,8 @@ export default function MapScreen({
             const isUnlocked = unlockedLevels.includes(level.id);
             const isCurrent = Math.max(...unlockedLevels, 0) === level.id && isUnlocked;
             const isCompleted = unlockedLevels.includes(level.id + 1);
-            const levelInfo = gradeData?.[level.id];
+            const rewardType = getMapRewardType(level.id);
+            const showRewardBadge = Boolean(rewardType) && !isCompleted;
             // 将level.top (240 到 -804) 映射到 CSS百分比 (100% 到 0%)
             // 关卡1 (240) -> 100% (底部), 关卡159 (-804) -> 0% (顶部)
             const cssTopPercent = ((level.top + 804) / 1044) * 100;
@@ -580,16 +655,9 @@ export default function MapScreen({
                 style={{
                   left: `${level.left}%`,
                   top: `${cssTopPercent}%`,
-                  zIndex: 10,
+                  zIndex: isCurrent ? 25 : 12,
                 }}
               >
-                {/* 标题（每隔5关显示） */}
-                {(level.id === 1 || level.id % 5 === 0) && levelInfo && (
-                  <div className="absolute top-full mt-2 bg-white/95 px-3 py-1 rounded-full text-xs font-bold text-gray-600 shadow-lg whitespace-nowrap border border-white/80 z-20">
-                    {level.id}. {levelInfo.title.length > 6 ? levelInfo.title.slice(0, 6) + '..' : levelInfo.title}
-                  </div>
-                )}
-
                 {isUnlocked ? (
                   <motion.button
                     whileHover={{ scale: 1.12, y: -4 }}
@@ -597,12 +665,7 @@ export default function MapScreen({
                     onClick={() => onStart(level.id)}
                     className="relative flex flex-col items-center cursor-pointer"
                   >
-                    {/* 完成标记 */}
-                    {isCompleted && (
-                      <div className="absolute -top-2 -right-2 w-7 h-7 bg-green-500 rounded-full flex items-center justify-center border-3 border-white shadow-md z-10">
-                        <span className="text-white text-sm">✓</span>
-                      </div>
-                    )}
+                    {showRewardBadge && <LevelRewardBadge type={rewardType!} />}
 
                     {/* 当前关卡标记 - 使用头像切图，最高层级，放大20% */}
                     {isCurrent && (
@@ -659,6 +722,7 @@ export default function MapScreen({
                   </motion.button>
                 ) : (
                   <div className="relative flex items-center justify-center">
+                    {showRewardBadge && <LevelRewardBadge type={rewardType!} locked />}
                     {/* 锁定的关卡 - 实色，去掉半透明 */}
                     <div
                       className="bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center border-3 border-white/50 shadow-md"
