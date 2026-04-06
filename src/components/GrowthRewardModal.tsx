@@ -27,6 +27,8 @@ export default function GrowthRewardModal({
   const showRewardHero = Boolean(reward.newRewardLabel);
   const isPreviewDominant = !showRewardHero;
   const previewText = isPreviewDominant ? reward.teaserText.replace('，', '，\n') : reward.teaserText;
+  const isHiddenFinale = reward.focus === 'hidden_finale';
+  const isHiddenNextStage = Boolean(nextStage?.hidden) && !isHiddenFinale;
 
   return (
     <AnimatePresence>
@@ -92,13 +94,41 @@ export default function GrowthRewardModal({
                           transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
                           className="mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-[28px] border-4 border-white/50 bg-white/25 p-3 text-center shadow-2xl backdrop-blur-sm"
                         >
-                          {reward.newRewardKind === 'evolution' && reward.rewardHeroImage ? (
-                            <img
-                              src={reward.rewardHeroImage}
-                              alt={reward.newRewardLabel}
-                              draggable={false}
-                              className="h-full w-full select-none object-contain"
-                            />
+                          {reward.rewardHeroImage ? (
+                            <div className="relative flex h-full w-full items-center justify-center">
+                              {reward.newRewardKind === 'hidden' ? (
+                                <>
+                                  <div className="absolute inset-1 rounded-[18px] bg-[radial-gradient(circle,rgba(255,250,205,0.32),rgba(147,51,234,0.08)_58%,transparent_78%)]" />
+                                  <img
+                                    src={reward.rewardHeroImage}
+                                    alt={reward.newRewardLabel}
+                                    draggable={false}
+                                    className="relative z-10 h-full w-full select-none object-contain drop-shadow-[0_0_18px_rgba(255,230,170,0.45)]"
+                                  />
+                                </>
+                              ) : reward.newRewardKind === 'gem' ? (
+                                <img
+                                  src={reward.rewardHeroImage}
+                                  alt={reward.newRewardLabel}
+                                  draggable={false}
+                                  className="h-[110%] w-[110%] select-none object-contain drop-shadow-[0_10px_18px_rgba(255,255,255,0.3)]"
+                                />
+                              ) : reward.newRewardKind === 'bg' ? (
+                                <img
+                                  src={reward.rewardHeroImage}
+                                  alt={reward.newRewardLabel}
+                                  draggable={false}
+                                  className="h-full w-full rounded-[18px] object-cover shadow-[0_8px_16px_rgba(0,0,0,0.18)]"
+                                />
+                              ) : (
+                                <img
+                                  src={reward.rewardHeroImage}
+                                  alt={reward.newRewardLabel}
+                                  draggable={false}
+                                  className="h-full w-full select-none object-contain"
+                                />
+                              )}
+                            </div>
                           ) : (
                             <div className="flex h-full w-full items-center justify-center rounded-[18px] border-2 border-dashed border-white/70 bg-black/10 px-2 text-sm font-black leading-5 text-white whitespace-pre-line">
                               {reward.newRewardLabel.replace(/：/g, '：\n')}
@@ -188,11 +218,21 @@ export default function GrowthRewardModal({
                       <motion.div
                         className="relative flex h-[72px] w-[72px] items-center justify-center rounded-2xl bg-black/20"
                       >
-                        {nextStage?.image ? (
+                        {isHiddenFinale && nextStage?.image ? (
                           <>
+                            <div className="absolute inset-1 rounded-2xl bg-[radial-gradient(circle,rgba(255,244,188,0.3),rgba(168,85,247,0.14)_56%,transparent_78%)]" />
                             <img
                               src={nextStage.image}
                               alt={nextStage.name}
+                              draggable={false}
+                              className="h-[82%] w-[82%] select-none object-contain brightness-0 opacity-90"
+                            />
+                          </>
+                        ) : nextStage?.image ? (
+                          <>
+                            <img
+                              src={nextStage.image}
+                              alt={isHiddenNextStage ? '隐藏形态' : nextStage.name}
                               draggable={false}
                               className="h-[82%] w-[82%] select-none object-contain opacity-45 brightness-0"
                             />
@@ -206,10 +246,18 @@ export default function GrowthRewardModal({
                       </motion.div>
                       <div className="pr-16">
                         <div className="text-sm font-black text-white">
-                          {nextStage ? `下一形态：${nextStage.name}` : '最终形态已达成'}
+                          {isHiddenFinale
+                            ? '隐藏形态已解锁'
+                            : nextStage
+                            ? `下一形态：${isHiddenNextStage ? '???' : nextStage.name}`
+                            : '最终形态已达成'}
                         </div>
                         <div className="mt-1 text-xs leading-5 text-white/90">
-                          {reward.toEvolution > 0 ? `还差${reward.toEvolution}经验进化` : '已完成本阶段最终进化'}
+                          {isHiddenFinale
+                            ? '第159关隐藏终局已完成'
+                            : reward.toEvolution > 0
+                            ? `还差${reward.toEvolution}经验进化`
+                            : '已完成本阶段最终进化'}
                         </div>
                       </div>
                     </div>

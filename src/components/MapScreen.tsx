@@ -52,6 +52,12 @@ function RewardTypeIcon({ type, locked = false }: { type: RewardType; locked?: b
           <circle cx="6" cy="6.6" r="1.1" fill={stroke} />
         </svg>
       );
+    case 'hidden':
+      return (
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path d="M9 2.4L10.5 6.3L14.7 6.5L11.4 9.2L12.6 13.3L9 10.8L5.4 13.3L6.6 9.2L3.3 6.5L7.5 6.3L9 2.4Z" fill={stroke} />
+        </svg>
+      );
     default:
       return null;
   }
@@ -65,6 +71,8 @@ function LevelRewardBadge({ type, locked = false }: { type: RewardType; locked?:
       ? 'bg-gradient-to-b from-[#FFA851] to-[#FF7E21] border-white text-white'
       : type === 'gem'
       ? 'bg-gradient-to-b from-[#9AB0FF] to-[#6D79FF] border-white text-white'
+      : type === 'hidden'
+      ? 'bg-gradient-to-b from-[#ffe9a6] to-[#7b63ff] border-white text-white'
       : 'bg-gradient-to-b from-[#7CDCC8] to-[#28B89D] border-white text-white';
 
   return (
@@ -77,6 +85,8 @@ function LevelRewardBadge({ type, locked = false }: { type: RewardType; locked?:
           ? '本关奖励：能力升级'
           : type === 'gem'
           ? '本关奖励：新宝石'
+          : type === 'hidden'
+          ? '本关奖励：隐藏形态'
           : '本关奖励：新地图'
       }
     >
@@ -642,6 +652,7 @@ export default function MapScreen({
             const isUnlocked = unlockedLevels.includes(level.id);
             const isCurrent = Math.max(...unlockedLevels, 0) === level.id && isUnlocked;
             const isCompleted = unlockedLevels.includes(level.id + 1);
+            const isHiddenFinalNode = level.id === 159;
             const rewardType = getMapRewardType(level.id);
             const showRewardBadge = Boolean(rewardType) && !isCompleted;
             // 将level.top (240 到 -804) 映射到 CSS百分比 (100% 到 0%)
@@ -685,19 +696,33 @@ export default function MapScreen({
                     {/* 关卡按钮 */}
                     <div
                       className={`relative flex items-center justify-center transition-all duration-300 ${
-                        isCurrent ? 'drop-shadow-[0_0_15px_rgba(255,193,7,0.7)]' : ''
+                        isCurrent
+                          ? isHiddenFinalNode
+                            ? 'drop-shadow-[0_0_22px_rgba(251,191,36,0.95)]'
+                            : 'drop-shadow-[0_0_15px_rgba(255,193,7,0.7)]'
+                          : isHiddenFinalNode
+                          ? 'drop-shadow-[0_0_14px_rgba(246,211,101,0.6)]'
+                          : ''
                       }`}
                     >
                       {/* 底座阴影 */}
                       <div
                         className={`absolute top-3 w-18 h-4 rounded-full ${
-                          isCurrent ? 'bg-orange-600/40' : isCompleted ? 'bg-green-700/30' : 'bg-blue-700/30'
+                          isHiddenFinalNode
+                            ? 'bg-amber-700/45'
+                            : isCurrent
+                            ? 'bg-orange-600/40'
+                            : isCompleted
+                            ? 'bg-green-700/30'
+                            : 'bg-blue-700/30'
                         }`}
                       />
                       {/* 主体 */}
                       <div
                         className={`relative flex items-center justify-center border-4 border-white shadow-lg ${
-                          isCurrent
+                          isHiddenFinalNode
+                            ? 'bg-gradient-to-br from-[#43326d] via-[#8873ff] to-[#ffe38d]'
+                            : isCurrent
                             ? 'bg-gradient-to-br from-yellow-300 to-orange-400'
                             : isCompleted
                             ? 'bg-gradient-to-br from-green-300 to-green-500'
@@ -707,17 +732,26 @@ export default function MapScreen({
                           width: '84px',
                           height: '84px',
                           borderRadius: '40% 60% 65% 35% / 45% 50% 55% 50%',
-                          boxShadow: isCurrent
+                          boxShadow: isHiddenFinalNode
+                            ? '0 9px 0 #6B4FD1, 0 0 20px rgba(255,231,160,0.7), 0 12px 22px rgba(0,0,0,0.24)'
+                            : isCurrent
                             ? '0 9px 0 #E65100, 0 12px 22px rgba(0,0,0,0.2)'
                             : isCompleted
                             ? '0 9px 0 #2E7D32, 0 12px 22px rgba(0,0,0,0.15)'
                             : '0 9px 0 #1976D2, 0 12px 22px rgba(0,0,0,0.15)'
                         }}
                       >
-                        <span className="text-3xl font-black text-white drop-shadow-md">{level.id}</span>
+                        {isHiddenFinalNode ? (
+                          <>
+                            <div className="absolute inset-2 rounded-[38%_62%_60%_40%/48%_48%_52%_52%] border border-white/35" />
+                            <span className="text-3xl font-black text-white drop-shadow-md">{level.id}</span>
+                          </>
+                        ) : (
+                          <span className="text-3xl font-black text-white drop-shadow-md">{level.id}</span>
+                        )}
                       </div>
                       {/* 高光 */}
-                      <div className="absolute top-2 left-3 w-4 h-2 bg-white/40 rounded-full" />
+                      <div className={`absolute top-2 left-3 h-2 rounded-full ${isHiddenFinalNode ? 'w-5 bg-white/55' : 'w-4 bg-white/40'}`} />
                     </div>
                   </motion.button>
                 ) : (
@@ -725,15 +759,21 @@ export default function MapScreen({
                     {showRewardBadge && <LevelRewardBadge type={rewardType!} locked />}
                     {/* 锁定的关卡 - 实色，去掉半透明 */}
                     <div
-                      className="bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center border-3 border-white/50 shadow-md"
+                      className={`flex items-center justify-center border-3 shadow-md ${
+                        isHiddenFinalNode
+                          ? 'bg-gradient-to-br from-[#4a3d74] via-[#6b5ca5] to-[#b59dff] border-white/70'
+                          : 'bg-gradient-to-br from-gray-400 to-gray-500 border-white/50'
+                      }`}
                       style={{
                         width: '72px',
                         height: '72px',
                         borderRadius: '35% 65% 70% 30% / 40% 55% 50% 45%',
-                        boxShadow: '0 7px 0 #9ca3af'
+                        boxShadow: isHiddenFinalNode
+                          ? '0 7px 0 #56439a, 0 0 16px rgba(255,231,160,0.4)'
+                          : '0 7px 0 #9ca3af'
                       }}
                     >
-                      <Lock className="text-gray-600" size={30} />
+                      <Lock className={isHiddenFinalNode ? 'text-amber-100' : 'text-gray-600'} size={30} />
                     </div>
                   </div>
                 )}

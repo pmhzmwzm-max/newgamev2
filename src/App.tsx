@@ -8,11 +8,12 @@ import MapScreen from './components/MapScreen';
 import QuizScreen from './components/QuizScreen';
 import ResultScreen from './components/ResultScreen';
 import PokedexScreen from './components/PokedexScreen';
-import { INITIAL_PET_ID, petsData } from './data/pets';
 import {
   buildRewardCardModel,
+  getGrowthStageByExp,
   getLevelRewardConfig,
   getTotalExpBeforeLevel,
+  growthStages,
   type RewardCardModel,
 } from './data/growthRewards';
 
@@ -26,7 +27,7 @@ interface GradeData {
 
 type GameData = Record<GradeKey, GradeData>;
 
-const MAX_LEVELS = 50; // 每个年级50关
+const MAX_LEVELS = 159; // 每个年级159关
 const INITIAL_GRADE3_UNLOCKS = [0, 1];
 
 const defaultData: GameData = {
@@ -81,10 +82,10 @@ export default function App() {
   const [currentGrade, setCurrentGrade] = useState<GradeKey>('3');
   const [stats, setStats] = useState({ accuracy: 0, time: 0, maxCombo: 0 });
   const [currentLevelId, setCurrentLevelId] = useState<number>(1);
-  const [selectedPetId, setSelectedPetId] = useState<number>(() => {
-    const saved = localStorage.getItem('selectedPetId');
-    const parsed = saved ? parseInt(saved, 10) : INITIAL_PET_ID;
-    return petsData.some((pet) => pet.id === parsed) ? parsed : INITIAL_PET_ID;
+  const [selectedBattleStageId, setSelectedBattleStageId] = useState<number>(() => {
+    const saved = localStorage.getItem('selectedBattleStageId');
+    const parsed = saved ? parseInt(saved, 10) : 1;
+    return growthStages.some((stage) => stage.id === parsed) ? parsed : 1;
   });
   const [showPokedexModal, setShowPokedexModal] = useState(false);
   const [rewardCard, setRewardCard] = useState<RewardCardModel | null>(null);
@@ -95,14 +96,8 @@ export default function App() {
   const [debugPanelMinimized, setDebugPanelMinimized] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('selectedPetId', selectedPetId.toString());
-  }, [selectedPetId]);
-
-  useEffect(() => {
-    if (!petsData.some((pet) => pet.id === selectedPetId)) {
-      setSelectedPetId(INITIAL_PET_ID);
-    }
-  }, [selectedPetId]);
+    localStorage.setItem('selectedBattleStageId', selectedBattleStageId.toString());
+  }, [selectedBattleStageId]);
 
   const [gameData, setGameData] = useState<GameData>(() => {
     const saved = localStorage.getItem('gameDataV3');
@@ -120,10 +115,22 @@ export default function App() {
     localStorage.setItem('gameDataV3', JSON.stringify(gameData));
   }, [gameData]);
 
+  const currentGradeData = gameData[currentGrade];
+  const activeGrowthStage = getGrowthStageByExp(currentGradeData.puzzlePieces);
+
+  useEffect(() => {
+    const selectedStage = growthStages.find((stage) => stage.id === selectedBattleStageId);
+    if (!selectedStage || currentGradeData.puzzlePieces < selectedStage.threshold) {
+      setSelectedBattleStageId(activeGrowthStage.id);
+    }
+  }, [activeGrowthStage.id, currentGradeData.puzzlePieces, selectedBattleStageId]);
+
   const handleLevelComplete = (levelStats: { accuracy: number; time: number; maxCombo: number }) => {
     const rewardConfig = getLevelRewardConfig(currentLevelId);
-    const totalBefore = getTotalExpBeforeLevel(currentLevelId);
-    const totalAfter = rewardConfig.cumulativeExp;
+    const totalBefore = currentGradeData.puzzlePieces;
+    const totalAfter = Math.max(currentGradeData.puzzlePieces, rewardConfig.cumulativeExp);
+    const beforeStage = getGrowthStageByExp(totalBefore);
+    const afterStage = getGrowthStageByExp(totalAfter);
 
     setStats({
       ...levelStats,
@@ -147,19 +154,20 @@ export default function App() {
         ...prev,
         [currentGrade]: {
           unlockedLevels: normalizeUnlockedLevelsForGrade(currentGrade, newUnlocked),
-          puzzlePieces: totalAfter
+          puzzlePieces: totalAfter,
         }
       };
     });
 
     setRewardCard(buildRewardCardModel(currentLevelId, totalBefore, totalAfter));
     setShowRewardCard(true);
+    if (afterStage.id > beforeStage.id) {
+      setSelectedBattleStageId(afterStage.id);
+    }
     setDebugPreviewExp(null);
     setDebugProgressLevel(null);
     setCurrentScreen('result');
   };
-
-  const currentGradeData = gameData[currentGrade];
   const realHighestUnlockedLevel = Math.max(
     ...currentGradeData.unlockedLevels.filter((level) => (currentGrade === '3' ? level >= 1 : level >= 1)),
     1
@@ -255,7 +263,7 @@ export default function App() {
           <QuizScreen
             gradeId={currentGrade}
             levelId={currentLevelId}
-            selectedPet={petsData.find(p => p.id === selectedPetId) || petsData[0]}
+            selectedPet={growthStages.find((stage) => stage.id === selectedBattleStageId) ?? growthStages[1]}
             onFinish={handleLevelComplete}
             onBack={() => setCurrentScreen('map')}
             showDebugTools={import.meta.env.DEV}
@@ -287,6 +295,8 @@ export default function App() {
         <PokedexScreen
           isOpen={showPokedexModal}
           puzzlePieces={effectivePuzzlePieces}
+          selectedBattleStageId={selectedBattleStageId}
+          onSelectBattleStage={setSelectedBattleStageId}
           onClose={() => setShowPokedexModal(false)}
         />
 
@@ -314,7 +324,7 @@ export default function App() {
               <input
                 type="range"
                 min={1}
-                max={50}
+                max={159}
                 value={debugLevel}
                 onChange={(event) => setDebugLevel(Number(event.target.value))}
                 className="mb-3 w-full accent-orange-500"
@@ -345,15 +355,15 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => {
-                    setDebugProgressLevel(50);
+                    setDebugProgressLevel(159);
                     setDebugPreviewExp(null);
-                    setDebugLevel(50);
-                    setCurrentLevelId(50);
+                    setDebugLevel(159);
+                    setCurrentLevelId(159);
                     setCurrentScreen('map');
                   }}
                   className="rounded-[14px] bg-emerald-400 px-3 py-2 text-xs font-black text-white shadow-[0_6px_0_rgba(5,150,105,0.18)] active:translate-y-[2px]"
                 >
-                  直达50关
+                  直达159关
                 </button>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2">

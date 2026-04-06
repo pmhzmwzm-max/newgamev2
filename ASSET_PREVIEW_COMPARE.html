@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>贴图素材总览与压缩对比</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --panel: rgba(255,255,255,0.82);
+      --line: rgba(126,88,49,0.12);
+      --text: #3f3427;
+      --muted: #7d6d59;
+      --accent: #ff9b3d;
+      --accent-2: #7a5cff;
+      --good: #2ba36c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255,183,94,0.22), transparent 28%),
+        radial-gradient(circle at top right, rgba(122,92,255,0.18), transparent 24%),
+        linear-gradient(180deg, #fffaf2 0%, var(--bg) 100%);
+    }
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+    .hero {
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 48px rgba(94, 72, 43, 0.12);
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.1;
+    }
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 22px;
+    }
+    .metric {
+      padding: 16px 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid var(--line);
+    }
+    .metric .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .metric .value {
+      font-size: 24px;
+      font-weight: 800;
+    }
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 18px 0 8px;
+    }
+    .chip {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.88);
+      color: var(--text);
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--line);
+    }
+    .chip.active {
+      background: linear-gradient(135deg, var(--accent), #ffbd59);
+      color: white;
+      box-shadow: 0 10px 20px rgba(255,155,61,0.22);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 18px;
+      margin-top: 20px;
+    }
+    .card {
+      border-radius: 26px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.88);
+      box-shadow: 0 16px 36px rgba(94, 72, 43, 0.1);
+      overflow: hidden;
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(126,88,49,0.08);
+      gap: 12px;
+    }
+    .card-title {
+      min-width: 0;
+    }
+    .card-title h3 {
+      margin: 0 0 4px;
+      font-size: 20px;
+      line-height: 1.2;
+      word-break: break-all;
+    }
+    .card-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .badge {
+      flex-shrink: 0;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: rgba(122,92,255,0.1);
+      color: var(--accent-2);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 18px;
+    }
+    .pane {
+      padding: 12px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(247,241,233,0.92));
+      border: 1px solid rgba(126,88,49,0.1);
+    }
+    .pane label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .preview {
+      aspect-ratio: 1 / 1;
+      border-radius: 18px;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(45deg, rgba(0,0,0,0.03) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.03) 75%),
+        linear-gradient(45deg, rgba(0,0,0,0.03) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.03) 75%);
+      background-size: 24px 24px;
+      background-position: 0 0, 12px 12px;
+      border: 1px solid rgba(126,88,49,0.08);
+      cursor: zoom-in;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    .preview:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(94, 72, 43, 0.12);
+    }
+    .preview img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      background: rgba(28, 22, 17, 0.82);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+    }
+    .lightbox.open {
+      display: flex;
+    }
+    .lightbox-panel {
+      width: min(1120px, 100%);
+      max-height: min(92vh, 920px);
+      border-radius: 28px;
+      background: rgba(255, 251, 244, 0.96);
+      border: 1px solid rgba(255,255,255,0.72);
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.28);
+    }
+    .lightbox-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 22px;
+      border-bottom: 1px solid rgba(126,88,49,0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(249,242,233,0.9));
+    }
+    .lightbox-title {
+      min-width: 0;
+    }
+    .lightbox-title h3 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+    .lightbox-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .lightbox-close {
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 16px;
+      background: rgba(122,92,255,0.12);
+      color: var(--accent-2);
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .lightbox-body {
+      padding: 20px 22px 24px;
+    }
+    .lightbox-stage {
+      height: min(74vh, 760px);
+      border-radius: 24px;
+      overflow: auto;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(45deg, rgba(0,0,0,0.03) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.03) 75%),
+        linear-gradient(45deg, rgba(0,0,0,0.03) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.03) 75%);
+      background-size: 28px 28px;
+      background-position: 0 0, 14px 14px;
+      border: 1px solid rgba(126,88,49,0.08);
+    }
+    .lightbox-stage img {
+      max-width: 100%;
+      max-height: none;
+      object-fit: contain;
+      display: block;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 0 18px 18px;
+    }
+    .stat {
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.8);
+      border: 1px solid rgba(126,88,49,0.08);
+    }
+    .stat .k {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .stat .v {
+      font-size: 16px;
+      font-weight: 800;
+    }
+    .stat.good .v { color: var(--good); }
+    @media (max-width: 900px) {
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .compare { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr; }
+      .lightbox {
+        padding: 14px;
+      }
+      .lightbox-head,
+      .lightbox-body {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <h1>贴图素材总览与压缩对比</h1>
+      <p>当前纳入预览的素材包含宠物形态、宝石、水晶升级链和地图主题。对比页会同时展示原图与压缩副本，并给出体积变化。当前对 1MB 以上的 PNG 做了轻损实验压缩：优先减色，必要时再小幅缩分辨率，目标是尽量压到 1MB 内，同时保留透明边缘与插画观感。</p>
+      <div class="summary">
+        <div class="metric"><div class="label">素材数量</div><div class="value">21</div></div>
+        <div class="metric"><div class="label">原始总大小</div><div class="value">40.87 MB</div></div>
+        <div class="metric"><div class="label">压缩后总大小</div><div class="value">5.71 MB</div></div>
+        <div class="metric"><div class="label">总节省</div><div class="value">35.15 MB · 86.0%</div></div>
+      </div>
+    </section>
+
+    <div class="filters" id="filters"></div>
+    <section class="grid" id="grid"></section>
+  </div>
+
+  <div class="lightbox" id="lightbox">
+    <div class="lightbox-panel">
+      <div class="lightbox-head">
+        <div class="lightbox-title">
+          <h3 id="lightboxName">素材大图</h3>
+          <p id="lightboxMeta">原图</p>
+        </div>
+        <button class="lightbox-close" id="lightboxClose" type="button">关闭</button>
+      </div>
+      <div class="lightbox-body">
+        <div class="lightbox-stage">
+          <img id="lightboxImage" src="" alt="" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const records = [{"name": "状态1.png", "category": "宠物形态", "original_path": "UI v2.0/状态1.png", "compressed_path": "UI v2.0/_preview_compressed/状态1.png", "original_size": 326045, "compressed_size": 310819, "savings": 15226, "savings_ratio": 4.669907528101949, "method": "Pillow(lossless fallback) · <=1MB"}, {"name": "状态2.png", "category": "宠物形态", "original_path": "UI v2.0/状态2.png", "compressed_path": "UI v2.0/_preview_compressed/状态2.png", "original_size": 332249, "compressed_size": 319653, "savings": 12596, "savings_ratio": 3.791132554198809, "method": "Pillow(lossless fallback) · <=1MB"}, {"name": "状态3.png", "category": "宠物形态", "original_path": "UI v2.0/状态3.png", "compressed_path": "UI v2.0/_preview_compressed/状态3.png", "original_size": 92355, "compressed_size": 87989, "savings": 4366, "savings_ratio": 4.727410535433924, "method": "Pillow(lossless fallback) · <=1MB"}, {"name": "状态4.png", "category": "宠物形态", "original_path": "UI v2.0/状态4.png", "compressed_path": "UI v2.0/_preview_compressed/状态4.png", "original_size": 119012, "compressed_size": 115556, "savings": 3456, "savings_ratio": 2.9039088495277787, "method": "Pillow(lossless fallback) · <=1MB"}, {"name": "状态5.png", "category": "宠物形态", "original_path": "UI v2.0/状态5.png", "compressed_path": "UI v2.0/_preview_compressed/状态5.png", "original_size": 138678, "compressed_size": 135303, "savings": 3375, "savings_ratio": 2.4336953229784104, "method": "Pillow(lossless fallback) · <=1MB"}, {"name": "状态6.png", "category": "宠物形态", "original_path": "UI v2.0/状态6.png", "compressed_path": "UI v2.0/_preview_compressed/状态6.png", "original_size": 152462, "compressed_size": 149661, "savings": 2801, "savings_ratio": 1.8371791003659927, "method": "Pillow(lossless fallback) · <=1MB"}, {"name": "状态7.png", "category": "宠物形态", "original_path": "UI v2.0/状态7.png", "compressed_path": "UI v2.0/_preview_compressed/状态7.png", "original_size": 173457, "compressed_size": 170101, "savings": 3356, "savings_ratio": 1.9347734597047108, "method": "Pillow(lossless fallback) · <=1MB"}, {"name": "状态8.png", "category": "宠物形态", "original_path": "UI v2.0/状态8.png", "compressed_path": "UI v2.0/_preview_compressed/状态8.png", "original_size": 3358272, "compressed_size": 368131, "savings": 2990141, "savings_ratio": 89.0380826806167, "method": "Adaptive palette 256c @ 100% · <=1MB"}, {"name": "状态9.png", "category": "宠物形态", "original_path": "UI v2.0/状态9.png", "compressed_path": "UI v2.0/_preview_compressed/状态9.png", "original_size": 759940, "compressed_size": 742480, "savings": 17460, "savings_ratio": 2.297549806563676, "method": "Pillow(lossless fallback) · <=1MB"}, {"name": "星晶.png", "category": "宝石", "original_path": "UI v2.0/星晶.png", "compressed_path": "UI v2.0/_preview_compressed/星晶.png", "original_size": 2063526, "compressed_size": 318564, "savings": 1744962, "savings_ratio": 84.5621523547559, "method": "Adaptive palette 256c @ 100% · <=1MB"}, {"name": "紫晶.png", "category": "宝石", "original_path": "UI v2.0/紫晶.png", "compressed_path": "UI v2.0/_preview_compressed/紫晶.png", "original_size": 2109808, "compressed_size": 322747, "savings": 1787061, "savings_ratio": 84.70254165307934, "method": "Adaptive palette 256c @ 100% · <=1MB"}, {"name": "蓝晶.png", "category": "宝石", "original_path": "UI v2.0/蓝晶.png", "compressed_path": "UI v2.0/_preview_compressed/蓝晶.png", "original_size": 1894436, "compressed_size": 267812, "savings": 1626624, "savings_ratio": 85.86323317335608, "method": "Adaptive palette 256c @ 100% · <=1MB"}, {"name": "虹晶.png", "category": "宝石", "original_path": "UI v2.0/虹晶.png", "compressed_path": "UI v2.0/_preview_compressed/虹晶.png", "original_size": 2013023, "compressed_size": 174627, "savings": 1838396, "savings_ratio": 91.32513637449746, "method": "Adaptive palette 256c @ 100% · <=1MB"}, {"name": "赤晶.png", "category": "宝石", "original_path": "UI v2.0/赤晶.png", "compressed_path": "UI v2.0/_preview_compressed/赤晶.png", "original_size": 1857532, "compressed_size": 201619, "savings": 1655913, "savings_ratio": 89.14586666609243, "method": "Adaptive palette 256c @ 100% · <=1MB"}, {"name": "金晶.png", "category": "宝石", "original_path": "UI v2.0/金晶.png", "compressed_path": "UI v2.0/_preview_compressed/金晶.png", "original_size": 2062450, "compressed_size": 261791, "savings": 1800659, "savings_ratio": 87.30679531625009, "method": "Adaptive palette 256c @ 100% · <=1MB"}, {"name": "青晶.png", "category": "宝石", "original_path": "UI v2.0/青晶.png", "compressed_path": "UI v2.0/_preview_compressed/青晶.png", "original_size": 1754996, "compressed_size": 234193, "savings": 1520803, "savings_ratio": 86.65563910117174, "method": "Adaptive palette 256c @ 100% · <=1MB"}, {"name": "幽叶之森.png", "category": "地图主题", "original_path": "UI v2.0/幽叶之森.png", "compressed_path": "UI v2.0/_preview_compressed/幽叶之森.png", "original_size": 4802747, "compressed_size": 402095, "savings": 4400652, "savings_ratio": 91.62781216666212, "method": "Adaptive palette 256c @ 100% · <=1MB"}, {"name": "灵辉湖.png", "category": "地图主题", "original_path": "UI v2.0/灵辉湖.png", "compressed_path": "UI v2.0/_preview_compressed/灵辉湖.png", "original_size": 4798831, "compressed_size": 323351, "savings": 4475480, "savings_ratio": 93.26187982031458, "method": "Adaptive palette 256c @ 100% · <=1MB"}, {"name": "群岩山麓.png", "category": "地图主题", "original_path": "UI v2.0/群岩山麓.png", "compressed_path": "UI v2.0/_preview_compressed/群岩山麓.png", "original_size": 4683192, "compressed_size": 364822, "savings": 4318370, "savings_ratio": 92.2099713187074, "method": "Adaptive palette 256c @ 100% · <=1MB"}, {"name": "苍穹峰.png", "category": "地图主题", "original_path": "UI v2.0/苍穹峰.png", "compressed_path": "UI v2.0/_preview_compressed/苍穹峰.png", "original_size": 4595149, "compressed_size": 273737, "savings": 4321412, "savings_ratio": 94.04291351597087, "method": "Adaptive palette 256c @ 100% · <=1MB"}, {"name": "远古祭坛.png", "category": "地图主题", "original_path": "UI v2.0/远古祭坛.png", "compressed_path": "UI v2.0/_preview_compressed/远古祭坛.png", "original_size": 4764041, "compressed_size": 447121, "savings": 4316920, "savings_ratio": 90.61466935318147, "method": "Adaptive palette 256c @ 100% · <=1MB"}];
+    const filters = ['全部', ...new Set(records.map(item => item.category))];
+    let active = '全部';
+
+    const fmt = new Intl.NumberFormat('zh-CN');
+    const filtersEl = document.getElementById('filters');
+    const gridEl = document.getElementById('grid');
+    const lightboxEl = document.getElementById('lightbox');
+    const lightboxNameEl = document.getElementById('lightboxName');
+    const lightboxMetaEl = document.getElementById('lightboxMeta');
+    const lightboxImageEl = document.getElementById('lightboxImage');
+    const lightboxCloseEl = document.getElementById('lightboxClose');
+
+    function bytes(v) {
+      if (v < 1024) return `${fmt.format(v)} B`;
+      if (v < 1024 ** 2) return `${(v / 1024).toFixed(2)} KB`;
+      return `${(v / (1024 ** 2)).toFixed(2)} MB`;
+    }
+
+    function renderFilters() {
+      filtersEl.innerHTML = filters.map(name => `
+        <button class="chip ${name === active ? 'active' : ''}" data-name="${name}">
+          ${name}
+        </button>
+      `).join('');
+      [...filtersEl.querySelectorAll('.chip')].forEach(btn => {
+        btn.addEventListener('click', () => {
+          active = btn.dataset.name;
+          renderFilters();
+          renderGrid();
+        });
+      });
+    }
+
+    function renderGrid() {
+      const items = active === '全部' ? records : records.filter(item => item.category === active);
+      gridEl.innerHTML = items.map(item => `
+        <article class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <h3>${item.name}</h3>
+              <p>${item.method}</p>
+            </div>
+            <div class="badge">${item.category}</div>
+          </div>
+          <div class="compare">
+            <div class="pane">
+              <label>原图</label>
+              <div class="preview" data-full="${encodeURI(item.original_path)}" data-name="${item.name}" data-meta="原图 · ${bytes(item.original_size)}">
+                <img src="${encodeURI(item.original_path)}" alt="${item.name} 原图" />
+              </div>
+            </div>
+            <div class="pane">
+              <label>压缩后</label>
+              <div class="preview" data-full="${encodeURI(item.compressed_path)}" data-name="${item.name}" data-meta="压缩后 · ${bytes(item.compressed_size)} · 节省 ${bytes(item.savings)} · ${item.savings_ratio.toFixed(1)}%">
+                <img src="${encodeURI(item.compressed_path)}" alt="${item.name} 压缩后" />
+              </div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <div class="k">原始大小</div>
+              <div class="v">${bytes(item.original_size)}</div>
+            </div>
+            <div class="stat">
+              <div class="k">压缩后</div>
+              <div class="v">${bytes(item.compressed_size)}</div>
+            </div>
+            <div class="stat good">
+              <div class="k">节省</div>
+              <div class="v">${bytes(item.savings)} · ${item.savings_ratio.toFixed(1)}%</div>
+            </div>
+          </div>
+        </article>
+      `).join('');
+
+      [...gridEl.querySelectorAll('.preview')].forEach(node => {
+        node.addEventListener('click', () => {
+          lightboxNameEl.textContent = node.dataset.name || '素材大图';
+          lightboxMetaEl.textContent = node.dataset.meta || '';
+          lightboxImageEl.src = node.dataset.full || '';
+          lightboxImageEl.alt = node.dataset.name || '素材大图';
+          lightboxEl.classList.add('open');
+        });
+      });
+    }
+
+    function closeLightbox() {
+      lightboxEl.classList.remove('open');
+      lightboxImageEl.src = '';
+    }
+
+    lightboxCloseEl.addEventListener('click', closeLightbox);
+    lightboxEl.addEventListener('click', (event) => {
+      if (event.target === lightboxEl) closeLightbox();
+    });
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeLightbox();
+    });
+
+    renderFilters();
+    renderGrid();
+  </script>
+</body>
+</html>

@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { allLevelsData } from '../data/questions';
 import { playCloudPuffBreak, playCloudPuffBurst, playCloudPuffCharge, primeBattleSfx, startBattleBgm, stopBattleBgm, warmupBattleBgm } from './battleSfx';
 import { getBreakFeedbackProfile, getCameraShakeProfile, getChargeDuration, getExplosionProfile, getRemovalCount, getShotTier, getShotTiming, type ShotTier } from './quizTiming';
-import fireFoxImage from '../assets/battle/fire-fox-battle.png';
 import blockGemImage from '../assets/battle/block-gem-battle.png';
 import quizBattleBackground from '../../UI v2.0/关卡内背景v2.jpg';
 
@@ -635,7 +634,7 @@ const BattleStage = memo(({
                   )}
                 </AnimatePresence>
                 <img
-                  src={fireFoxImage}
+                  src={selectedPet?.image ?? blockGemImage}
                   alt={selectedPet?.name ?? '火尾狐'}
                   draggable={false}
                   className="relative z-10 h-full w-full object-contain select-none"
