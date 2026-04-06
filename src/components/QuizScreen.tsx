@@ -2,11 +2,7 @@ import React, { memo, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Delete, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { allLevelsData } from '../data/questions';
-import {
-  getBattleBackgroundForLevel,
-  getGemImageForLevel,
-  type AttackEffectProfile,
-} from '../data/growthRewards';
+import { type AttackEffectProfile } from '../data/growthRewards';
 import { playCloudPuffBreak, playCloudPuffBurst, playCloudPuffCharge, primeBattleSfx, startBattleBgm, stopBattleBgm, warmupBattleBgm } from './battleSfx';
 import { getBreakFeedbackProfile, getCameraShakeProfile, getChargeDuration, getExplosionProfile, getRemovalCount, getShotTier, getShotTiming, type ShotTier } from './quizTiming';
 
@@ -832,6 +828,8 @@ export default function QuizScreen({
   levelId,
   selectedPet,
   attackEffect,
+  gemImage,
+  backgroundImage,
   onFinish,
   onBack,
   showDebugTools = false,
@@ -840,6 +838,8 @@ export default function QuizScreen({
   levelId: number;
   selectedPet: any;
   attackEffect: AttackEffectProfile;
+  gemImage?: string;
+  backgroundImage?: string;
   onFinish: (stats: any) => void;
   onBack: () => void;
   showDebugTools?: boolean;
@@ -859,8 +859,8 @@ export default function QuizScreen({
   const [shotTier, setShotTier] = useState<ShotTier>('idle');
   const [shotSequence, setShotSequence] = useState(0);
   const [impactSequence, setImpactSequence] = useState(0);
-  const battleGemImage = useMemo(() => getGemImageForLevel(levelId), [levelId]);
-  const battleBackgroundImage = useMemo(() => getBattleBackgroundForLevel(levelId), [levelId]);
+  const battleGemImage = gemImage;
+  const battleBackgroundImage = backgroundImage;
 
   // 从新的数据源获取关卡数据
   const gradeLevels = useMemo(() => allLevelsData[gradeId as keyof typeof allLevelsData], [gradeId]);

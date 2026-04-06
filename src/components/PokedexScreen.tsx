@@ -1,37 +1,75 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Lock, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getGrowthStageByExp, growthStages } from '../data/growthRewards';
+import { getGrowthStageByExp, growthStages, type BattleVisualOption } from '../data/growthRewards';
+
+type PokedexTab = 'stage' | 'effect' | 'gem' | 'map';
 
 interface PokedexScreenProps {
   isOpen: boolean;
   puzzlePieces: number;
   selectedBattleStageId: number;
+  selectedBattleEffectName: string;
+  selectedBattleGemName: string;
+  selectedBattleMapTheme: string;
+  effectOptions: BattleVisualOption[];
+  gemOptions: BattleVisualOption[];
+  mapOptions: BattleVisualOption[];
   onSelectBattleStage: (stageId: number) => void;
+  onSelectBattleEffect: (effectName: string) => void;
+  onSelectBattleGem: (gemName: string) => void;
+  onSelectBattleMap: (mapTheme: string) => void;
   onClose: () => void;
 }
+
+const tabItems: Array<{ id: PokedexTab; label: string }> = [
+  { id: 'stage', label: '形态' },
+  { id: 'effect', label: '攻击' },
+  { id: 'gem', label: '宝石' },
+  { id: 'map', label: '场景' },
+];
 
 export default function PokedexScreen({
   isOpen,
   puzzlePieces,
   selectedBattleStageId,
+  selectedBattleEffectName,
+  selectedBattleGemName,
+  selectedBattleMapTheme,
+  effectOptions,
+  gemOptions,
+  mapOptions,
   onSelectBattleStage,
+  onSelectBattleEffect,
+  onSelectBattleGem,
+  onSelectBattleMap,
   onClose,
 }: PokedexScreenProps) {
   const activeStage = useMemo(() => getGrowthStageByExp(puzzlePieces), [puzzlePieces]);
   const [selectedStageId, setSelectedStageId] = useState(selectedBattleStageId);
+  const [selectedEffectId, setSelectedEffectId] = useState(selectedBattleEffectName);
+  const [selectedGemId, setSelectedGemId] = useState(selectedBattleGemName);
+  const [selectedMapId, setSelectedMapId] = useState(selectedBattleMapTheme);
+  const [activeTab, setActiveTab] = useState<PokedexTab>('stage');
 
   useEffect(() => {
     if (isOpen) {
       setSelectedStageId(selectedBattleStageId);
+      setSelectedEffectId(selectedBattleEffectName);
+      setSelectedGemId(selectedBattleGemName);
+      setSelectedMapId(selectedBattleMapTheme);
     }
-  }, [isOpen, selectedBattleStageId]);
+  }, [isOpen, selectedBattleStageId, selectedBattleEffectName, selectedBattleGemName, selectedBattleMapTheme]);
 
   const selectedStage = useMemo(
     () => growthStages.find((stage) => stage.id === selectedStageId) ?? activeStage,
     [activeStage, selectedStageId]
   );
   const isSelectedStageUnlocked = puzzlePieces >= selectedStage.threshold;
+  const selectedEffectOption = effectOptions.find((option) => option.id === selectedEffectId) ?? effectOptions[0];
+  const selectedGemOption = gemOptions.find((option) => option.id === selectedGemId) ?? gemOptions[0];
+  const selectedMapOption = mapOptions.find((option) => option.id === selectedMapId) ?? mapOptions[0];
+
   const getStageImageStyle = (
     stage: typeof growthStages[number],
     context: 'list' | 'detail'
@@ -44,7 +82,7 @@ export default function PokedexScreen({
         return { transform: 'translateY(6px) scale(1.18)', transformOrigin: 'center center' };
       }
       if (stage.id === 4) {
-        return { transform: 'translateY(8px) scale(0.9)', transformOrigin: 'center center' };
+        return { transform: 'translateY(8px) scale(0.81)', transformOrigin: 'center center' };
       }
       if (stage.id === 5) {
         return { transform: 'translateY(8px) scale(1.01)', transformOrigin: 'center center' };
@@ -140,12 +178,228 @@ export default function PokedexScreen({
         ) : null}
 
         {!isUnlocked && (
-          <div className="absolute bottom-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-slate-200/80 px-2 py-1 text-[10px] font-black text-slate-600 shadow-[0_2px_6px_rgba(148,163,184,0.16)]">
+          <div className="absolute bottom-3 left-1/2 inline-flex min-w-[74px] -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-full bg-slate-200/80 px-2.5 py-1 text-[10px] font-black leading-none text-slate-600 shadow-[0_2px_6px_rgba(148,163,184,0.16)]">
             <Lock size={11} />
             {`第${stage.unlockLevel}关`}
           </div>
         )}
       </motion.button>
+    );
+  };
+
+  const renderVisualOptionCard = (
+    option: BattleVisualOption,
+    selectedId: string,
+    onInspect: (id: string) => void,
+    onApply: (id: string) => void,
+    accentClass: string,
+    kind: 'effect' | 'gem' | 'map'
+  ) => {
+    const isActive = option.id === selectedId;
+    const isUnlocked = option.unlocked !== false;
+    return (
+      <button
+        key={option.id}
+        type="button"
+        onClick={() => {
+          onInspect(option.id);
+          if (isUnlocked) {
+            onApply(option.id);
+          }
+        }}
+        className={`relative flex min-h-[112px] flex-col items-center justify-start rounded-[20px] border-2 px-3 pt-3 pb-3 text-center shadow-[0_8px_16px_rgba(67,99,139,0.1)] transition-all active:scale-[0.98] ${
+          isActive ? `${accentClass} ring-2` : 'border-white/95 bg-white/92'
+        }`}
+      >
+        <div className="mx-auto mb-2 flex h-[60px] w-[60px] items-center justify-center overflow-visible">
+          {option.image ? (
+            <img
+              src={option.image}
+              alt={option.name}
+              draggable={false}
+              className={`h-full w-full object-contain ${kind === 'effect' ? 'scale-[1.15]' : ''} ${isUnlocked ? '' : 'brightness-0'}`}
+            />
+          ) : (
+            <div className="text-[11px] font-black text-slate-500">{option.name}</div>
+          )}
+        </div>
+        {isUnlocked ? (
+          <div className="text-center text-[12px] font-black leading-[1.1] text-slate-700">{option.name}</div>
+        ) : (
+          <div className="absolute bottom-3 left-1/2 inline-flex min-w-[74px] -translate-x-1/2 items-center justify-center gap-1 whitespace-nowrap rounded-full bg-slate-200/80 px-2.5 py-1 text-[10px] font-black leading-none text-slate-600 shadow-[0_2px_6px_rgba(148,163,184,0.16)]">
+            <Lock size={11} />
+            {`第${option.unlockLevel ?? 0}关`}
+          </div>
+        )}
+      </button>
+    );
+  };
+
+  const renderAssetTab = (
+    title: string,
+    previewImage: string | undefined,
+    previewLabel: string | undefined,
+    description: string,
+    options: BattleVisualOption[],
+    selectedId: string,
+    onInspect: (id: string) => void,
+    onApply: (id: string) => void,
+    accentClass: string,
+    kind: 'effect' | 'gem' | 'map'
+  ) => (
+    <div className="relative z-10 grid h-[calc(100%-56px)] min-h-0 grid-rows-[minmax(0,1.06fr)_minmax(0,0.94fr)] gap-3 sm:h-[calc(100%-64px)] sm:grid-rows-[minmax(0,0.86fr)_308px]">
+      <aside className={`relative flex min-h-0 flex-col overflow-hidden rounded-[24px] border-2 px-4 py-4 shadow-[inset_0_-6px_0_rgba(201,129,25,0.16),0_16px_26px_rgba(244,166,52,0.18)] sm:rounded-[28px] sm:px-5 sm:py-5 ${
+        options.find((item) => item.id === selectedId)?.unlocked !== false
+          ? 'border-white/80 bg-gradient-to-br from-amber-300 via-orange-300 to-orange-400'
+          : 'border-slate-200/90 bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500'
+      }`}>
+        <div className="pointer-events-none absolute -right-8 top-0 h-32 w-32 rounded-full bg-white/18 blur-2xl" />
+        <div className="pointer-events-none absolute -left-6 bottom-0 h-28 w-28 rounded-full bg-amber-100/20 blur-2xl" />
+
+        <div className="relative z-10 flex flex-1 flex-col gap-4 sm:flex-row sm:items-stretch sm:gap-5">
+          <div className="order-1 flex justify-center self-center sm:order-1 sm:min-w-[148px]">
+            <div className="flex h-[148px] w-[148px] items-center justify-center overflow-visible rounded-full border-4 border-white/45 bg-transparent shadow-[0_14px_24px_rgba(180,106,10,0.18)] sm:h-[154px] sm:w-[154px]">
+              {previewImage ? (
+                <img
+                  src={previewImage}
+                  alt={previewLabel ?? title}
+                  draggable={false}
+                  className={`h-full w-full object-contain drop-shadow-[0_16px_24px_rgba(255,255,255,0.2)] ${kind === 'gem' ? 'scale-[0.8]' : ''} ${options.find((item) => item.id === selectedId)?.unlocked !== false ? '' : 'brightness-0'}`}
+                />
+              ) : (
+                <div className="text-sm font-black text-white/90">{previewLabel ?? title}</div>
+              )}
+            </div>
+          </div>
+
+          <div className="order-2 flex min-w-0 flex-1 flex-col justify-start sm:order-2">
+            <div className="mb-3 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
+              <h3 className="min-w-0 text-[26px] font-black leading-[1.12] text-white drop-shadow-[0_2px_6px_rgba(150,82,0,0.22)] sm:flex-1 sm:text-[30px]">
+                {options.find((item) => item.id === selectedId)?.unlocked !== false ? previewLabel ?? title : '???'}
+              </h3>
+            </div>
+            <p className="min-h-0 overflow-y-auto rounded-[20px] bg-white/16 px-4 py-3 text-sm font-bold leading-6 text-white/95 backdrop-blur-[2px] sm:flex-1 sm:rounded-[22px] sm:px-5 sm:py-4 sm:text-base sm:leading-7">
+              {options.find((item) => item.id === selectedId)?.unlocked !== false ? description : '???'}
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      <section className="flex min-h-0 min-w-0 flex-col rounded-[24px] bg-white/20 px-2 py-2 sm:rounded-[28px] sm:px-3 sm:py-3">
+        <div className="grid min-h-0 grid-cols-2 gap-2.5 overflow-y-auto px-1 pb-2 pt-1 sm:grid-cols-4">
+          {options.map((option) => renderVisualOptionCard(option, selectedId, onInspect, onApply, accentClass, kind))}
+        </div>
+      </section>
+    </div>
+  );
+
+  const renderContent = () => {
+    if (activeTab === 'effect') {
+      return renderAssetTab(
+        '攻击',
+        selectedEffectOption?.image,
+        selectedEffectOption?.name,
+        '在这里切换当前展示的攻击特效。调试器改变正式进度后，这里的选择会立即被对应进度覆盖。',
+        effectOptions,
+        selectedEffectId,
+        setSelectedEffectId,
+        onSelectBattleEffect,
+        'border-orange-100 bg-gradient-to-br from-amber-300/30 to-orange-300/30 ring-amber-200',
+        'effect'
+      );
+    }
+
+    if (activeTab === 'gem') {
+      return renderAssetTab(
+        '宝石',
+        selectedGemOption?.image,
+        selectedGemOption?.name,
+        '在这里切换当前展示的宝石外观。调试器改变正式进度后，宝石会自动刷新成对应进度的解锁状态。',
+        gemOptions,
+        selectedGemId,
+        setSelectedGemId,
+        onSelectBattleGem,
+        'border-sky-100 bg-gradient-to-br from-sky-300/30 to-cyan-300/30 ring-sky-200',
+        'gem'
+      );
+    }
+
+    if (activeTab === 'map') {
+      return renderAssetTab(
+        '场景',
+        selectedMapOption?.image,
+        selectedMapOption?.name,
+        '在这里切换当前展示的场景主题。调试器改变正式进度后，场景会自动刷新成该进度应该使用的背景。',
+        mapOptions,
+        selectedMapId,
+        setSelectedMapId,
+        onSelectBattleMap,
+        'border-violet-100 bg-gradient-to-br from-violet-300/30 to-fuchsia-300/30 ring-violet-200',
+        'map'
+      );
+    }
+
+    return (
+      <div className="relative z-10 grid h-[calc(100%-56px)] min-h-0 grid-rows-[minmax(0,1.06fr)_minmax(0,0.94fr)] gap-3 sm:h-[calc(100%-64px)] sm:grid-rows-[minmax(0,0.86fr)_308px]">
+        <aside className={`relative flex min-h-0 flex-col ${selectedStage.hidden ? 'overflow-visible' : 'overflow-hidden'} rounded-[24px] border-2 px-4 py-4 shadow-[inset_0_-6px_0_rgba(201,129,25,0.16),0_16px_26px_rgba(244,166,52,0.18)] sm:rounded-[28px] sm:px-5 sm:py-5 ${
+          isSelectedStageUnlocked
+            ? 'border-white/80 bg-gradient-to-br from-amber-300 via-orange-300 to-orange-400'
+            : 'border-slate-200/90 bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500'
+        }`}>
+          <div className="pointer-events-none absolute -right-8 top-0 h-32 w-32 rounded-full bg-white/18 blur-2xl" />
+          <div className={`pointer-events-none absolute -left-6 bottom-0 h-28 w-28 blur-2xl ${isSelectedStageUnlocked ? 'rounded-full bg-amber-100/20' : 'rounded-full bg-white/10'}`} />
+
+          <div className="relative z-10 flex flex-1 flex-col gap-4 sm:flex-row sm:items-stretch sm:gap-5">
+            <div className={`order-1 flex justify-center self-center sm:order-1 sm:min-w-[148px] ${selectedStage.hidden ? 'relative z-30 -mt-6 sm:-mt-8' : ''}`}>
+              <div className="flex h-[148px] w-[148px] items-center justify-center overflow-visible rounded-full border-4 border-white/45 bg-white/25 shadow-[inset_0_12px_24px_rgba(255,255,255,0.28),0_14px_24px_rgba(180,106,10,0.18)] sm:h-[154px] sm:w-[154px]">
+                {selectedStage.image ? (
+                  <img
+                    src={selectedStage.image}
+                    alt={isSelectedStageUnlocked ? selectedStage.name : '未知形态'}
+                    draggable={false}
+                    className={`h-full w-full select-none object-contain drop-shadow-[0_16px_24px_rgba(255,255,255,0.2)] ${selectedStage.hidden ? 'relative z-30' : ''} ${isSelectedStageUnlocked ? '' : 'brightness-0'}`}
+                    style={getStageImageStyle(selectedStage, 'detail')}
+                  />
+                ) : (
+                  <span className="text-8xl">{selectedStage.emoji ?? '🥚'}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="order-2 flex min-w-0 flex-1 flex-col justify-start sm:order-2">
+              <div className={`mb-3 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left ${selectedStage.hidden ? 'relative z-40' : ''}`}>
+                <h3 className={`min-w-0 text-[26px] font-black leading-[1.12] text-white drop-shadow-[0_2px_6px_rgba(150,82,0,0.22)] sm:flex-1 sm:text-[30px] ${selectedStage.hidden ? 'relative z-40' : ''}`}>
+                  {isSelectedStageUnlocked ? selectedStage.name : '???'}
+                </h3>
+                {isSelectedStageUnlocked ? (
+                  selectedBattleStageId === selectedStage.id ? (
+                    <div className="shrink-0 inline-flex items-center rounded-full bg-white px-4 py-2 text-xs font-black text-sky-600 shadow-[0_8px_16px_rgba(255,255,255,0.18)] sm:text-sm">
+                      当前形态
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onSelectBattleStage(selectedStage.id)}
+                      className="shrink-0 inline-flex items-center rounded-full bg-white px-4 py-2 text-xs font-black text-amber-700 shadow-[0_8px_16px_rgba(255,255,255,0.18)] transition-transform active:scale-95 sm:text-sm"
+                    >
+                      用该形态出战
+                    </button>
+                  )
+                ) : null}
+              </div>
+              <p className="min-h-0 overflow-y-auto rounded-[20px] bg-white/16 px-4 py-3 text-sm font-bold leading-6 text-white/95 backdrop-blur-[2px] sm:flex-1 sm:rounded-[22px] sm:px-5 sm:py-4 sm:text-base sm:leading-7">
+                {isSelectedStageUnlocked ? selectedStage.description : '???'}
+              </p>
+            </div>
+          </div>
+        </aside>
+
+        <section className="flex min-h-0 min-w-0 flex-col rounded-[24px] bg-white/20 px-2 py-2 sm:rounded-[28px] sm:px-3 sm:py-3">
+          <div className="grid min-h-0 grid-cols-2 gap-2.5 overflow-y-auto px-1 pb-2 pt-1 sm:grid-cols-4">
+            {growthStages.map((stage) => renderStageCard(stage))}
+          </div>
+        </section>
+      </div>
     );
   };
 
@@ -169,13 +423,32 @@ export default function PokedexScreen({
           >
             <div className="pointer-events-none absolute inset-[8px] rounded-[20px] border border-dashed border-amber-300/40 sm:inset-[12px] sm:rounded-[26px]" />
 
-            <div className="relative z-10 mb-3 flex items-center justify-between sm:mb-4">
+            <div className="relative z-10 mb-3 flex flex-wrap items-center justify-between gap-3 sm:mb-4">
               <div className="flex items-center gap-3">
                 <div className="grid h-10 w-10 place-items-center rounded-[14px] bg-gradient-to-b from-amber-200 to-orange-300 text-xl shadow-[0_8px_16px_rgba(255,181,66,0.22)] sm:h-11 sm:w-11 sm:rounded-[16px] sm:text-2xl">
                   📖
                 </div>
-                <div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                   <h2 className="text-[24px] font-black leading-none text-slate-700 sm:text-[28px]">图鉴</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {tabItems.map((tab) => {
+                      const isActive = activeTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setActiveTab(tab.id)}
+                          className={`rounded-full px-3 py-1.5 text-[11px] font-black transition-all sm:text-xs ${
+                            isActive
+                              ? 'bg-slate-700 text-white shadow-[0_8px_16px_rgba(51,65,85,0.18)]'
+                              : 'bg-white/85 text-slate-500 shadow-[0_8px_16px_rgba(67,99,139,0.08)]'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -188,66 +461,7 @@ export default function PokedexScreen({
               </button>
             </div>
 
-            <div className="relative z-10 grid h-[calc(100%-56px)] min-h-0 grid-rows-[minmax(0,1.06fr)_minmax(0,0.94fr)] gap-3 sm:h-[calc(100%-64px)] sm:grid-rows-[minmax(0,0.86fr)_308px]">
-              <aside className={`relative flex min-h-0 flex-col ${selectedStage.hidden ? 'overflow-visible' : 'overflow-hidden'} rounded-[24px] border-2 px-4 py-4 shadow-[inset_0_-6px_0_rgba(201,129,25,0.16),0_16px_26px_rgba(244,166,52,0.18)] sm:rounded-[28px] sm:px-5 sm:py-5 ${
-                isSelectedStageUnlocked
-                  ? 'border-white/80 bg-gradient-to-br from-amber-300 via-orange-300 to-orange-400'
-                  : 'border-slate-200/90 bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500'
-              }`}>
-                <div className="pointer-events-none absolute -right-8 top-0 h-32 w-32 rounded-full bg-white/18 blur-2xl" />
-                <div className={`pointer-events-none absolute -left-6 bottom-0 h-28 w-28 blur-2xl ${isSelectedStageUnlocked ? 'rounded-full bg-amber-100/20' : 'rounded-full bg-white/10'}`} />
-
-                <div className="relative z-10 flex flex-1 flex-col gap-4 sm:flex-row sm:items-stretch sm:gap-5">
-                  <div className={`order-1 flex justify-center self-center sm:order-1 sm:min-w-[148px] ${selectedStage.hidden ? 'relative z-30 -mt-6 sm:-mt-8' : ''}`}>
-                    <div className="flex h-[148px] w-[148px] items-center justify-center overflow-visible rounded-full border-4 border-white/45 bg-white/25 shadow-[inset_0_12px_24px_rgba(255,255,255,0.28),0_14px_24px_rgba(180,106,10,0.18)] sm:h-[154px] sm:w-[154px]">
-                      {selectedStage.image ? (
-                        <img
-                          src={selectedStage.image}
-                          alt={isSelectedStageUnlocked ? selectedStage.name : '未知形态'}
-                          draggable={false}
-                          className={`h-full w-full select-none object-contain drop-shadow-[0_16px_24px_rgba(255,255,255,0.2)] ${selectedStage.hidden ? 'relative z-30' : ''} ${isSelectedStageUnlocked ? '' : 'brightness-0 opacity-80'}`}
-                          style={getStageImageStyle(selectedStage, 'detail')}
-                        />
-                      ) : (
-                        <span className="text-8xl">{selectedStage.emoji ?? '🥚'}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="order-2 flex min-w-0 flex-1 flex-col justify-start sm:order-2">
-                    <div className={`mb-3 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left ${selectedStage.hidden ? 'relative z-40' : ''}`}>
-                      <h3 className={`min-w-0 text-[26px] font-black leading-[1.12] text-white drop-shadow-[0_2px_6px_rgba(150,82,0,0.22)] sm:flex-1 sm:text-[30px] ${selectedStage.hidden ? 'relative z-40' : ''}`}>
-                        {isSelectedStageUnlocked ? selectedStage.name : '???'}
-                      </h3>
-                      {isSelectedStageUnlocked ? (
-                        selectedBattleStageId === selectedStage.id ? (
-                          <div className="shrink-0 inline-flex items-center rounded-full bg-white px-4 py-2 text-xs font-black text-sky-600 shadow-[0_8px_16px_rgba(255,255,255,0.18)] sm:text-sm">
-                            当前形态
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => onSelectBattleStage(selectedStage.id)}
-                            className="shrink-0 inline-flex items-center rounded-full bg-white px-4 py-2 text-xs font-black text-amber-700 shadow-[0_8px_16px_rgba(255,255,255,0.18)] transition-transform active:scale-95 sm:text-sm"
-                          >
-                            用该形态出战
-                          </button>
-                        )
-                      ) : null}
-                    </div>
-                    <p className="min-h-0 overflow-y-auto rounded-[20px] bg-white/16 px-4 py-3 text-sm font-bold leading-6 text-white/95 backdrop-blur-[2px] sm:flex-1 sm:rounded-[22px] sm:px-5 sm:py-4 sm:text-base sm:leading-7">
-                      {isSelectedStageUnlocked ? selectedStage.description : '???'}
-                    </p>
-                  </div>
-                </div>
-              </aside>
-
-              <section className="flex min-h-0 min-w-0 flex-col rounded-[24px] bg-white/20 px-2 py-2 sm:rounded-[28px] sm:px-3 sm:py-3">
-                <div className="grid min-h-0 grid-cols-2 gap-2.5 overflow-y-auto px-1 pb-2 pt-1 sm:grid-cols-4">
-                  {growthStages.map((stage) => renderStageCard(stage))}
-                </div>
-              </section>
-            </div>
+            {renderContent()}
           </motion.div>
         </motion.div>
       )}

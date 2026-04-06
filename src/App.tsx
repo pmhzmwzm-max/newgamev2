@@ -9,13 +9,21 @@ import QuizScreen from './components/QuizScreen';
 import ResultScreen from './components/ResultScreen';
 import PokedexScreen from './components/PokedexScreen';
 import {
+  getAttackEffectProfileByName,
   buildRewardCardModel,
+  getBattleBackgroundForExp,
   getCurrentAttackEffect,
+  getGemImage,
+  getGemImageForExp,
+  getGemNameForExp,
   getGrowthStageByExp,
-  getGemNameForLevel,
   getLevelRewardConfig,
-  getMapThemeNameForLevel,
+  getMapThemeImage,
+  getMapThemeNameForExp,
   getTotalExpBeforeLevel,
+  getUnlockedAttackEffectOptions,
+  getUnlockedGemOptions,
+  getUnlockedMapThemeOptions,
   growthStages,
   type RewardCardModel,
 } from './data/growthRewards';
@@ -90,6 +98,9 @@ export default function App() {
     const parsed = saved ? parseInt(saved, 10) : 1;
     return growthStages.some((stage) => stage.id === parsed) ? parsed : 1;
   });
+  const [selectedBattleEffectName, setSelectedBattleEffectName] = useState<string>(() => localStorage.getItem('selectedBattleEffectName') || '橙光I');
+  const [selectedBattleGemName, setSelectedBattleGemName] = useState<string>(() => localStorage.getItem('selectedBattleGemName') || '蓝晶');
+  const [selectedBattleMapTheme, setSelectedBattleMapTheme] = useState<string>(() => localStorage.getItem('selectedBattleMapTheme') || '启程原');
   const [showPokedexModal, setShowPokedexModal] = useState(false);
   const [rewardCard, setRewardCard] = useState<RewardCardModel | null>(null);
   const [showRewardCard, setShowRewardCard] = useState(false);
@@ -99,6 +110,18 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('selectedBattleStageId', selectedBattleStageId.toString());
   }, [selectedBattleStageId]);
+
+  useEffect(() => {
+    localStorage.setItem('selectedBattleEffectName', selectedBattleEffectName);
+  }, [selectedBattleEffectName]);
+
+  useEffect(() => {
+    localStorage.setItem('selectedBattleGemName', selectedBattleGemName);
+  }, [selectedBattleGemName]);
+
+  useEffect(() => {
+    localStorage.setItem('selectedBattleMapTheme', selectedBattleMapTheme);
+  }, [selectedBattleMapTheme]);
 
   const [gameData, setGameData] = useState<GameData>(() => {
     const saved = localStorage.getItem('gameDataV3');
@@ -118,6 +141,18 @@ export default function App() {
 
   const currentGradeData = gameData[currentGrade];
   const activeGrowthStage = getGrowthStageByExp(currentGradeData.puzzlePieces);
+  const defaultEffectName = getCurrentAttackEffect(currentGradeData.puzzlePieces).name;
+  const defaultGemName = getGemNameForExp(currentGradeData.puzzlePieces);
+  const defaultMapTheme = getMapThemeNameForExp(currentGradeData.puzzlePieces);
+  const unlockedEffectOptions = getUnlockedAttackEffectOptions(currentGradeData.puzzlePieces);
+  const unlockedGemOptions = getUnlockedGemOptions(currentGradeData.puzzlePieces);
+  const unlockedMapOptions = getUnlockedMapThemeOptions(currentGradeData.puzzlePieces);
+
+  const applyBattleLoadoutFromExp = (exp: number) => {
+    setSelectedBattleEffectName(getCurrentAttackEffect(exp).name);
+    setSelectedBattleGemName(getGemNameForExp(exp));
+    setSelectedBattleMapTheme(getMapThemeNameForExp(exp));
+  };
 
   useEffect(() => {
     const selectedStage = growthStages.find((stage) => stage.id === selectedBattleStageId);
@@ -125,6 +160,28 @@ export default function App() {
       setSelectedBattleStageId(activeGrowthStage.id);
     }
   }, [activeGrowthStage.id, currentGradeData.puzzlePieces, selectedBattleStageId]);
+
+  useEffect(() => {
+    if (!unlockedEffectOptions.some((option) => option.id === selectedBattleEffectName && option.unlocked !== false)) {
+      setSelectedBattleEffectName(defaultEffectName);
+    }
+    if (!unlockedGemOptions.some((option) => option.id === selectedBattleGemName && option.unlocked !== false)) {
+      setSelectedBattleGemName(defaultGemName);
+    }
+    if (!unlockedMapOptions.some((option) => option.id === selectedBattleMapTheme && option.unlocked !== false)) {
+      setSelectedBattleMapTheme(defaultMapTheme);
+    }
+  }, [
+    defaultEffectName,
+    defaultGemName,
+    defaultMapTheme,
+    selectedBattleEffectName,
+    selectedBattleGemName,
+    selectedBattleMapTheme,
+    unlockedEffectOptions,
+    unlockedGemOptions,
+    unlockedMapOptions,
+  ]);
 
   const handleLevelComplete = (levelStats: { accuracy: number; time: number; maxCombo: number }) => {
     const rewardConfig = getLevelRewardConfig(currentLevelId);
@@ -165,6 +222,7 @@ export default function App() {
     if (afterStage.id > beforeStage.id) {
       setSelectedBattleStageId(afterStage.id);
     }
+    applyBattleLoadoutFromExp(totalAfter);
     setCurrentScreen('result');
   };
   const realHighestUnlockedLevel = Math.max(
@@ -178,7 +236,7 @@ export default function App() {
 
   const setFormalProgressToLevel = (level: number) => {
     const clampedLevel = Math.max(1, Math.min(MAX_LEVELS, level));
-    const targetExp = getLevelRewardConfig(clampedLevel).cumulativeExp;
+    const targetExp = getTotalExpBeforeLevel(clampedLevel);
     const targetStage = getGrowthStageByExp(targetExp);
     setGameData((prev) => ({
       ...prev,
@@ -188,6 +246,7 @@ export default function App() {
       },
     }));
     setSelectedBattleStageId(targetStage.id);
+    applyBattleLoadoutFromExp(targetExp);
     setCurrentLevelId(clampedLevel);
     setDebugLevel(clampedLevel);
     setRewardCard(null);
@@ -196,10 +255,10 @@ export default function App() {
   };
   const effectiveUnlockedLevels = currentGradeData.unlockedLevels;
   const effectivePuzzlePieces = currentGradeData.puzzlePieces;
-  const debugChainExp = getLevelRewardConfig(debugLevel).cumulativeExp;
+  const debugChainExp = getTotalExpBeforeLevel(debugLevel);
   const debugChainStage = getGrowthStageByExp(debugChainExp);
-  const debugChainGem = getGemNameForLevel(debugLevel);
-  const debugChainMapTheme = getMapThemeNameForLevel(debugLevel);
+  const debugChainGem = getGemNameForExp(debugChainExp);
+  const debugChainMapTheme = getMapThemeNameForExp(debugChainExp);
   const debugChainEffect = getCurrentAttackEffect(debugChainExp);
   const debugChainReward = getLevelRewardConfig(debugLevel).reward || '-';
 
@@ -248,7 +307,9 @@ export default function App() {
             gradeId={currentGrade}
             levelId={currentLevelId}
             selectedPet={growthStages.find((stage) => stage.id === selectedBattleStageId) ?? growthStages[1]}
-            attackEffect={getCurrentAttackEffect(effectivePuzzlePieces)}
+            attackEffect={getAttackEffectProfileByName(selectedBattleEffectName)}
+            gemImage={getGemImage(selectedBattleGemName) ?? getGemImageForExp(effectivePuzzlePieces)}
+            backgroundImage={getMapThemeImage(selectedBattleMapTheme) ?? getBattleBackgroundForExp(effectivePuzzlePieces)}
             onFinish={handleLevelComplete}
             onBack={() => setCurrentScreen('map')}
             showDebugTools={import.meta.env.DEV}
@@ -281,6 +342,15 @@ export default function App() {
           puzzlePieces={effectivePuzzlePieces}
           selectedBattleStageId={selectedBattleStageId}
           onSelectBattleStage={setSelectedBattleStageId}
+          selectedBattleEffectName={selectedBattleEffectName}
+          selectedBattleGemName={selectedBattleGemName}
+          selectedBattleMapTheme={selectedBattleMapTheme}
+          effectOptions={unlockedEffectOptions}
+          gemOptions={unlockedGemOptions}
+          mapOptions={unlockedMapOptions}
+          onSelectBattleEffect={setSelectedBattleEffectName}
+          onSelectBattleGem={setSelectedBattleGemName}
+          onSelectBattleMap={setSelectedBattleMapTheme}
           onClose={() => setShowPokedexModal(false)}
         />
 

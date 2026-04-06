@@ -120,6 +120,13 @@ export default function GrowthRewardModal({
                                   draggable={false}
                                   className="h-full w-full rounded-[18px] object-cover shadow-[0_8px_16px_rgba(0,0,0,0.18)]"
                                 />
+                              ) : reward.newRewardKind === 'sfx' ? (
+                                <img
+                                  src={reward.rewardHeroImage}
+                                  alt={reward.newRewardLabel}
+                                  draggable={false}
+                                  className="h-[118%] w-[118%] select-none object-contain drop-shadow-[0_14px_22px_rgba(255,245,196,0.32)]"
+                                />
                               ) : (
                                 <img
                                   src={reward.rewardHeroImage}
