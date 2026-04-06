@@ -2,10 +2,13 @@ import React, { memo, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Delete, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { allLevelsData } from '../data/questions';
+import {
+  getBattleBackgroundForLevel,
+  getGemImageForLevel,
+  type AttackEffectProfile,
+} from '../data/growthRewards';
 import { playCloudPuffBreak, playCloudPuffBurst, playCloudPuffCharge, primeBattleSfx, startBattleBgm, stopBattleBgm, warmupBattleBgm } from './battleSfx';
 import { getBreakFeedbackProfile, getCameraShakeProfile, getChargeDuration, getExplosionProfile, getRemovalCount, getShotTier, getShotTiming, type ShotTier } from './quizTiming';
-import blockGemImage from '../assets/battle/block-gem-battle.png';
-import quizBattleBackground from '../../UI v2.0/关卡内背景v2.jpg';
 
 const TOTAL_BATTLE_BLOCKS = 35;
 const BATTLE_BLOCK_COLUMNS = 5;
@@ -87,23 +90,25 @@ const createSeededRandom = (seed: number) => {
   };
 };
 
-const getShardColors = (tier: ShotTier) =>
+const getShardColors = (tier: ShotTier, effect: AttackEffectProfile) =>
   tier === 'final'
-    ? ['#FFF7AE', '#FDE047', '#FB923C', '#F87171', '#FB7185']
+    ? [effect.coreColor, effect.glowColor, effect.tailColor, effect.ringColor, 'rgba(255,255,255,0.95)']
     : tier === 'super'
-    ? ['#FFF7AE', '#FDE047', '#FB923C', '#F87171']
-    : ['#FFF7AE', '#FDE047', '#FB923C'];
+    ? [effect.coreColor, effect.glowColor, effect.tailColor, effect.ringColor]
+    : [effect.coreColor, effect.glowColor, effect.tailColor];
 
-const getSparkColors = (tier: ShotTier) =>
-  tier === 'final' ? ['#FFFFFF', '#FEF3C7', '#FDE68A', '#FDBA74'] : ['#FFFFFF', '#FEF3C7', '#FDE68A'];
+const getSparkColors = (tier: ShotTier, effect: AttackEffectProfile) =>
+  tier === 'final'
+    ? ['#FFFFFF', effect.coreColor, effect.ringColor, effect.glowColor]
+    : ['#FFFFFF', effect.coreColor, effect.glowColor];
 
-const getExplosionPreset = (tier: ShotTier, seed: number, profile: ReturnType<typeof getExplosionProfile>) => {
-  const cacheKey = `${tier}:${seed}`;
+const getExplosionPreset = (tier: ShotTier, seed: number, profile: ReturnType<typeof getExplosionProfile>, effect: AttackEffectProfile) => {
+  const cacheKey = `${tier}:${seed}:${effect.name}`;
   const cached = explosionPresetCache.get(cacheKey);
   if (cached) return cached;
 
-  const shardColors = getShardColors(tier);
-  const sparkColors = getSparkColors(tier);
+  const shardColors = getShardColors(tier, effect);
+  const sparkColors = getSparkColors(tier, effect);
   const rand = createSeededRandom(seed + 1);
 
   const preset: ExplosionPreset = {
@@ -151,9 +156,9 @@ const getExplosionPreset = (tier: ShotTier, seed: number, profile: ReturnType<ty
   return preset;
 };
 
-const BlockExplosion = memo(({ delay = 0, tier = 'normal', seed }: { delay?: number; tier?: ShotTier; seed: number }) => {
+const BlockExplosion = memo(({ delay = 0, tier = 'normal', seed, effect }: { delay?: number; tier?: ShotTier; seed: number; effect: AttackEffectProfile }) => {
   const profile = useMemo(() => getExplosionProfile(tier), [tier]);
-  const preset = useMemo(() => getExplosionPreset(tier, seed, profile), [profile, seed, tier]);
+  const preset = useMemo(() => getExplosionPreset(tier, seed, profile, effect), [effect, profile, seed, tier]);
   const burstScale = tier === 'final' ? 3.9 : 3.1;
 
   return (
@@ -162,8 +167,11 @@ const BlockExplosion = memo(({ delay = 0, tier = 'normal', seed }: { delay?: num
         initial={{ scale: 0.2, opacity: 0.98 }}
         animate={{ scale: [0.2, profile.flashScale * 0.72, profile.flashScale], opacity: [0.98, 0.62, 0] }}
         transition={{ duration: 0.42, delay, ease: 'easeOut', times: [0, 0.24, 1] }}
-        className="absolute inset-[2%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,1),rgba(255,251,235,0.96)_16%,rgba(253,224,71,0.9)_34%,rgba(251,146,60,0.7)_56%,rgba(239,68,68,0.34)_74%,transparent_100%)]"
-        style={{ willChange: 'transform, opacity' }}
+        className="absolute inset-[2%] rounded-full"
+        style={{
+          background: `radial-gradient(circle, rgba(255,255,255,1), ${effect.coreColor} 20%, ${effect.glowColor} 42%, ${effect.tailColor} 68%, transparent 100%)`,
+          willChange: 'transform, opacity',
+        }}
       />
 
       <motion.div
@@ -247,6 +255,8 @@ type BattleBlockProps = {
   justCleared: boolean;
   shotTier: ShotTier;
   clearDelay: number;
+  effect: AttackEffectProfile;
+  gemImage: string | undefined;
 };
 
 const BattleBlock: React.FC<BattleBlockProps> = memo(({
@@ -255,6 +265,8 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
   justCleared,
   shotTier,
   clearDelay,
+  effect,
+  gemImage,
 }) => {
   const wobbleDelay = (index % 5) * 0.12;
 
@@ -267,14 +279,14 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
             ...BLOCK_WOBBLE_TRANSITION,
             delay: wobbleDelay,
           }}
-          className="relative h-[98%] w-[122%] max-h-full max-w-none overflow-visible will-change-transform"
+          className="relative h-[88%] w-[102%] max-h-full max-w-none overflow-visible will-change-transform"
         >
           <img
-            src={blockGemImage}
+            src={gemImage ?? ''}
             alt=""
             draggable={false}
-            className="h-full w-full scale-x-[1.04] scale-y-[1.36] object-fill select-none"
-            style={{ filter: 'drop-shadow(0 10px 18px rgba(49,104,201,0.22))' }}
+            className="h-full w-full scale-x-[0.94] scale-y-[1.36] object-fill select-none"
+            style={{ filter: 'drop-shadow(0 8px 14px rgba(49,104,201,0.2))' }}
           />
         </motion.div>
       )}
@@ -285,17 +297,17 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
             initial={{ scale: 1, opacity: 1, rotate: 0 }}
             animate={{ scale: [1, 1.08, 0.2], opacity: [1, 1, 0], rotate: [0, -6, 8] }}
             transition={{ duration: 0.44, delay: clearDelay, ease: 'easeOut' }}
-            className="absolute h-[98%] w-[122%] max-h-full max-w-none overflow-visible"
+            className="absolute h-[88%] w-[102%] max-h-full max-w-none overflow-visible"
           >
             <img
-              src={blockGemImage}
+              src={gemImage ?? ''}
               alt=""
               draggable={false}
-              className="h-full w-full scale-x-[1.04] scale-y-[1.36] object-fill select-none"
-              style={{ filter: 'drop-shadow(0 12px 20px rgba(49,104,201,0.24))' }}
+              className="h-full w-full scale-x-[0.94] scale-y-[1.36] object-fill select-none"
+              style={{ filter: 'drop-shadow(0 9px 16px rgba(49,104,201,0.22))' }}
             />
           </motion.div>
-          <BlockExplosion delay={clearDelay} tier={shotTier} seed={index} />
+          <BlockExplosion delay={clearDelay} tier={shotTier} seed={index} effect={effect} />
         </>
       )}
     </div>
@@ -307,15 +319,19 @@ const BattleBlockGrid = memo(
     clearedBlocks,
     lastRemoval,
     shotTier,
+    effect,
+    gemImage,
   }: {
     clearedBlocks: number;
     lastRemoval: number;
     shotTier: ShotTier;
+    effect: AttackEffectProfile;
+    gemImage: string | undefined;
   }) => {
     const recentClearStart = Math.max(0, clearedBlocks - lastRemoval);
 
     return (
-      <div className="grid h-full w-full min-h-0 grid-cols-5 grid-rows-7 gap-x-0 gap-y-0 place-items-stretch">
+      <div className="grid h-full w-full min-h-0 grid-cols-5 grid-rows-7 gap-x-3 gap-y-1.5 place-items-stretch">
         {BATTLE_BLOCK_INDEXES.map((index) => {
           const clearRank = BLOCK_CLEAR_RANK[index];
           const cleared = clearRank < clearedBlocks;
@@ -330,6 +346,8 @@ const BattleBlockGrid = memo(
               justCleared={justCleared}
               shotTier={shotTier}
               clearDelay={clearDelay}
+              effect={effect}
+              gemImage={gemImage}
             />
           );
         })}
@@ -411,6 +429,8 @@ const BattleStage = memo(({
   combo,
   displayCombo,
   shotTier,
+  effect,
+  gemImage,
   clearedBlocks,
   lastRemoval,
   shotSequence,
@@ -420,6 +440,8 @@ const BattleStage = memo(({
   combo: number;
   displayCombo: number;
   shotTier: ShotTier;
+  effect: AttackEffectProfile;
+  gemImage: string | undefined;
   clearedBlocks: number;
   lastRemoval: number;
   shotSequence: number;
@@ -432,7 +454,7 @@ const BattleStage = memo(({
   const breakSourceTier = combo >= 10 ? 'final' : combo >= 6 ? 'super' : combo >= 3 ? 'boost' : 'normal';
   const breakFeedback = getBreakFeedbackProfile(breakSourceTier);
   const cameraShake = getCameraShakeProfile(shotTier);
-  const petScalePeak = shotTier === 'final' ? 1.3 : shotTier === 'super' ? 1.2 : shotTier === 'boost' ? 1.12 : 1.05;
+  const petScalePeak = shotTier === 'final' ? 1.34 : shotTier === 'super' ? 1.22 : shotTier === 'boost' ? 1.12 : 1.05;
   useEffect(() => {
     if (!cameraShake.enabled || impactSequence === 0) return;
 
@@ -444,14 +466,22 @@ const BattleStage = memo(({
   const petGlowStyle = useMemo(
     () =>
       shotTier === 'final'
-        ? { filter: 'drop-shadow(0 0 36px rgba(251,146,60,1))' }
+        ? { filter: `drop-shadow(0 0 40px ${effect.glowColor}) drop-shadow(0 0 18px ${effect.coreColor})` }
         : shotTier === 'super'
-        ? { filter: 'drop-shadow(0 0 26px rgba(250,204,21,0.92))' }
+        ? { filter: `drop-shadow(0 0 28px ${effect.glowColor}) drop-shadow(0 0 14px ${effect.coreColor})` }
         : shotTier === 'boost'
-        ? { filter: 'drop-shadow(0 0 20px rgba(251,146,60,0.82))' }
-        : { filter: 'drop-shadow(0 0 12px rgba(251,191,36,0.5))' },
-    [shotTier],
+        ? { filter: `drop-shadow(0 0 22px ${effect.glowColor})` }
+        : { filter: `drop-shadow(0 0 14px ${effect.glowColor})` },
+    [effect.coreColor, effect.glowColor, shotTier],
   );
+
+  const impactScalePeak =
+    effect.baseImpactScale * (shotTier === 'final' ? 1.3 : shotTier === 'super' ? 1.16 : shotTier === 'boost' ? 1.08 : 1);
+  const impactRingPeak =
+    effect.baseImpactScale * (shotTier === 'final' ? 1.56 : shotTier === 'super' ? 1.36 : shotTier === 'boost' ? 1.24 : 1.14);
+  const particleEnabled = effect.particleOpacity > 0.25;
+  const showSecondRing = effect.secondRingOpacity > 0.01;
+  const showFinalFlash = shotTier === 'final' && effect.flashOpacity > 0;
 
   return (
     <div className="relative w-full h-full overflow-visible transition-all">
@@ -475,48 +505,135 @@ const BattleStage = memo(({
       <AnimatePresence>
         {showImpact && (
           <motion.div
-            key={`impact-${shotSequence}-${shotTier}`}
-            initial={{ opacity: 0, scale: 0.2, x: 18, y: 8 }}
+            key={`impact-${shotSequence}-${shotTier}-${effect.name}`}
+            initial={{ opacity: 0, scale: 0.18, x: 18, y: 8 }}
             animate={{
-              opacity: [0, 0, 0.96, 0.38, 0],
-              scale:
-                shotTier === 'final'
-                  ? [0.2, 0.2, 1.54, 1.98, 2.18]
-                  : shotTier === 'super'
-                  ? [0.2, 0.2, 1.26, 1.62, 1.82]
-                  : [0.2, 0.2, 1.08, 1.3, 1.48],
+              opacity: [0, 0, 0.98, 0.48, 0],
+              scale: [0.18, 0.18, impactScalePeak, impactScalePeak * 1.12, impactScalePeak * 1.26],
               x: [18, 12, -12, -26, -34],
               y: [8, 6, 0, -1, -2],
             }}
             exit={{ opacity: 0 }}
             transition={{ duration: chargeDuration + 0.62, times: [0, 0.62, 0.72, 0.9, 1], ease: 'easeOut' }}
-            className="pointer-events-none absolute right-[26%] top-[56%] z-20 h-20 w-20 rounded-full bg-[radial-gradient(circle,rgba(255,251,235,0.98),rgba(254,240,138,0.9)_34%,rgba(251,146,60,0.52)_62%,transparent_100%)]"
-            style={{ willChange: 'transform, opacity' }}
+            className="pointer-events-none absolute right-[26%] top-[56%] z-20 h-20 w-20 rounded-full"
+            style={{
+              background: `radial-gradient(circle, rgba(255,255,255,0.99), ${effect.coreColor} 28%, ${effect.glowColor} 56%, ${effect.tailColor} 76%, transparent 100%)`,
+              willChange: 'transform, opacity',
+            }}
           >
             <motion.div
-              initial={{ opacity: 0, scaleX: 0.2 }}
-              animate={{
-                opacity: [0, 0, 0.7, 0],
-                scaleX: shotTier === 'final' ? [0.2, 0.2, 1.42, 1.9] : shotTier === 'super' ? [0.2, 0.2, 1.18, 1.55] : [0.2, 0.2, 1.02, 1.28],
-              }}
+              initial={{ opacity: 0, scale: 0.2 }}
+              animate={{ opacity: [0, 0, 0.92, 0], scale: [0.2, 0.2, impactRingPeak, impactRingPeak * 1.16] }}
               transition={{ duration: chargeDuration + 0.62, times: [0, 0.64, 0.76, 1], ease: 'easeOut' }}
-              className="absolute left-1/2 top-1/2 h-5 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,rgba(251,146,60,0)_0%,rgba(251,191,36,0.75)_42%,rgba(255,251,235,0.96)_100%)]"
-              style={{ willChange: 'transform, opacity' }}
+              className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+              style={{ borderColor: effect.ringColor, boxShadow: `0 0 28px ${effect.glowColor}`, willChange: 'transform, opacity' }}
             />
+            {showSecondRing && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.22 }}
+                animate={{
+                  opacity: [0, 0, effect.secondRingOpacity * (shotTier === 'final' ? 1 : 0.9), 0],
+                  scale: [0.22, 0.22, impactRingPeak * 1.12, impactRingPeak * 1.34],
+                }}
+                transition={{ duration: chargeDuration + 0.72, times: [0, 0.64, 0.8, 1], ease: 'easeOut' }}
+                className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+                style={{ borderColor: effect.ringColor, boxShadow: `0 0 34px ${effect.haloColor}`, willChange: 'transform, opacity' }}
+              />
+            )}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.14 }}
+              animate={{ opacity: [0, 1, 0], scale: [0.14, effect.orbScale, effect.orbScale * 1.28] }}
+              transition={{ duration: chargeDuration + 0.44, times: [0, 0.62, 1], ease: 'easeOut' }}
+              className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full"
+              style={{
+                background: `radial-gradient(circle, rgba(255,255,255,1) 0%, ${effect.coreColor} 40%, ${effect.glowColor} 72%, rgba(255,255,255,0) 100%)`,
+                boxShadow: `0 0 36px ${effect.glowColor}`,
+                willChange: 'transform, opacity',
+              }}
+            />
+            {effect.residueOpacity > 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.72 }}
+                animate={{ opacity: [0, effect.residueOpacity * 0.72, 0], scale: [0.72, 1.02, 1.24] }}
+                transition={{ duration: chargeDuration + 0.92, times: [0, 0.42, 1], ease: 'easeOut' }}
+                className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style={{
+                  background: `radial-gradient(circle, rgba(255,255,255,0.92) 0%, ${effect.coreColor} 28%, ${effect.haloColor} 52%, rgba(255,255,255,0) 100%)`,
+                  filter: 'blur(10px)',
+                  willChange: 'transform, opacity',
+                }}
+              />
+            )}
+            {particleEnabled &&
+              [
+                { x: -52, y: -22, r: -32, delay: 0.02 },
+                { x: -24, y: 38, r: 48, delay: 0.05 },
+                { x: 22, y: -46, r: 72, delay: 0.04 },
+                { x: 58, y: 18, r: -58, delay: 0.08 },
+                { x: 46, y: 42, r: 34, delay: 0.1 },
+                { x: -12, y: -60, r: -82, delay: 0.05 },
+              ].map((shard, i) => (
+                <motion.div
+                  key={`impact-shard-${i}`}
+                  initial={{ opacity: 0, x: 0, y: 0, rotate: 0, scale: 0.24 }}
+                  animate={{
+                    opacity: [0, effect.particleOpacity, 0],
+                    x: [0, shard.x],
+                    y: [0, shard.y],
+                    rotate: [0, shard.r],
+                    scale: [0.24, effect.shardScale],
+                  }}
+                  transition={{ duration: chargeDuration + 0.24, delay: shard.delay, ease: 'easeOut' }}
+                  className="absolute left-1/2 top-1/2 h-2.5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  style={{
+                    background: `linear-gradient(135deg, rgba(255,255,255,0.98), ${effect.coreColor} 55%, ${effect.tailColor} 100%)`,
+                    boxShadow: `0 0 24px ${effect.glowColor}`,
+                    willChange: 'transform, opacity',
+                  }}
+                />
+              ))}
+            {particleEnabled &&
+              [
+                { x: -42, y: -36, delay: 0.03 },
+                { x: -18, y: 62, delay: 0.06 },
+                { x: 44, y: -28, delay: 0.04 },
+                { x: 66, y: 22, delay: 0.08 },
+              ].map((dot, i) => (
+                <motion.div
+                  key={`impact-dot-${i}`}
+                  initial={{ opacity: 0, x: 0, y: 0, scale: 0.2 }}
+                  animate={{
+                    opacity: [0, effect.particleOpacity, 0],
+                    x: [0, dot.x],
+                    y: [0, dot.y],
+                    scale: [0.2, 1.08, 0.2],
+                  }}
+                  transition={{ duration: chargeDuration + 0.14, delay: dot.delay, ease: 'easeOut' }}
+                  className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  style={{
+                    background: `radial-gradient(circle, rgba(255,255,255,1) 0%, ${effect.coreColor} 55%, rgba(255,255,255,0) 100%)`,
+                    boxShadow: `0 0 18px ${effect.glowColor}`,
+                    willChange: 'transform, opacity',
+                  }}
+                />
+              ))}
           </motion.div>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
-        {shotTier === 'final' && (
+        {showFinalFlash && (
           <motion.div
-            key={`final-burst-${shotSequence}`}
+            key={`final-burst-${shotSequence}-${effect.name}`}
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.34, 0.08, 0] }}
+            animate={{ opacity: [0, effect.flashOpacity, effect.flashOpacity * 0.3, 0] }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.95, ease: 'easeOut' }}
-            className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_72%_54%,rgba(255,251,235,0.85),rgba(254,240,138,0.42)_22%,rgba(251,146,60,0.18)_45%,transparent_72%)]"
-            style={{ willChange: 'opacity' }}
+            className="pointer-events-none absolute inset-0 z-10"
+            style={{
+              background: `radial-gradient(circle_at_72%_54%, rgba(255,255,255,0.85), ${effect.coreColor} 22%, ${effect.haloColor} 45%, transparent 72%)`,
+              willChange: 'opacity',
+            }}
           />
         )}
       </AnimatePresence>
@@ -536,7 +653,13 @@ const BattleStage = memo(({
           />
 
           <div className="relative z-10 flex h-full w-full min-h-0 items-stretch justify-stretch pr-1">
-            <BattleBlockGrid clearedBlocks={clearedBlocks} lastRemoval={lastRemoval} shotTier={shotTier} />
+            <BattleBlockGrid
+              clearedBlocks={clearedBlocks}
+              lastRemoval={lastRemoval}
+              shotTier={shotTier}
+              effect={effect}
+              gemImage={gemImage}
+            />
           </div>
         </div>
 
@@ -615,9 +738,63 @@ const BattleStage = memo(({
                       }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: chargeDuration, ease: 'easeOut', times: [0, 0.28, 0.72, 1] }}
-                      className="pointer-events-none absolute inset-0 rounded-[2.6rem] bg-[radial-gradient(circle,rgba(255,250,205,0.96),rgba(254,240,138,0.42)_44%,rgba(251,146,60,0)_78%)]"
-                      style={{ willChange: 'transform, opacity' }}
+                      className="pointer-events-none absolute inset-0 rounded-[2.6rem]"
+                      style={{
+                        background: `radial-gradient(circle, rgba(255,255,255,0.92), ${effect.haloColor} 44%, rgba(255,255,255,0) 78%)`,
+                        willChange: 'transform, opacity',
+                      }}
                     />
+                  )}
+                </AnimatePresence>
+                <AnimatePresence>
+                  {showImpact && (effect.petAuraOpacity > 0.01 || effect.petRimOpacity > 0.01 || effect.petGroundOpacity > 0.01) && (
+                    <>
+                      {effect.petGroundOpacity > 0.01 && (
+                        <motion.div
+                          key={`pet-ground-${shotSequence}-${effect.name}`}
+                          initial={{ opacity: 0, scale: 0.7 }}
+                          animate={{ opacity: [0, effect.petGroundOpacity, 0], scale: [0.7, 1.08, 1.22] }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: chargeDuration + 0.42, ease: 'easeOut' }}
+                          className="pointer-events-none absolute -bottom-1 h-12 w-[78%] rounded-full"
+                          style={{
+                            background: `radial-gradient(circle, rgba(255,255,255,0.9), ${effect.haloColor} 42%, rgba(255,255,255,0) 100%)`,
+                            filter: 'blur(8px)',
+                            willChange: 'transform, opacity',
+                          }}
+                        />
+                      )}
+                      {effect.petAuraOpacity > 0.01 && (
+                        <motion.div
+                          key={`pet-aura-${shotSequence}-${effect.name}`}
+                          initial={{ opacity: 0, scale: 0.64 }}
+                          animate={{ opacity: [0, effect.petAuraOpacity, 0], scale: [0.64, 1.08, 1.26] }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: chargeDuration + 0.5, ease: 'easeOut' }}
+                          className="pointer-events-none absolute inset-0 rounded-[50%]"
+                          style={{
+                            background: `radial-gradient(circle, rgba(255,255,255,0.7) 0%, ${effect.haloColor} 34%, rgba(255,255,255,0) 78%)`,
+                            filter: 'blur(20px)',
+                            willChange: 'transform, opacity',
+                          }}
+                        />
+                      )}
+                      {effect.petRimOpacity > 0.01 && (
+                        <motion.div
+                          key={`pet-rim-${shotSequence}-${effect.name}`}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: [0, effect.petRimOpacity, 0], scale: [0.8, 1.04, 1.14] }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: chargeDuration + 0.46, ease: 'easeOut' }}
+                          className="pointer-events-none absolute inset-[6%] rounded-[50%]"
+                          style={{
+                            background: `radial-gradient(circle, rgba(255,255,255,0) 44%, rgba(255,252,235,0.92) 62%, ${effect.haloColor} 76%, rgba(255,255,255,0) 92%)`,
+                            filter: 'blur(10px)',
+                            willChange: 'transform, opacity',
+                          }}
+                        />
+                      )}
+                    </>
                   )}
                 </AnimatePresence>
                 <AnimatePresence>
@@ -634,7 +811,7 @@ const BattleStage = memo(({
                   )}
                 </AnimatePresence>
                 <img
-                  src={selectedPet?.image ?? blockGemImage}
+                  src={selectedPet?.image ?? gemImage ?? ''}
                   alt={selectedPet?.name ?? '火尾狐'}
                   draggable={false}
                   className="relative z-10 h-full w-full object-contain select-none"
@@ -654,6 +831,7 @@ export default function QuizScreen({
   gradeId = '1',
   levelId,
   selectedPet,
+  attackEffect,
   onFinish,
   onBack,
   showDebugTools = false,
@@ -661,6 +839,7 @@ export default function QuizScreen({
   gradeId?: string;
   levelId: number;
   selectedPet: any;
+  attackEffect: AttackEffectProfile;
   onFinish: (stats: any) => void;
   onBack: () => void;
   showDebugTools?: boolean;
@@ -680,6 +859,8 @@ export default function QuizScreen({
   const [shotTier, setShotTier] = useState<ShotTier>('idle');
   const [shotSequence, setShotSequence] = useState(0);
   const [impactSequence, setImpactSequence] = useState(0);
+  const battleGemImage = useMemo(() => getGemImageForLevel(levelId), [levelId]);
+  const battleBackgroundImage = useMemo(() => getBattleBackgroundForLevel(levelId), [levelId]);
 
   // 从新的数据源获取关卡数据
   const gradeLevels = useMemo(() => allLevelsData[gradeId as keyof typeof allLevelsData], [gradeId]);
@@ -1342,7 +1523,7 @@ export default function QuizScreen({
     <div
       className="relative flex h-full w-full flex-col overflow-visible bg-[#93cdf4]"
       style={{
-        backgroundImage: `url(${quizBattleBackground})`,
+        backgroundImage: `url(${battleBackgroundImage})`,
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         backgroundSize: 'cover',
@@ -1362,21 +1543,20 @@ export default function QuizScreen({
             />
           </div>
         </div>
-        <div className="rounded-full border-2 border-[#6ca7d8] bg-gradient-to-b from-[#f8fdff] to-[#dff2ff] px-4 py-2 text-lg font-black text-[#24436a] shadow-[0_8px_0_rgba(108,167,216,0.28),0_12px_22px_rgba(71,131,188,0.12)]">
-          {currentIndex + 1}/{questions.length}
-        </div>
-      </div>
-
-      {showDebugTools && (
-        <div className="absolute right-4 top-20 z-20">
+        {showDebugTools ? (
           <button
             onClick={handleDebugSolveCurrent}
-            className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-black text-white shadow-[0_8px_0_rgba(5,150,105,0.2)] active:translate-y-[2px]"
+            className="rounded-full border-2 border-[#6ca7d8] bg-gradient-to-b from-[#f8fdff] to-[#dff2ff] px-4 py-2 text-lg font-black text-[#24436a] shadow-[0_8px_0_rgba(108,167,216,0.28),0_12px_22px_rgba(71,131,188,0.12)] active:translate-y-[2px] active:shadow-[0_5px_0_rgba(108,167,216,0.24),0_8px_16px_rgba(71,131,188,0.12)]"
+            title="调试：点击直接答对当前题"
           >
-            一键答对
+            {currentIndex + 1}/{questions.length}
           </button>
-        </div>
-      )}
+        ) : (
+          <div className="rounded-full border-2 border-[#6ca7d8] bg-gradient-to-b from-[#f8fdff] to-[#dff2ff] px-4 py-2 text-lg font-black text-[#24436a] shadow-[0_8px_0_rgba(108,167,216,0.28),0_12px_22px_rgba(71,131,188,0.12)]">
+            {currentIndex + 1}/{questions.length}
+          </div>
+        )}
+      </div>
 
       {/* Main Area */}
       <div className="flex-1 min-h-0 flex flex-col px-4 pb-0 pt-1 relative z-10">
@@ -1390,6 +1570,8 @@ export default function QuizScreen({
             combo={combo}
             displayCombo={displayCombo}
             shotTier={shotTier}
+            effect={attackEffect}
+            gemImage={battleGemImage}
             clearedBlocks={clearedBlocks}
             lastRemoval={lastRemoval}
             shotSequence={shotSequence}

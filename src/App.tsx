@@ -10,8 +10,11 @@ import ResultScreen from './components/ResultScreen';
 import PokedexScreen from './components/PokedexScreen';
 import {
   buildRewardCardModel,
+  getCurrentAttackEffect,
   getGrowthStageByExp,
+  getGemNameForLevel,
   getLevelRewardConfig,
+  getMapThemeNameForLevel,
   getTotalExpBeforeLevel,
   growthStages,
   type RewardCardModel,
@@ -91,8 +94,6 @@ export default function App() {
   const [rewardCard, setRewardCard] = useState<RewardCardModel | null>(null);
   const [showRewardCard, setShowRewardCard] = useState(false);
   const [debugLevel, setDebugLevel] = useState<number>(1);
-  const [debugPreviewExp, setDebugPreviewExp] = useState<number | null>(null);
-  const [debugProgressLevel, setDebugProgressLevel] = useState<number | null>(null);
   const [debugPanelMinimized, setDebugPanelMinimized] = useState(false);
 
   useEffect(() => {
@@ -164,8 +165,6 @@ export default function App() {
     if (afterStage.id > beforeStage.id) {
       setSelectedBattleStageId(afterStage.id);
     }
-    setDebugPreviewExp(null);
-    setDebugProgressLevel(null);
     setCurrentScreen('result');
   };
   const realHighestUnlockedLevel = Math.max(
@@ -179,32 +178,34 @@ export default function App() {
 
   const setFormalProgressToLevel = (level: number) => {
     const clampedLevel = Math.max(1, Math.min(MAX_LEVELS, level));
+    const targetExp = getLevelRewardConfig(clampedLevel).cumulativeExp;
+    const targetStage = getGrowthStageByExp(targetExp);
     setGameData((prev) => ({
       ...prev,
       [currentGrade]: {
         unlockedLevels: normalizeUnlockedLevelsForGrade(currentGrade, buildDebugUnlockedLevels(clampedLevel)),
-        puzzlePieces: getLevelRewardConfig(clampedLevel).cumulativeExp,
+        puzzlePieces: targetExp,
       },
     }));
+    setSelectedBattleStageId(targetStage.id);
     setCurrentLevelId(clampedLevel);
     setDebugLevel(clampedLevel);
-    setDebugProgressLevel(null);
-    setDebugPreviewExp(null);
     setRewardCard(null);
     setShowRewardCard(false);
     setCurrentScreen('map');
   };
+  const effectiveUnlockedLevels = currentGradeData.unlockedLevels;
+  const effectivePuzzlePieces = currentGradeData.puzzlePieces;
+  const debugChainExp = getLevelRewardConfig(debugLevel).cumulativeExp;
+  const debugChainStage = getGrowthStageByExp(debugChainExp);
+  const debugChainGem = getGemNameForLevel(debugLevel);
+  const debugChainMapTheme = getMapThemeNameForLevel(debugLevel);
+  const debugChainEffect = getCurrentAttackEffect(debugChainExp);
+  const debugChainReward = getLevelRewardConfig(debugLevel).reward || '-';
 
-  const effectiveUnlockedLevels =
-    debugProgressLevel !== null
-      ? buildDebugUnlockedLevels(debugProgressLevel)
-      : currentGradeData.unlockedLevels;
-
-  const effectivePuzzlePieces =
-    debugPreviewExp ??
-    (debugProgressLevel !== null && debugProgressLevel >= 1
-      ? getLevelRewardConfig(debugProgressLevel).cumulativeExp
-      : currentGradeData.puzzlePieces);
+  useEffect(() => {
+    setDebugLevel(realHighestUnlockedLevel);
+  }, [realHighestUnlockedLevel]);
 
   const applyDebugPreview = (level: number) => {
     const clampedLevel = Math.max(1, Math.min(MAX_LEVELS, level));
@@ -221,22 +222,7 @@ export default function App() {
     });
     setRewardCard(buildRewardCardModel(clampedLevel, totalBefore, totalAfter));
     setShowRewardCard(true);
-    setDebugPreviewExp(totalAfter);
     setCurrentScreen('result');
-  };
-
-  const previewDebugPokedex = () => {
-    const clampedLevel = Math.max(1, Math.min(MAX_LEVELS, debugLevel));
-    setCurrentLevelId(clampedLevel);
-    setDebugPreviewExp(getLevelRewardConfig(clampedLevel).cumulativeExp);
-    setShowPokedexModal(true);
-  };
-
-  const clearDebugPreview = () => {
-    setDebugPreviewExp(null);
-    setRewardCard(null);
-    setShowRewardCard(false);
-    setDebugProgressLevel(null);
   };
 
   return (
@@ -251,8 +237,6 @@ export default function App() {
             onStart={(levelId) => {
               setRewardCard(null);
               setShowRewardCard(false);
-              setDebugProgressLevel(null);
-              setDebugPreviewExp(null);
               setCurrentLevelId(levelId);
               setCurrentScreen('quiz');
             }}
@@ -264,6 +248,7 @@ export default function App() {
             gradeId={currentGrade}
             levelId={currentLevelId}
             selectedPet={growthStages.find((stage) => stage.id === selectedBattleStageId) ?? growthStages[1]}
+            attackEffect={getCurrentAttackEffect(effectivePuzzlePieces)}
             onFinish={handleLevelComplete}
             onBack={() => setCurrentScreen('map')}
             showDebugTools={import.meta.env.DEV}
@@ -277,7 +262,6 @@ export default function App() {
               if (currentLevelId < MAX_LEVELS) {
                 setRewardCard(null);
                 setShowRewardCard(false);
-                setDebugPreviewExp(null);
                 setCurrentLevelId(currentLevelId + 1);
                 setCurrentScreen('quiz');
               } else {
@@ -319,72 +303,27 @@ export default function App() {
                   最小化
                 </button>
               </div>
-              <div className="mb-2 text-sm font-black text-slate-700">第 {debugLevel} 关</div>
-              <div className="mb-2 text-[11px] font-bold text-slate-500">真实进度：第 {realHighestUnlockedLevel} 关</div>
+              <div className="mb-2 text-sm font-black text-slate-700">设备正式进度：第 {debugLevel} 关</div>
+              <div className="mb-2 rounded-[14px] bg-slate-50 px-3 py-2 text-[10px] font-bold leading-5 text-slate-600">
+                <div>{`形态：${debugChainStage.name}`}</div>
+                <div>{`宝石：${debugChainGem}`}</div>
+                <div>{`背景：${debugChainMapTheme}`}</div>
+                <div>{`特效：${debugChainEffect.name}`}</div>
+                <div>{`获得：${debugChainReward}`}</div>
+              </div>
               <input
                 type="range"
                 min={1}
                 max={159}
                 value={debugLevel}
-                onChange={(event) => setDebugLevel(Number(event.target.value))}
+                onChange={(event) => setFormalProgressToLevel(Number(event.target.value))}
                 className="mb-3 w-full accent-orange-500"
               />
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => {
-                    setDebugProgressLevel(debugLevel);
-                    setDebugPreviewExp(null);
-                    setCurrentLevelId(debugLevel);
-                    setCurrentScreen('map');
-                  }}
-                  className="rounded-[14px] bg-violet-400 px-3 py-2 text-xs font-black text-white shadow-[0_6px_0_rgba(109,40,217,0.18)] active:translate-y-[2px]"
-                >
-                  预览进度
-                </button>
-                <button
-                  onClick={() => applyDebugPreview(debugLevel)}
-                  className="rounded-[14px] bg-orange-400 px-3 py-2 text-xs font-black text-white shadow-[0_6px_0_rgba(194,101,27,0.18)] active:translate-y-[2px]"
-                >
-                  预览奖励
-                </button>
-                <button
-                  onClick={previewDebugPokedex}
-                  className="rounded-[14px] bg-sky-400 px-3 py-2 text-xs font-black text-white shadow-[0_6px_0_rgba(41,128,182,0.18)] active:translate-y-[2px]"
-                >
-                  预览图鉴
-                </button>
-                <button
-                  onClick={() => {
-                    setDebugProgressLevel(159);
-                    setDebugPreviewExp(null);
-                    setDebugLevel(159);
-                    setCurrentLevelId(159);
-                    setCurrentScreen('map');
-                  }}
-                  className="rounded-[14px] bg-emerald-400 px-3 py-2 text-xs font-black text-white shadow-[0_6px_0_rgba(5,150,105,0.18)] active:translate-y-[2px]"
-                >
-                  直达159关
-                </button>
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setFormalProgressToLevel(debugLevel)}
-                  className="rounded-[14px] bg-fuchsia-400 px-3 py-2 text-xs font-black text-white shadow-[0_6px_0_rgba(192,38,211,0.18)] active:translate-y-[2px]"
-                >
-                  设为正式进度
-                </button>
-                <button
-                  onClick={() => setFormalProgressToLevel(1)}
-                  className="rounded-[14px] bg-rose-400 px-3 py-2 text-xs font-black text-white shadow-[0_6px_0_rgba(225,29,72,0.18)] active:translate-y-[2px]"
-                >
-                  重置到1关
-                </button>
-              </div>
               <button
-                onClick={clearDebugPreview}
-                className="mt-2 w-full rounded-[14px] bg-slate-100 px-3 py-2 text-xs font-black text-slate-600"
+                onClick={() => applyDebugPreview(debugLevel)}
+                className="w-full rounded-[14px] bg-orange-400 px-3 py-2 text-xs font-black text-white shadow-[0_6px_0_rgba(194,101,27,0.18)] active:translate-y-[2px]"
               >
-                清除预览
+                预览奖励
               </button>
             </div>
           )
