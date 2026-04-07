@@ -26,9 +26,15 @@ export default function GrowthRewardModal({
   const nextStage = reward.nextStage;
   const showRewardHero = Boolean(reward.newRewardLabel);
   const isPreviewDominant = !showRewardHero;
-  const previewText = isPreviewDominant ? reward.teaserText.replace('，', '，\n') : reward.teaserText;
   const isHiddenFinale = reward.focus === 'hidden_finale';
   const isHiddenNextStage = Boolean(nextStage?.hidden) && !isHiddenFinale;
+
+  // 159关特殊处理：即使有奖励hero，也需要支持换行显示
+  const previewText = isPreviewDominant
+    ? reward.teaserText.replace('，', '，\n')
+    : reward.teaserText.includes('\n')
+      ? reward.teaserText
+      : reward.teaserText;
 
   return (
     <AnimatePresence>
@@ -192,7 +198,7 @@ export default function GrowthRewardModal({
                         </div>
                       ) : null}
                       <div
-                        className={`${isPreviewDominant ? 'text-[30px] leading-[1.28] whitespace-pre-line' : 'text-sm leading-6'} relative z-10 font-black`}
+                        className={`${isPreviewDominant ? 'text-[30px] leading-[1.28]' : 'text-sm leading-6'} ${previewText.includes('\n') ? 'whitespace-pre-line' : ''} relative z-10 font-black`}
                         style={{ textShadow: '0 1px 2px rgba(0,0,0,0.14)' }}
                       >
                         {previewText}
@@ -221,53 +227,72 @@ export default function GrowthRewardModal({
                       </div>
                     </div>
 
-                    <div className="relative grid grid-cols-[72px_minmax(0,1fr)] gap-3 items-center pt-3">
-                      <motion.div
-                        className="relative flex h-[72px] w-[72px] items-center justify-center rounded-2xl bg-black/20"
-                      >
-                        {isHiddenFinale && nextStage?.image ? (
-                          <>
-                            <div className="absolute inset-1 rounded-2xl bg-[radial-gradient(circle,rgba(255,244,188,0.3),rgba(168,85,247,0.14)_56%,transparent_78%)]" />
-                            <img
-                              src={nextStage.image}
-                              alt={nextStage.name}
-                              draggable={false}
-                              className="h-[82%] w-[82%] select-none object-contain brightness-0 opacity-90"
-                            />
-                          </>
-                        ) : nextStage?.image ? (
-                          <>
-                            <img
-                              src={nextStage.image}
-                              alt={isHiddenNextStage ? '隐藏形态' : nextStage.name}
-                              draggable={false}
-                              className="h-[82%] w-[82%] select-none object-contain opacity-45 brightness-0"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <Lock className="h-6 w-6 text-white" />
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-4xl brightness-50">{nextStage?.emoji ?? '🥚'}</div>
-                        )}
-                      </motion.div>
-                      <div className="pr-16">
-                        <div className="text-sm font-black text-white">
-                          {isHiddenFinale
-                            ? '隐藏形态已解锁'
-                            : nextStage
-                            ? `下一形态：${isHiddenNextStage ? '???' : nextStage.name}`
-                            : '最终形态已达成'}
-                        </div>
-                        <div className="mt-1 text-xs leading-5 text-white/90">
-                          {isHiddenFinale
-                            ? '第159关隐藏终局已完成'
-                            : reward.toEvolution > 0
-                            ? `还差${reward.toEvolution}经验进化`
-                            : '已完成本阶段最终进化'}
+                    {isHiddenFinale ? (
+                      // 159关：显示"查看图鉴"按钮
+                      <div className="flex justify-center pt-2">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewPokedex();
+                          }}
+                          className="rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-3 text-base font-black text-white shadow-lg"
+                        >
+                          查看图鉴
+                        </motion.button>
+                      </div>
+                    ) : (
+                      // 其他关卡：显示下一形态信息
+                      <div className="relative grid grid-cols-[72px_minmax(0,1fr)] gap-3 items-center pt-3">
+                        <motion.div
+                          className="relative flex h-[72px] w-[72px] items-center justify-center rounded-2xl bg-black/20"
+                        >
+                          {isHiddenFinale && nextStage?.image ? (
+                            <>
+                              <div className="absolute inset-1 rounded-2xl bg-[radial-gradient(circle,rgba(255,244,188,0.3),rgba(168,85,247,0.14)_56%,transparent_78%)]" />
+                              <img
+                                src={nextStage.image}
+                                alt={nextStage.name}
+                                draggable={false}
+                                className="h-[82%] w-[82%] select-none object-contain brightness-0 opacity-90"
+                              />
+                            </>
+                          ) : nextStage?.image ? (
+                            <>
+                              <img
+                                src={nextStage.image}
+                                alt={isHiddenNextStage ? '隐藏形态' : nextStage.name}
+                                draggable={false}
+                                className="h-[82%] w-[82%] select-none object-contain opacity-45 brightness-0"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Lock className="h-6 w-6 text-white" />
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-4xl brightness-50">{nextStage?.emoji ?? '🥚'}</div>
+                          )}
+                        </motion.div>
+                        <div className="pr-16">
+                          <div className="text-sm font-black text-white">
+                            {isHiddenFinale
+                              ? '隐藏形态已解锁'
+                              : nextStage
+                              ? `下一形态：???`
+                              : '最终形态已达成'}
+                          </div>
+                          <div className="mt-1 text-xs leading-5 text-white/90">
+                            {isHiddenFinale
+                              ? '第159关隐藏终局已完成'
+                              : reward.toEvolution > 0
+                              ? `还差${reward.toEvolution}经验进化`
+                              : '已完成本阶段最终进化'}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 

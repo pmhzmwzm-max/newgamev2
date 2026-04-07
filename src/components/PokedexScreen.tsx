@@ -20,13 +20,14 @@ interface PokedexScreenProps {
   onSelectBattleGem: (gemName: string) => void;
   onSelectBattleMap: (mapTheme: string) => void;
   onClose: () => void;
+  defaultTab?: PokedexTab;
 }
 
 const tabItems: Array<{ id: PokedexTab; label: string }> = [
   { id: 'stage', label: '形态' },
-  { id: 'effect', label: '攻击' },
+  { id: 'effect', label: '能力' },
   { id: 'gem', label: '宝石' },
-  { id: 'map', label: '场景' },
+  { id: 'map', label: '地图' },
 ];
 
 export default function PokedexScreen({
@@ -44,22 +45,24 @@ export default function PokedexScreen({
   onSelectBattleGem,
   onSelectBattleMap,
   onClose,
+  defaultTab = 'stage',
 }: PokedexScreenProps) {
   const activeStage = useMemo(() => getGrowthStageByExp(puzzlePieces), [puzzlePieces]);
   const [selectedStageId, setSelectedStageId] = useState(selectedBattleStageId);
   const [selectedEffectId, setSelectedEffectId] = useState(selectedBattleEffectName);
   const [selectedGemId, setSelectedGemId] = useState(selectedBattleGemName);
   const [selectedMapId, setSelectedMapId] = useState(selectedBattleMapTheme);
-  const [activeTab, setActiveTab] = useState<PokedexTab>('stage');
+  const [activeTab, setActiveTab] = useState<PokedexTab>(defaultTab);
 
   useEffect(() => {
     if (isOpen) {
+      setActiveTab(defaultTab);
       setSelectedStageId(selectedBattleStageId);
       setSelectedEffectId(selectedBattleEffectName);
       setSelectedGemId(selectedBattleGemName);
       setSelectedMapId(selectedBattleMapTheme);
     }
-  }, [isOpen, selectedBattleStageId, selectedBattleEffectName, selectedBattleGemName, selectedBattleMapTheme]);
+  }, [isOpen, defaultTab, selectedBattleStageId, selectedBattleEffectName, selectedBattleGemName, selectedBattleMapTheme]);
 
   const selectedStage = useMemo(
     () => growthStages.find((stage) => stage.id === selectedStageId) ?? activeStage,
@@ -190,39 +193,62 @@ export default function PokedexScreen({
   const renderVisualOptionCard = (
     option: BattleVisualOption,
     selectedId: string,
+    currentUsedId: string,
     onInspect: (id: string) => void,
-    onApply: (id: string) => void,
     accentClass: string,
     kind: 'effect' | 'gem' | 'map'
   ) => {
-    const isActive = option.id === selectedId;
+    const isSelected = option.id === selectedId;
+    const isCurrentUsed = option.id === currentUsedId;
     const isUnlocked = option.unlocked !== false;
+    // 提取 ring 颜色用于选中状态
+    const ringColor = kind === 'effect' ? 'ring-amber-200/60' : kind === 'gem' ? 'ring-sky-200' : 'ring-violet-200';
     return (
       <button
         key={option.id}
         type="button"
         onClick={() => {
           onInspect(option.id);
-          if (isUnlocked) {
-            onApply(option.id);
-          }
         }}
-        className={`relative flex min-h-[112px] flex-col items-center justify-start rounded-[20px] border-2 px-3 pt-3 pb-3 text-center shadow-[0_8px_16px_rgba(67,99,139,0.1)] transition-all active:scale-[0.98] ${
-          isActive ? `${accentClass} ring-2` : 'border-white/95 bg-white/92'
+        className={`relative flex min-h-[112px] flex-col items-center justify-start rounded-[20px] border-2 px-3 pt-3 pb-3 text-center shadow-[0_8px_16px_rgba(67,99,139,0.1)] transition-all active:scale-[0.98] border-white/95 bg-white/92 ${
+          isSelected ? 'shadow-[0_14px_28px_rgba(255,184,64,0.18)] ring-2 ring-amber-200/60' : ''
         }`}
       >
-        <div className="mx-auto mb-2 flex h-[60px] w-[60px] items-center justify-center overflow-visible">
-          {option.image ? (
-            <img
-              src={option.image}
-              alt={option.name}
-              draggable={false}
-              className={`h-full w-full object-contain ${kind === 'effect' ? 'scale-[1.15]' : ''} ${isUnlocked ? '' : 'brightness-0'}`}
-            />
-          ) : (
-            <div className="text-[11px] font-black text-slate-500">{option.name}</div>
-          )}
-        </div>
+        {isCurrentUsed ? (
+          <div className="absolute right-[-4px] top-[-6px] rounded-full bg-sky-400 px-2.5 py-0.5 text-[9px] font-black text-white shadow-[0_4px_10px_rgba(56,189,248,0.32)]">
+            {kind === 'effect' ? '当前能力' : kind === 'gem' ? '当前宝石' : '当前地图'}
+          </div>
+        ) : null}
+        {kind === 'map' ? (
+          // 地图列表：白色圈外切
+          <div className="mx-auto mb-2 flex h-[60px] w-[60px] items-center justify-center overflow-hidden rounded-full border-2 border-white/80">
+            {option.image ? (
+              <img
+                src={option.image}
+                alt={option.name}
+                draggable={false}
+                className={`h-full w-full object-cover ${isUnlocked ? '' : 'brightness-0'}`}
+                style={{ objectPosition: option.name === '踏火山径' || option.name === '星火遗坛' ? 'top' : 'center' }}
+              />
+            ) : (
+              <div className="text-[11px] font-black text-slate-500">{option.name}</div>
+            )}
+          </div>
+        ) : (
+          // 能力/宝石列表：无白色圈
+          <div className="mx-auto mb-2 flex h-[60px] w-[60px] items-center justify-center overflow-visible">
+            {option.image ? (
+              <img
+                src={option.image}
+                alt={option.name}
+                draggable={false}
+                className={`h-full w-full object-contain ${kind === 'effect' ? 'scale-[1.15]' : ''} ${isUnlocked ? '' : 'brightness-0'}`}
+              />
+            ) : (
+              <div className="text-[11px] font-black text-slate-500">{option.name}</div>
+            )}
+          </div>
+        )}
         {isUnlocked ? (
           <div className="text-center text-[12px] font-black leading-[1.1] text-slate-700">{option.name}</div>
         ) : (
@@ -242,66 +268,109 @@ export default function PokedexScreen({
     description: string,
     options: BattleVisualOption[],
     selectedId: string,
+    currentUsedId: string,
     onInspect: (id: string) => void,
     onApply: (id: string) => void,
     accentClass: string,
     kind: 'effect' | 'gem' | 'map'
-  ) => (
-    <div className="relative z-10 grid h-[calc(100%-56px)] min-h-0 grid-rows-[minmax(0,1.06fr)_minmax(0,0.94fr)] gap-3 sm:h-[calc(100%-64px)] sm:grid-rows-[minmax(0,0.86fr)_308px]">
-      <aside className={`relative flex min-h-0 flex-col overflow-hidden rounded-[24px] border-2 px-4 py-4 shadow-[inset_0_-6px_0_rgba(201,129,25,0.16),0_16px_26px_rgba(244,166,52,0.18)] sm:rounded-[28px] sm:px-5 sm:py-5 ${
-        options.find((item) => item.id === selectedId)?.unlocked !== false
-          ? 'border-white/80 bg-gradient-to-br from-amber-300 via-orange-300 to-orange-400'
-          : 'border-slate-200/90 bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500'
-      }`}>
-        <div className="pointer-events-none absolute -right-8 top-0 h-32 w-32 rounded-full bg-white/18 blur-2xl" />
-        <div className="pointer-events-none absolute -left-6 bottom-0 h-28 w-28 rounded-full bg-amber-100/20 blur-2xl" />
+  ) => {
+    const selectedOption = options.find((item) => item.id === selectedId);
+    const isSelectedUnlocked = selectedOption?.unlocked !== false;
+    const isCurrentUsed = selectedId === currentUsedId;
+    const applyLabel = kind === 'effect' ? '使用该能力' : kind === 'gem' ? '使用该宝石' : '使用该地图';
+    const currentLabel = kind === 'effect' ? '当前能力' : kind === 'gem' ? '当前宝石' : '当前地图';
 
-        <div className="relative z-10 flex flex-1 flex-col gap-4 sm:flex-row sm:items-stretch sm:gap-5">
-          <div className="order-1 flex justify-center self-center sm:order-1 sm:min-w-[148px]">
-            <div className="flex h-[148px] w-[148px] items-center justify-center overflow-visible rounded-full border-4 border-white/45 bg-transparent shadow-[0_14px_24px_rgba(180,106,10,0.18)] sm:h-[154px] sm:w-[154px]">
-              {previewImage ? (
-                <img
-                  src={previewImage}
-                  alt={previewLabel ?? title}
-                  draggable={false}
-                  className={`h-full w-full object-contain drop-shadow-[0_16px_24px_rgba(255,255,255,0.2)] ${kind === 'gem' ? 'scale-[0.8]' : ''} ${options.find((item) => item.id === selectedId)?.unlocked !== false ? '' : 'brightness-0'}`}
-                />
+    return (
+      <div className="relative z-10 grid h-[calc(100%-56px)] min-h-0 grid-rows-[minmax(0,1.06fr)_minmax(0,0.94fr)] gap-3 sm:h-[calc(100%-64px)] sm:grid-rows-[minmax(0,0.86fr)_308px]">
+        <aside className={`relative flex min-h-0 flex-col overflow-hidden rounded-[24px] border-2 px-4 py-4 shadow-[inset_0_-6px_0_rgba(201,129,25,0.16),0_16px_26px_rgba(244,166,52,0.18)] sm:rounded-[28px] sm:px-5 sm:py-5 ${
+          isSelectedUnlocked
+            ? 'border-white/80 bg-gradient-to-br from-amber-300 via-orange-300 to-orange-400'
+            : 'border-slate-200/90 bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500'
+        }`}>
+          <div className="pointer-events-none absolute -right-8 top-0 h-32 w-32 rounded-full bg-white/18 blur-2xl" />
+          <div className="pointer-events-none absolute -left-6 bottom-0 h-28 w-28 rounded-full bg-amber-100/20 blur-2xl" />
+
+          <div className="relative z-10 flex flex-1 flex-col gap-4 sm:flex-row sm:items-stretch sm:gap-5">
+            <div className="order-1 flex justify-center self-center sm:order-1 sm:min-w-[148px]">
+              {kind === 'map' ? (
+                // 地图：白色圈外切包住场景图
+                <div className="flex h-[148px] w-[148px] items-center justify-center overflow-hidden rounded-full border-4 border-white/45 bg-transparent shadow-[0_14px_24px_rgba(180,106,10,0.18)] sm:h-[154px] sm:w-[154px]">
+                  {previewImage ? (
+                    <img
+                      src={previewImage}
+                      alt={previewLabel ?? title}
+                      draggable={false}
+                      className={`h-full w-full object-cover ${isSelectedUnlocked ? '' : 'brightness-0'}`}
+                      style={{ objectPosition: previewLabel === '踏火山径' || previewLabel === '星火遗坛' ? 'top' : 'center' }}
+                    />
+                  ) : (
+                    <div className="text-sm font-black text-white/90">{previewLabel ?? title}</div>
+                  )}
+                </div>
               ) : (
-                <div className="text-sm font-black text-white/90">{previewLabel ?? title}</div>
+                // 能力/宝石：无白色圈
+                <div className="flex h-[148px] w-[148px] items-center justify-center overflow-visible sm:h-[154px] sm:w-[154px]">
+                  {previewImage ? (
+                    <img
+                      src={previewImage}
+                      alt={previewLabel ?? title}
+                      draggable={false}
+                      className={`h-full w-full object-contain drop-shadow-[0_16px_24px_rgba(255,255,255,0.2)] ${kind === 'gem' ? 'scale-[0.8]' : ''} ${isSelectedUnlocked ? '' : 'brightness-0'}`}
+                    />
+                  ) : (
+                    <div className="text-sm font-black text-white/90">{previewLabel ?? title}</div>
+                  )}
+                </div>
               )}
             </div>
-          </div>
 
-          <div className="order-2 flex min-w-0 flex-1 flex-col justify-start sm:order-2">
-            <div className="mb-3 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
-              <h3 className="min-w-0 text-[26px] font-black leading-[1.12] text-white drop-shadow-[0_2px_6px_rgba(150,82,0,0.22)] sm:flex-1 sm:text-[30px]">
-                {options.find((item) => item.id === selectedId)?.unlocked !== false ? previewLabel ?? title : '???'}
-              </h3>
+            <div className="order-2 flex min-w-0 flex-1 flex-col justify-start sm:order-2">
+              <div className="mb-3 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
+                <h3 className="min-w-0 text-[26px] font-black leading-[1.12] text-white drop-shadow-[0_2px_6px_rgba(150,82,0,0.22)] sm:flex-1 sm:text-[30px]">
+                  {isSelectedUnlocked ? previewLabel ?? title : '???'}
+                </h3>
+                {isSelectedUnlocked ? (
+                  isCurrentUsed ? (
+                    <div className="shrink-0 inline-flex items-center rounded-full bg-white px-4 py-2 text-xs font-black text-sky-600 shadow-[0_8px_16px_rgba(255,255,255,0.18)] sm:text-sm">
+                      {currentLabel}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onApply(selectedId)}
+                      className="shrink-0 inline-flex items-center rounded-full bg-white px-4 py-2 text-xs font-black text-amber-700 shadow-[0_8px_16px_rgba(255,255,255,0.18)] transition-transform active:scale-95 sm:text-sm"
+                    >
+                      {applyLabel}
+                    </button>
+                  )
+                ) : null}
+              </div>
+              <p className="min-h-0 overflow-y-auto rounded-[20px] bg-white/16 px-4 py-3 text-sm font-bold leading-6 text-white/95 backdrop-blur-[2px] sm:flex-1 sm:rounded-[22px] sm:px-5 sm:py-4 sm:text-base sm:leading-7">
+                {isSelectedUnlocked ? description : '???'}
+              </p>
             </div>
-            <p className="min-h-0 overflow-y-auto rounded-[20px] bg-white/16 px-4 py-3 text-sm font-bold leading-6 text-white/95 backdrop-blur-[2px] sm:flex-1 sm:rounded-[22px] sm:px-5 sm:py-4 sm:text-base sm:leading-7">
-              {options.find((item) => item.id === selectedId)?.unlocked !== false ? description : '???'}
-            </p>
           </div>
-        </div>
-      </aside>
+        </aside>
 
-      <section className="flex min-h-0 min-w-0 flex-col rounded-[24px] bg-white/20 px-2 py-2 sm:rounded-[28px] sm:px-3 sm:py-3">
-        <div className="grid min-h-0 grid-cols-2 gap-2.5 overflow-y-auto px-1 pb-2 pt-1 sm:grid-cols-4">
-          {options.map((option) => renderVisualOptionCard(option, selectedId, onInspect, onApply, accentClass, kind))}
-        </div>
-      </section>
-    </div>
-  );
+        <section className="flex min-h-0 min-w-0 flex-col rounded-[24px] bg-white/20 px-2 py-2 sm:rounded-[28px] sm:px-3 sm:py-3">
+          <div className="grid min-h-0 grid-cols-2 gap-2.5 overflow-y-auto px-1 pb-2 pt-1 sm:grid-cols-4">
+            {options.map((option) => renderVisualOptionCard(option, selectedId, currentUsedId, onInspect, accentClass, kind))}
+          </div>
+        </section>
+      </div>
+    );
+  };
 
   const renderContent = () => {
     if (activeTab === 'effect') {
       return renderAssetTab(
-        '攻击',
+        '能力',
         selectedEffectOption?.image,
         selectedEffectOption?.name,
-        '在这里切换当前展示的攻击特效。调试器改变正式进度后，这里的选择会立即被对应进度覆盖。',
+        selectedEffectOption?.description ?? '',
         effectOptions,
         selectedEffectId,
+        selectedBattleEffectName,
         setSelectedEffectId,
         onSelectBattleEffect,
         'border-orange-100 bg-gradient-to-br from-amber-300/30 to-orange-300/30 ring-amber-200',
@@ -314,9 +383,10 @@ export default function PokedexScreen({
         '宝石',
         selectedGemOption?.image,
         selectedGemOption?.name,
-        '在这里切换当前展示的宝石外观。调试器改变正式进度后，宝石会自动刷新成对应进度的解锁状态。',
+        selectedGemOption?.description ?? '',
         gemOptions,
         selectedGemId,
+        selectedBattleGemName,
         setSelectedGemId,
         onSelectBattleGem,
         'border-sky-100 bg-gradient-to-br from-sky-300/30 to-cyan-300/30 ring-sky-200',
@@ -326,12 +396,13 @@ export default function PokedexScreen({
 
     if (activeTab === 'map') {
       return renderAssetTab(
-        '场景',
+        '地图',
         selectedMapOption?.image,
         selectedMapOption?.name,
-        '在这里切换当前展示的场景主题。调试器改变正式进度后，场景会自动刷新成该进度应该使用的背景。',
+        selectedMapOption?.description ?? '',
         mapOptions,
         selectedMapId,
+        selectedBattleMapTheme,
         setSelectedMapId,
         onSelectBattleMap,
         'border-violet-100 bg-gradient-to-br from-violet-300/30 to-fuchsia-300/30 ring-violet-200',
@@ -382,7 +453,7 @@ export default function PokedexScreen({
                       onClick={() => onSelectBattleStage(selectedStage.id)}
                       className="shrink-0 inline-flex items-center rounded-full bg-white px-4 py-2 text-xs font-black text-amber-700 shadow-[0_8px_16px_rgba(255,255,255,0.18)] transition-transform active:scale-95 sm:text-sm"
                     >
-                      用该形态出战
+                      使用该形态
                     </button>
                   )
                 ) : null}

@@ -98,10 +98,11 @@ export default function App() {
     const parsed = saved ? parseInt(saved, 10) : 1;
     return growthStages.some((stage) => stage.id === parsed) ? parsed : 1;
   });
-  const [selectedBattleEffectName, setSelectedBattleEffectName] = useState<string>(() => localStorage.getItem('selectedBattleEffectName') || '橙光I');
-  const [selectedBattleGemName, setSelectedBattleGemName] = useState<string>(() => localStorage.getItem('selectedBattleGemName') || '蓝晶');
-  const [selectedBattleMapTheme, setSelectedBattleMapTheme] = useState<string>(() => localStorage.getItem('selectedBattleMapTheme') || '启程原');
+  const [selectedBattleEffectName, setSelectedBattleEffectName] = useState<string>(() => localStorage.getItem('selectedBattleEffectName') || '晨火I');
+  const [selectedBattleGemName, setSelectedBattleGemName] = useState<string>(() => localStorage.getItem('selectedBattleGemName') || '静思石');
+  const [selectedBattleMapTheme, setSelectedBattleMapTheme] = useState<string>(() => localStorage.getItem('selectedBattleMapTheme') || '起光原野');
   const [showPokedexModal, setShowPokedexModal] = useState(false);
+  const [pokedexDefaultTab, setPokedexDefaultTab] = useState<'stage' | 'effect' | 'gem' | 'map'>('stage');
   const [rewardCard, setRewardCard] = useState<RewardCardModel | null>(null);
   const [showRewardCard, setShowRewardCard] = useState(false);
   const [debugLevel, setDebugLevel] = useState<number>(1);
@@ -195,6 +196,8 @@ export default function App() {
       expGained: rewardConfig.exp,
     });
 
+    const isFirstTimeClear = !currentGradeData.unlockedLevels.includes(currentLevelId);
+
     setGameData(prev => {
       const currentData = prev[currentGrade];
       const newUnlocked = [...currentData.unlockedLevels];
@@ -217,8 +220,11 @@ export default function App() {
       };
     });
 
-    setRewardCard(buildRewardCardModel(currentLevelId, totalBefore, totalAfter));
-    setShowRewardCard(true);
+    // 仅在首次通关时显示奖励卡片
+    if (isFirstTimeClear) {
+      setRewardCard(buildRewardCardModel(currentLevelId, totalBefore, totalAfter));
+      setShowRewardCard(true);
+    }
     if (afterStage.id > beforeStage.id) {
       setSelectedBattleStageId(afterStage.id);
     }
@@ -230,8 +236,8 @@ export default function App() {
     1
   );
   const buildDebugUnlockedLevels = (level: number) =>
-    Array.from({ length: Math.max(0, level) + 1 }, (_, index) => index).filter((value) =>
-      currentGrade === '3' ? value <= level : value >= 1 && value <= level
+    Array.from({ length: Math.max(0, level) }, (_, index) => index).filter((value) =>
+      currentGrade === '3' ? value < level : value >= 1 && value < level
     );
 
   const setFormalProgressToLevel = (level: number) => {
@@ -253,9 +259,10 @@ export default function App() {
     setShowRewardCard(false);
     setCurrentScreen('map');
   };
+  // 直接使用真实数据
   const effectiveUnlockedLevels = currentGradeData.unlockedLevels;
   const effectivePuzzlePieces = currentGradeData.puzzlePieces;
-  const debugChainExp = getTotalExpBeforeLevel(debugLevel);
+  const debugChainExp = getLevelRewardConfig(debugLevel).cumulativeExp;
   const debugChainStage = getGrowthStageByExp(debugChainExp);
   const debugChainGem = getGemNameForExp(debugChainExp);
   const debugChainMapTheme = getMapThemeNameForExp(debugChainExp);
@@ -265,6 +272,20 @@ export default function App() {
   useEffect(() => {
     setDebugLevel(realHighestUnlockedLevel);
   }, [realHighestUnlockedLevel]);
+
+  // 应用关卡未完成时的默认状态（强制覆盖图鉴选择）
+  const applyDebugLevelPreview = (level: number) => {
+    const clampedLevel = Math.max(1, Math.min(MAX_LEVELS, level));
+    const expBefore = getTotalExpBeforeLevel(clampedLevel); // 关卡未完成时的经验
+
+    // 强制设置到默认态（覆盖图鉴选择）
+    const stageBefore = getGrowthStageByExp(expBefore);
+    setSelectedBattleStageId(stageBefore.id);
+    setSelectedBattleEffectName(getCurrentAttackEffect(expBefore).name);
+    setSelectedBattleGemName(getGemNameForExp(expBefore));
+    setSelectedBattleMapTheme(getMapThemeNameForExp(expBefore));
+    setCurrentLevelId(clampedLevel);
+  };
 
   const applyDebugPreview = (level: number) => {
     const clampedLevel = Math.max(1, Math.min(MAX_LEVELS, level));
@@ -299,7 +320,10 @@ export default function App() {
               setCurrentLevelId(levelId);
               setCurrentScreen('quiz');
             }}
-            onOpenPokedex={() => setShowPokedexModal(true)}
+            onOpenPokedex={() => {
+              setPokedexDefaultTab('stage');
+              setShowPokedexModal(true);
+            }}
           />
         )}
         {currentScreen === 'quiz' && (
@@ -329,7 +353,10 @@ export default function App() {
                 setCurrentScreen('map');
               }
             }}
-            onOpenPokedex={() => setShowPokedexModal(true)}
+            onOpenPokedex={() => {
+              setPokedexDefaultTab('stage');
+              setShowPokedexModal(true);
+            }}
             hasNextLevel={currentLevelId < MAX_LEVELS && effectiveUnlockedLevels.includes(currentLevelId + 1)}
             rewardCard={rewardCard}
             showRewardCard={showRewardCard}
@@ -352,6 +379,7 @@ export default function App() {
           onSelectBattleGem={setSelectedBattleGemName}
           onSelectBattleMap={setSelectedBattleMapTheme}
           onClose={() => setShowPokedexModal(false)}
+          defaultTab={pokedexDefaultTab}
         />
 
         {import.meta.env.DEV && (
@@ -386,7 +414,19 @@ export default function App() {
                 min={1}
                 max={159}
                 value={debugLevel}
-                onChange={(event) => setFormalProgressToLevel(Number(event.target.value))}
+                onChange={(event) => {
+                  const level = Number(event.target.value);
+                  setDebugLevel(level);
+                  if (showRewardCard) {
+                    // 正在预览奖励卡片时，实时更新卡片内容
+                    const totalBefore = getTotalExpBeforeLevel(level);
+                    const totalAfter = getLevelRewardConfig(level).cumulativeExp;
+                    setRewardCard(buildRewardCardModel(level, totalBefore, totalAfter));
+                  } else {
+                    // 拖动时直接更新真实进度
+                    setFormalProgressToLevel(level);
+                  }
+                }}
                 className="mb-3 w-full accent-orange-500"
               />
               <button
