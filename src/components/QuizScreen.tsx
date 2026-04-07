@@ -275,14 +275,18 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
             ...BLOCK_WOBBLE_TRANSITION,
             delay: wobbleDelay,
           }}
-          className="relative h-[88%] w-[102%] max-h-full max-w-none overflow-visible will-change-transform"
+          className="relative h-full w-full overflow-visible will-change-transform"
         >
           <img
             src={gemImage ?? ''}
             alt=""
             draggable={false}
-            className="h-full w-full scale-x-[0.94] scale-y-[1.36] object-fill select-none"
-            style={{ filter: 'drop-shadow(0 8px 14px rgba(49,104,201,0.2))' }}
+            className="h-full w-full object-fill select-none"
+            style={{
+              filter: 'drop-shadow(0 8px 14px rgba(49,104,201,0.2))',
+              maxWidth: '120%',
+              maxHeight: '110%',
+            }}
           />
         </motion.div>
       )}
@@ -293,14 +297,18 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
             initial={{ scale: 1, opacity: 1, rotate: 0 }}
             animate={{ scale: [1, 1.08, 0.2], opacity: [1, 1, 0], rotate: [0, -6, 8] }}
             transition={{ duration: 0.44, delay: clearDelay, ease: 'easeOut' }}
-            className="absolute h-[88%] w-[102%] max-h-full max-w-none overflow-visible"
+            className="absolute h-full w-full overflow-visible"
           >
             <img
               src={gemImage ?? ''}
               alt=""
               draggable={false}
-              className="h-full w-full scale-x-[0.94] scale-y-[1.36] object-fill select-none"
-              style={{ filter: 'drop-shadow(0 9px 16px rgba(49,104,201,0.22))' }}
+              className="h-full w-full object-fill select-none"
+              style={{
+                filter: 'drop-shadow(0 9px 16px rgba(49,104,201,0.22))',
+                maxWidth: '120%',
+                maxHeight: '110%',
+              }}
             />
           </motion.div>
           <BlockExplosion delay={clearDelay} tier={shotTier} seed={index} effect={effect} />

@@ -28,6 +28,62 @@ export default function GrowthRewardModal({
   const isPreviewDominant = !showRewardHero;
   const isHiddenFinale = reward.focus === 'hidden_finale';
   const isHiddenNextStage = Boolean(nextStage?.hidden) && !isHiddenFinale;
+  const isBoostedRewardHero =
+    reward.newRewardKind === 'evolution' || reward.newRewardKind === 'sfx' || reward.newRewardKind === 'hidden';
+  const isLevelHeroShowcase = [18, 30, 50, 80, 159].includes(reward.level);
+  const isFinalHeroShowcase = reward.level === 159;
+  const isRegularHeroShowcase = isLevelHeroShowcase && !isFinalHeroShowcase;
+  const rewardHeroScaleMultiplier = reward.level === 159 ? 2.34 : [18, 30, 50, 80].includes(reward.level) ? 1.56 : 1;
+  const boostedRewardHeroScale = `${255 * rewardHeroScaleMultiplier}%`;
+  const rewardHeroContainerClass = isFinalHeroShowcase
+    ? 'h-40 w-40 rounded-[34px]'
+    : isLevelHeroShowcase
+    ? 'h-36 w-36 rounded-[32px]'
+    : 'h-28 w-28 rounded-[28px]';
+  const rewardHeroSectionClass = showRewardHero
+    ? isFinalHeroShowcase
+      ? 'mb-4 h-[220px] overflow-visible'
+      : isRegularHeroShowcase
+      ? 'mb-3 h-[182px] overflow-visible'
+      : 'mb-5 h-[186px] overflow-visible'
+    : 'mb-4 h-0 min-h-0 overflow-hidden';
+  const boostedRewardHeroOffsetY = isFinalHeroShowcase ? -7 : isLevelHeroShowcase ? -6 : -4;
+  const specialLayoutTight = isFinalHeroShowcase;
+  const contentShellClass = specialLayoutTight ? 'flex flex-1 flex-col px-6 pt-6 pb-[72px]' : 'flex flex-1 flex-col px-6 pt-12 pb-4';
+  const rewardHeroFrameMarginClass = specialLayoutTight ? 'mb-0.5' : 'mb-4';
+  const rewardTitleBlockClass = specialLayoutTight ? 'text-center -mt-1' : 'text-center';
+  const rewardTitleMarginClass = specialLayoutTight ? 'mb-0.5' : 'mb-2';
+  const rewardSparkleMarginClass = specialLayoutTight ? 'mb-0.5' : 'mb-4';
+  const teaserSectionClass = isPreviewDominant
+    ? specialLayoutTight
+      ? 'mb-1 flex flex-1 items-center justify-center py-3'
+      : 'mb-4 flex flex-1 items-center justify-center py-8'
+    : specialLayoutTight
+    ? 'mb-1 flex min-h-[44px] items-center justify-center py-0'
+    : 'mb-4 flex min-h-[96px] items-center justify-center py-4';
+  const teaserInnerClass = isPreviewDominant
+    ? specialLayoutTight
+      ? 'px-4 py-2.5'
+      : 'px-6 py-5'
+    : specialLayoutTight
+    ? 'px-5 py-1'
+    : 'px-8 py-3';
+  const detailCardClass = specialLayoutTight
+    ? 'relative mt-auto rounded-2xl bg-white/22 p-3 pt-4 backdrop-blur-sm'
+    : 'relative mt-auto rounded-2xl bg-white/22 p-4 pt-6 backdrop-blur-sm';
+  const actionAreaClass = specialLayoutTight ? 'absolute inset-x-0 bottom-3 z-30 px-6' : 'relative z-30 px-6 pb-8';
+  const actionSpacerClass = specialLayoutTight ? 'h-0' : 'h-[32px]';
+  const progressBarMarginClass = specialLayoutTight ? 'relative mb-2 h-5 overflow-hidden rounded-full bg-white/25' : 'relative mb-3 h-5 overflow-hidden rounded-full bg-white/25';
+  const nextStageBlockClass = specialLayoutTight
+    ? 'relative grid grid-cols-[68px_minmax(0,1fr)] gap-2 items-center pt-2'
+    : 'relative grid grid-cols-[72px_minmax(0,1fr)] gap-3 items-center pt-3';
+  const nextStageAvatarClass = specialLayoutTight
+    ? 'relative flex h-[68px] w-[68px] items-center justify-center rounded-2xl bg-black/20'
+    : 'relative flex h-[72px] w-[72px] items-center justify-center rounded-2xl bg-black/20';
+  const nextStageTextWrapClass = specialLayoutTight ? 'pr-12' : 'pr-16';
+  const hiddenFinaleSummaryClass = specialLayoutTight
+    ? 'relative grid grid-cols-[68px_minmax(0,1fr)] gap-2 items-center pt-2'
+    : 'relative grid grid-cols-[72px_minmax(0,1fr)] gap-3 items-center pt-3';
 
   // 159关特殊处理：即使有奖励hero，也需要支持换行显示
   const previewText = isPreviewDominant
@@ -91,17 +147,19 @@ export default function GrowthRewardModal({
                   <div className="absolute bottom-8 right-4 text-5xl">💫</div>
                 </div>
 
-                <div className="flex flex-1 flex-col px-6 pt-12 pb-4">
-                  <div className={`${showRewardHero ? 'mb-5 h-[186px]' : 'mb-4 h-0 min-h-0 overflow-hidden'}`}>
+                <div className={contentShellClass}>
+                  <div className={rewardHeroSectionClass}>
                     {showRewardHero ? (
                       <>
                         <motion.div
                           animate={{ y: [0, -10, 0], scale: [1, 1.03, 1] }}
                           transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-                          className="mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-[28px] border-4 border-white/50 bg-white/25 p-3 text-center shadow-2xl backdrop-blur-sm"
+                          className={`mx-auto ${rewardHeroFrameMarginClass} flex items-center justify-center border-4 border-white/50 bg-white/25 text-center shadow-2xl backdrop-bl-sm overflow-visible ${rewardHeroContainerClass} ${
+                            isBoostedRewardHero ? 'p-0.5' : 'p-3'
+                          }`}
                         >
                           {reward.rewardHeroImage ? (
-                            <div className="relative flex h-full w-full items-center justify-center">
+                            <div className="relative flex h-full w-full items-center justify-center overflow-visible">
                               {reward.newRewardKind === 'hidden' ? (
                                 <>
                                   <div className="absolute inset-1 rounded-[18px] bg-[radial-gradient(circle,rgba(255,250,205,0.32),rgba(147,51,234,0.08)_58%,transparent_78%)]" />
@@ -109,7 +167,12 @@ export default function GrowthRewardModal({
                                     src={reward.rewardHeroImage}
                                     alt={reward.newRewardLabel}
                                     draggable={false}
-                                    className="relative z-10 h-full w-full select-none object-contain drop-shadow-[0_0_18px_rgba(255,230,170,0.45)]"
+                                    className="relative z-10 select-none object-contain drop-shadow-[0_0_18px_rgba(255,230,170,0.45)]"
+                                    style={{
+                                      width: boostedRewardHeroScale,
+                                      height: boostedRewardHeroScale,
+                                      transform: `translateY(${boostedRewardHeroOffsetY}px)`,
+                                    }}
                                   />
                                 </>
                               ) : reward.newRewardKind === 'gem' ? (
@@ -126,12 +189,17 @@ export default function GrowthRewardModal({
                                   draggable={false}
                                   className="h-full w-full rounded-[18px] object-cover shadow-[0_8px_16px_rgba(0,0,0,0.18)]"
                                 />
-                              ) : reward.newRewardKind === 'sfx' ? (
+                              ) : reward.newRewardKind === 'evolution' || reward.newRewardKind === 'sfx' ? (
                                 <img
                                   src={reward.rewardHeroImage}
                                   alt={reward.newRewardLabel}
                                   draggable={false}
-                                  className="h-[118%] w-[118%] select-none object-contain drop-shadow-[0_14px_22px_rgba(255,245,196,0.32)]"
+                                  className="select-none object-contain drop-shadow-[0_14px_22px_rgba(255,245,196,0.32)]"
+                                  style={{
+                                    width: boostedRewardHeroScale,
+                                    height: boostedRewardHeroScale,
+                                    transform: `translateY(${boostedRewardHeroOffsetY}px)`,
+                                  }}
                                 />
                               ) : (
                                 <img
@@ -149,11 +217,11 @@ export default function GrowthRewardModal({
                           )}
                         </motion.div>
 
-                        <div className="text-center">
-                          <h2 className="mb-2 text-[30px] font-black leading-[1.15] text-white" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                        <div className={rewardTitleBlockClass}>
+                          <h2 className={`${rewardTitleMarginClass} text-[30px] font-black leading-[1.15] text-white`} style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                             {reward.newRewardLabel}
                           </h2>
-                          <div className="mb-4 flex justify-center gap-1">
+                          <div className={`${rewardSparkleMarginClass} flex justify-center gap-1`}>
                             {[...Array(5)].map((_, i) => (
                               <motion.div
                                 key={i}
@@ -173,13 +241,9 @@ export default function GrowthRewardModal({
                   </div>
 
                   <div
-                    className={`relative px-4 text-center text-white/92 ${
-                      isPreviewDominant
-                        ? 'mb-4 flex flex-1 items-center justify-center py-8'
-                        : 'mb-4 flex min-h-[96px] items-center justify-center py-4'
-                    }`}
+                    className={`relative px-4 text-center text-white/92 ${teaserSectionClass}`}
                   >
-                    <div className={`relative z-10 inline-flex max-w-[92%] items-center justify-center ${isPreviewDominant ? 'px-6 py-5' : 'px-8 py-3'}`}>
+                    <div className={`relative z-10 inline-flex max-w-[92%] items-center justify-center ${teaserInnerClass}`}>
                       <div
                         className="absolute left-1/2 top-1/2 rounded-full"
                         style={{
@@ -206,7 +270,7 @@ export default function GrowthRewardModal({
                     </div>
                   </div>
 
-                  <div className="relative mt-auto rounded-2xl bg-white/22 p-4 pt-6 backdrop-blur-sm">
+                  <div className={detailCardClass}>
                     <motion.div
                       animate={{ scale: [1, 1.08, 1] }}
                       transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
@@ -215,7 +279,7 @@ export default function GrowthRewardModal({
                       经验 +{reward.expGained}
                     </motion.div>
 
-                    <div className="relative mb-3 h-5 overflow-hidden rounded-full bg-white/25">
+                    <div className={progressBarMarginClass}>
                       <motion.div
                         initial={{ width: `${Math.round(reward.progressBeforeRatio * 100)}%` }}
                         animate={{ width: `${Math.round(reward.progressAfterRatio * 100)}%` }}
@@ -229,25 +293,45 @@ export default function GrowthRewardModal({
 
                     {isHiddenFinale ? (
                       // 159关：显示"查看图鉴"按钮
-                      <div className="flex justify-center pt-2">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onViewPokedex();
-                          }}
-                          className="rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-3 text-base font-black text-white shadow-lg"
-                        >
-                          查看图鉴
-                        </motion.button>
-                      </div>
+                      <>
+                        <div className={hiddenFinaleSummaryClass}>
+                          <motion.div className={nextStageAvatarClass}>
+                            {reward.rewardHeroImage ? (
+                              <img
+                                src={reward.rewardHeroImage}
+                                alt={reward.newRewardLabel}
+                                draggable={false}
+                                className="h-[88%] w-[88%] select-none object-contain"
+                              />
+                            ) : (
+                              <div className="text-4xl">🔥</div>
+                            )}
+                          </motion.div>
+                          <div className={nextStageTextWrapClass}>
+                            <div className="text-sm font-black text-white">最终形态已达成</div>
+                            <div className="mt-1 text-xs leading-5 text-white/90">隐藏图鉴已点亮，现在就可以前往查看</div>
+                          </div>
+                        </div>
+                        <div className="flex justify-center pt-2">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onViewPokedex();
+                            }}
+                            className="rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-3 text-base font-black text-white shadow-lg"
+                          >
+                            查看图鉴
+                          </motion.button>
+                        </div>
+                      </>
                     ) : (
                       // 其他关卡：显示下一形态信息
-                      <div className="relative grid grid-cols-[72px_minmax(0,1fr)] gap-3 items-center pt-3">
+                      <div className={nextStageBlockClass}>
                         <motion.div
-                          className="relative flex h-[72px] w-[72px] items-center justify-center rounded-2xl bg-black/20"
+                          className={nextStageAvatarClass}
                         >
                           {isHiddenFinale && nextStage?.image ? (
                             <>
@@ -275,7 +359,7 @@ export default function GrowthRewardModal({
                             <div className="text-4xl brightness-50">{nextStage?.emoji ?? '🥚'}</div>
                           )}
                         </motion.div>
-                        <div className="pr-16">
+                        <div className={nextStageTextWrapClass}>
                           <div className="text-sm font-black text-white">
                             {isHiddenFinale
                               ? '隐藏形态已解锁'
@@ -300,7 +384,7 @@ export default function GrowthRewardModal({
                   initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 1.6 }}
-                  className="relative z-30 px-6 pb-8"
+                  className={actionAreaClass}
                 >
                   <motion.button
                     whileHover={{ scale: 1.02 }}
@@ -310,7 +394,7 @@ export default function GrowthRewardModal({
                   >
                     我知道了
                   </motion.button>
-                  <div className="h-[32px]" />
+                  <div className={actionSpacerClass} />
                 </motion.div>
               </div>
             </motion.div>

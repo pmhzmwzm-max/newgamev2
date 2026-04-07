@@ -9,11 +9,12 @@ import {
   getScrollTopForLevel,
 } from './mapScroll';
 import { primeMapBgm, startMapBgm, stopMapBgm, warmupMapBgm } from './mapBgm';
+import pokedexButtonImage from '../../UI v2.0/图鉴按钮v2.png';
 
 const MAX_LEVELS = 159;
 
 function getMapRewardType(levelId: number): RewardType | null {
-  if (levelId < 1 || levelId > 50) return null;
+  if (levelId < 1 || levelId > MAX_LEVELS) return null;
   const config = getLevelRewardConfig(levelId);
   return config.rewardType === 'none' ? null : config.rewardType;
 }
@@ -100,6 +101,7 @@ export default function MapScreen({
   onStart,
   onOpenPokedex,
   unlockedLevels,
+  completedLevels,
   puzzlePieces,
   maxLevels = MAX_LEVELS
 }: {
@@ -107,6 +109,7 @@ export default function MapScreen({
   onStart: (levelId: number) => void;
   onOpenPokedex: () => void;
   unlockedLevels: number[];
+  completedLevels: number[];
   puzzlePieces: number;
   maxLevels?: number;
 }) {
@@ -125,7 +128,7 @@ export default function MapScreen({
   };
 
   // 宠物图鉴按钮切图
-  const pokedexButton = '/images/宠物图鉴.png';
+  const pokedexButton = pokedexButtonImage;
 
   // 精心设计的159关蜿蜒路径 - 统一间距模式
   const levels = [
@@ -651,7 +654,7 @@ export default function MapScreen({
           {levels.map((level) => {
             const isUnlocked = unlockedLevels.includes(level.id);
             const isCurrent = Math.max(...unlockedLevels, 0) === level.id && isUnlocked;
-            const isCompleted = unlockedLevels.includes(level.id + 1);
+            const isCompleted = completedLevels.includes(level.id);
             const isHiddenFinalNode = level.id === 159;
             const rewardType = getMapRewardType(level.id);
             const showRewardBadge = Boolean(rewardType) && !isCompleted;

@@ -33,6 +33,7 @@ type GradeKey = 'k' | '1' | '2' | '3';
 
 interface GradeData {
   unlockedLevels: number[];
+  completedLevels: number[];
   puzzlePieces: number;
 }
 
@@ -42,10 +43,10 @@ const MAX_LEVELS = 159; // 每个年级159关
 const INITIAL_GRADE3_UNLOCKS = [0, 1];
 
 const defaultData: GameData = {
-  k: { unlockedLevels: [1], puzzlePieces: 0 },
-  '1': { unlockedLevels: [1], puzzlePieces: 0 },
-  '2': { unlockedLevels: [1], puzzlePieces: 0 },
-  '3': { unlockedLevels: INITIAL_GRADE3_UNLOCKS, puzzlePieces: 0 },
+  k: { unlockedLevels: [1], completedLevels: [], puzzlePieces: 0 },
+  '1': { unlockedLevels: [1], completedLevels: [], puzzlePieces: 0 },
+  '2': { unlockedLevels: [1], completedLevels: [], puzzlePieces: 0 },
+  '3': { unlockedLevels: INITIAL_GRADE3_UNLOCKS, completedLevels: [], puzzlePieces: 0 },
 };
 
 function normalizeUnlockedLevelsForGrade(grade: GradeKey, unlockedLevels: number[]): number[] {
@@ -68,21 +69,25 @@ function normalizeGameData(data: GameData): GameData {
       ...defaultData.k,
       ...(data.k ?? {}),
       unlockedLevels: normalizeUnlockedLevelsForGrade('k', data.k?.unlockedLevels ?? defaultData.k.unlockedLevels),
+      completedLevels: data.k?.completedLevels ?? [],
     },
     '1': {
       ...defaultData['1'],
       ...(data['1'] ?? {}),
       unlockedLevels: normalizeUnlockedLevelsForGrade('1', data['1']?.unlockedLevels ?? defaultData['1'].unlockedLevels),
+      completedLevels: data['1']?.completedLevels ?? [],
     },
     '2': {
       ...defaultData['2'],
       ...(data['2'] ?? {}),
       unlockedLevels: normalizeUnlockedLevelsForGrade('2', data['2']?.unlockedLevels ?? defaultData['2'].unlockedLevels),
+      completedLevels: data['2']?.completedLevels ?? [],
     },
     '3': {
       ...defaultData['3'],
       ...(data['3'] ?? {}),
       unlockedLevels: normalizeUnlockedLevelsForGrade('3', data['3']?.unlockedLevels ?? defaultData['3'].unlockedLevels),
+      completedLevels: data['3']?.completedLevels ?? [],
     },
   };
 }
@@ -196,17 +201,20 @@ export default function App() {
       expGained: rewardConfig.exp,
     });
 
-    const isFirstTimeClear = !currentGradeData.unlockedLevels.includes(currentLevelId);
+    // 使用 completedLevels 判断是否首次通关
+    const isFirstTimeClear = !currentGradeData.completedLevels.includes(currentLevelId);
 
     setGameData(prev => {
       const currentData = prev[currentGrade];
       const newUnlocked = [...currentData.unlockedLevels];
+      const newCompleted = [...currentData.completedLevels];
 
-      if (!newUnlocked.includes(currentLevelId)) {
-        newUnlocked.push(currentLevelId);
+      // 记录已完成
+      if (!newCompleted.includes(currentLevelId)) {
+        newCompleted.push(currentLevelId);
       }
 
-      // 解锁下一关（最多50关）
+      // 解锁下一关
       if (!newUnlocked.includes(currentLevelId + 1) && currentLevelId < MAX_LEVELS) {
         newUnlocked.push(currentLevelId + 1);
       }
@@ -215,6 +223,7 @@ export default function App() {
         ...prev,
         [currentGrade]: {
           unlockedLevels: normalizeUnlockedLevelsForGrade(currentGrade, newUnlocked),
+          completedLevels: newCompleted.sort((a, b) => a - b),
           puzzlePieces: totalAfter,
         }
       };
@@ -231,14 +240,28 @@ export default function App() {
     applyBattleLoadoutFromExp(totalAfter);
     setCurrentScreen('result');
   };
+  // 当前可玩关卡 = 已完成关卡的最大值 + 1（如果有的话）
   const realHighestUnlockedLevel = Math.max(
-    ...currentGradeData.unlockedLevels.filter((level) => (currentGrade === '3' ? level >= 1 : level >= 1)),
+    1,
+    ...currentGradeData.completedLevels.filter((level) => (currentGrade === '3' ? level >= 1 : level >= 1)).map(l => l + 1),
     1
   );
-  const buildDebugUnlockedLevels = (level: number) =>
-    Array.from({ length: Math.max(0, level) }, (_, index) => index).filter((value) =>
-      currentGrade === '3' ? value < level : value >= 1 && value < level
-    );
+
+  // 构建调试用的 unlockedLevels：包含当前可玩关卡
+  const buildDebugUnlockedLevels = (level: number) => {
+    if (currentGrade === '3') {
+      // 三年级包含 0 和 1 到 level
+      return [0, ...Array.from({ length: level }, (_, index) => index + 1)];
+    }
+    // 其他年级：1 到 level
+    return Array.from({ length: level }, (_, index) => index + 1);
+  };
+
+  // 构建调试用的 completedLevels：已完成 1 到 level-1
+  const buildDebugCompletedLevels = (level: number) => {
+    if (level <= 1) return [];
+    return Array.from({ length: level - 1 }, (_, index) => index + 1);
+  };
 
   const setFormalProgressToLevel = (level: number) => {
     const clampedLevel = Math.max(1, Math.min(MAX_LEVELS, level));
@@ -248,6 +271,7 @@ export default function App() {
       ...prev,
       [currentGrade]: {
         unlockedLevels: normalizeUnlockedLevelsForGrade(currentGrade, buildDebugUnlockedLevels(clampedLevel)),
+        completedLevels: buildDebugCompletedLevels(clampedLevel),
         puzzlePieces: targetExp,
       },
     }));
@@ -261,6 +285,7 @@ export default function App() {
   };
   // 直接使用真实数据
   const effectiveUnlockedLevels = currentGradeData.unlockedLevels;
+  const effectiveCompletedLevels = currentGradeData.completedLevels;
   const effectivePuzzlePieces = currentGradeData.puzzlePieces;
   const debugChainExp = getLevelRewardConfig(debugLevel).cumulativeExp;
   const debugChainStage = getGrowthStageByExp(debugChainExp);
@@ -312,6 +337,7 @@ export default function App() {
           <MapScreen
             gradeId={currentGrade}
             unlockedLevels={effectiveUnlockedLevels}
+            completedLevels={effectiveCompletedLevels}
             puzzlePieces={effectivePuzzlePieces}
             maxLevels={MAX_LEVELS}
             onStart={(levelId) => {
