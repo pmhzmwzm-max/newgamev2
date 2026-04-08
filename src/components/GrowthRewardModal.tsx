@@ -35,20 +35,16 @@ export default function GrowthRewardModal({
   const isRegularHeroShowcase = isLevelHeroShowcase && !isFinalHeroShowcase;
   const rewardHeroScaleMultiplier = reward.level === 159 ? 2.34 : [18, 30, 50, 80].includes(reward.level) ? 1.56 : 1;
   const boostedRewardHeroScale = `${255 * rewardHeroScaleMultiplier}%`;
-  const rewardHeroContainerClass = isFinalHeroShowcase
-    ? 'h-40 w-40 rounded-[34px]'
-    : isLevelHeroShowcase
+  const rewardHeroContainerClass = isLevelHeroShowcase
     ? 'h-36 w-36 rounded-[32px]'
     : 'h-28 w-28 rounded-[28px]';
   const rewardHeroSectionClass = showRewardHero
-    ? isFinalHeroShowcase
-      ? 'mb-4 h-[220px] overflow-visible'
-      : isRegularHeroShowcase
+    ? isRegularHeroShowcase || isFinalHeroShowcase
       ? 'mb-3 h-[182px] overflow-visible'
       : 'mb-5 h-[186px] overflow-visible'
     : 'mb-4 h-0 min-h-0 overflow-hidden';
-  const boostedRewardHeroOffsetY = isFinalHeroShowcase ? -7 : isLevelHeroShowcase ? -6 : -4;
-  const specialLayoutTight = isFinalHeroShowcase;
+  const boostedRewardHeroOffsetY = isLevelHeroShowcase ? -6 : -4;
+  const specialLayoutTight = false;
   const contentShellClass = specialLayoutTight ? 'flex flex-1 flex-col px-6 pt-6 pb-[72px]' : 'flex flex-1 flex-col px-6 pt-12 pb-4';
   const rewardHeroFrameMarginClass = specialLayoutTight ? 'mb-0.5' : 'mb-4';
   const rewardTitleBlockClass = specialLayoutTight ? 'text-center -mt-1' : 'text-center';
@@ -283,7 +279,7 @@ export default function GrowthRewardModal({
                       <motion.div
                         initial={{ width: `${Math.round(reward.progressBeforeRatio * 100)}%` }}
                         animate={{ width: `${Math.round(reward.progressAfterRatio * 100)}%` }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                        transition={{ duration: 0.8, delay: 2.0, ease: 'easeOut' }}
                         className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-yellow-100 via-yellow-300 to-emerald-200"
                       />
                       <div className="absolute inset-0 flex items-center justify-center text-[11px] font-black text-amber-900">
@@ -307,24 +303,21 @@ export default function GrowthRewardModal({
                               <div className="text-4xl">🔥</div>
                             )}
                           </motion.div>
-                          <div className={nextStageTextWrapClass}>
-                            <div className="text-sm font-black text-white">最终形态已达成</div>
-                            <div className="mt-1 text-xs leading-5 text-white/90">隐藏图鉴已点亮，现在就可以前往查看</div>
+                          <div className={`${nextStageTextWrapClass} flex min-h-[68px] flex-col justify-center`}>
+                            <div className="mb-3 text-sm font-black text-white">最终形态已达成</div>
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onViewPokedex();
+                              }}
+                              className="w-fit rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-3 text-base font-black text-white shadow-lg"
+                            >
+                              查看图鉴
+                            </motion.button>
                           </div>
-                        </div>
-                        <div className="flex justify-center pt-2">
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onViewPokedex();
-                            }}
-                            className="rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-3 text-base font-black text-white shadow-lg"
-                          >
-                            查看图鉴
-                          </motion.button>
                         </div>
                       </>
                     ) : (

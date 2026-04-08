@@ -30,6 +30,9 @@ const tabItems: Array<{ id: PokedexTab; label: string }> = [
   { id: 'map', label: '地图' },
 ];
 
+const LOCKED_ICON_CLASS = 'grayscale brightness-75 contrast-125';
+const LOCKED_STAGE_SILHOUETTE_CLASS = 'brightness-0 saturate-0 contrast-[0] opacity-100';
+
 export default function PokedexScreen({
   isOpen,
   puzzlePieces,
@@ -57,12 +60,17 @@ export default function PokedexScreen({
   useEffect(() => {
     if (isOpen) {
       setActiveTab(defaultTab);
+    }
+  }, [isOpen, defaultTab]);
+
+  useEffect(() => {
+    if (isOpen) {
       setSelectedStageId(selectedBattleStageId);
       setSelectedEffectId(selectedBattleEffectName);
       setSelectedGemId(selectedBattleGemName);
       setSelectedMapId(selectedBattleMapTheme);
     }
-  }, [isOpen, defaultTab, selectedBattleStageId, selectedBattleEffectName, selectedBattleGemName, selectedBattleMapTheme]);
+  }, [isOpen, selectedBattleStageId, selectedBattleEffectName, selectedBattleGemName, selectedBattleMapTheme]);
 
   const selectedStage = useMemo(
     () => growthStages.find((stage) => stage.id === selectedStageId) ?? activeStage,
@@ -82,7 +90,7 @@ export default function PokedexScreen({
         return { transform: 'translateY(2%) scale(1.39)', transformOrigin: 'center center' };
       }
       if (stage.id === 3) {
-        return { transform: 'translateY(6px) scale(1.18)', transformOrigin: 'center center' };
+        return { transform: 'translateY(6px) scale(0.83)', transformOrigin: 'center center' };
       }
       if (stage.id === 4) {
         return { transform: 'translateY(8px) scale(0.81)', transformOrigin: 'center center' };
@@ -137,7 +145,7 @@ export default function PokedexScreen({
 
         <div
           className={`mx-auto mb-1.5 flex h-[56px] w-[56px] items-center justify-center rounded-[18px] text-[30px] shadow-inner sm:mb-2 sm:h-[58px] sm:w-[58px] ${
-            isUnlocked ? '' : 'grayscale opacity-55'
+            isUnlocked ? '' : LOCKED_ICON_CLASS
           }`}
           style={{
             background: isUnlocked
@@ -164,7 +172,7 @@ export default function PokedexScreen({
               src={stage.image}
               alt={isUnlocked ? stage.name : isHiddenStage ? '隐藏形态' : '未知伙伴'}
               draggable={false}
-              className={`h-full w-full select-none object-contain drop-shadow-[0_8px_16px_rgba(255,255,255,0.16)] ${isUnlocked ? '' : 'brightness-0'}`}
+              className={`h-full w-full select-none object-contain drop-shadow-[0_8px_16px_rgba(255,255,255,0.16)] ${isUnlocked ? '' : LOCKED_STAGE_SILHOUETTE_CLASS}`}
               style={getStageImageStyle(stage, 'list')}
             />
           ) : (
@@ -227,7 +235,7 @@ export default function PokedexScreen({
                 src={option.image}
                 alt={option.name}
                 draggable={false}
-                className={`h-full w-full object-cover ${isUnlocked ? '' : 'brightness-0'}`}
+                className={`h-full w-full object-cover ${isUnlocked ? '' : LOCKED_ICON_CLASS}`}
                 style={{ objectPosition: option.name === '踏火山径' || option.name === '星火遗坛' ? 'top' : 'center' }}
               />
             ) : (
@@ -242,7 +250,7 @@ export default function PokedexScreen({
                 src={option.image}
                 alt={option.name}
                 draggable={false}
-                className={`h-full w-full object-contain ${kind === 'effect' ? 'scale-[1.15]' : ''} ${isUnlocked ? '' : 'brightness-0'}`}
+                className={`h-full w-full object-contain ${kind === 'effect' ? 'scale-[1.15]' : ''} ${isUnlocked ? '' : LOCKED_ICON_CLASS}`}
               />
             ) : (
               <div className="text-[11px] font-black text-slate-500">{option.name}</div>
@@ -300,7 +308,7 @@ export default function PokedexScreen({
                       src={previewImage}
                       alt={previewLabel ?? title}
                       draggable={false}
-                      className={`h-full w-full object-cover ${isSelectedUnlocked ? '' : 'brightness-0'}`}
+                      className={`h-full w-full object-cover ${isSelectedUnlocked ? '' : LOCKED_ICON_CLASS}`}
                       style={{ objectPosition: previewLabel === '踏火山径' || previewLabel === '星火遗坛' ? 'top' : 'center' }}
                     />
                   ) : (
@@ -315,7 +323,7 @@ export default function PokedexScreen({
                       src={previewImage}
                       alt={previewLabel ?? title}
                       draggable={false}
-                      className={`h-full w-full object-contain drop-shadow-[0_16px_24px_rgba(255,255,255,0.2)] ${kind === 'gem' ? 'scale-[0.8]' : ''} ${isSelectedUnlocked ? '' : 'brightness-0'}`}
+                      className={`h-full w-full object-contain drop-shadow-[0_16px_24px_rgba(255,255,255,0.2)] ${kind === 'gem' ? 'scale-[0.8]' : ''} ${isSelectedUnlocked ? '' : LOCKED_ICON_CLASS}`}
                     />
                   ) : (
                     <div className="text-sm font-black text-white/90">{previewLabel ?? title}</div>
@@ -428,7 +436,7 @@ export default function PokedexScreen({
                     src={selectedStage.image}
                     alt={isSelectedStageUnlocked ? selectedStage.name : '未知形态'}
                     draggable={false}
-                    className={`h-full w-full select-none object-contain drop-shadow-[0_16px_24px_rgba(255,255,255,0.2)] ${selectedStage.hidden ? 'relative z-30' : ''} ${isSelectedStageUnlocked ? '' : 'brightness-0'}`}
+                    className={`h-full w-full select-none object-contain drop-shadow-[0_16px_24px_rgba(255,255,255,0.2)] ${selectedStage.hidden ? 'relative z-30' : ''} ${isSelectedStageUnlocked ? '' : LOCKED_STAGE_SILHOUETTE_CLASS}`}
                     style={getStageImageStyle(selectedStage, 'detail')}
                   />
                 ) : (
@@ -511,7 +519,7 @@ export default function PokedexScreen({
                           onClick={() => setActiveTab(tab.id)}
                           className={`rounded-full px-3 py-1.5 text-[11px] font-black transition-all sm:text-xs ${
                             isActive
-                              ? 'bg-slate-700 text-white shadow-[0_8px_16px_rgba(51,65,85,0.18)]'
+                              ? 'bg-gradient-to-b from-[#ffcc73] to-[#f59e0b] text-[#7b3b12] shadow-[0_8px_16px_rgba(245,158,11,0.28)]'
                               : 'bg-white/85 text-slate-500 shadow-[0_8px_16px_rgba(67,99,139,0.08)]'
                           }`}
                         >

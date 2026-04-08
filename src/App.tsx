@@ -8,8 +8,11 @@ import MapScreen from './components/MapScreen';
 import QuizScreen from './components/QuizScreen';
 import ResultScreen from './components/ResultScreen';
 import PokedexScreen from './components/PokedexScreen';
+import LoginModal from './components/LoginModal';
+import { isLevelZeroTutorial } from './components/levelZeroBattle';
 import {
   getAttackEffectProfileByName,
+  buildLevelZeroRewardCardModel,
   buildRewardCardModel,
   getBattleBackgroundForExp,
   getCurrentAttackEffect,
@@ -27,6 +30,17 @@ import {
   growthStages,
   type RewardCardModel,
 } from './data/growthRewards';
+import { getAutoEquipUpdatesForExpChange } from './progression';
+import {
+  AUTH_STORAGE_KEY,
+  createMockAuthService,
+  emptyAuthState,
+  isAuthState,
+  type AuthState,
+  type LoginMethod,
+} from './auth';
+import { shouldRequireLoginForLevel } from './levelGate';
+import { useDebugMode, useStartMode } from './hooks/useDebugMode';
 
 type Screen = 'map' | 'quiz' | 'result';
 type GradeKey = 'k' | '1' | '2' | '3';
@@ -41,6 +55,7 @@ type GameData = Record<GradeKey, GradeData>;
 
 const MAX_LEVELS = 159; // 每个年级159关
 const INITIAL_GRADE3_UNLOCKS = [0, 1];
+const authService = createMockAuthService();
 
 const defaultData: GameData = {
   k: { unlockedLevels: [1], completedLevels: [], puzzlePieces: 0 },
@@ -93,6 +108,26 @@ function normalizeGameData(data: GameData): GameData {
 }
 
 export default function App() {
+  const isDebugMode = useDebugMode();
+  const isStartMode = useStartMode();
+
+  // ?start 参数：全新用户初始化，清除数据并进入第0关
+  useEffect(() => {
+    if (!isStartMode) return;
+
+    // 清除所有本地存储数据
+    localStorage.removeItem('gameDataV3');
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem('selectedBattleStageId');
+    localStorage.removeItem('selectedBattleEffectName');
+    localStorage.removeItem('selectedBattleGemName');
+    localStorage.removeItem('selectedBattleMapTheme');
+
+    // 直接进入第0关
+    setCurrentLevelId(0);
+    setCurrentScreen('quiz');
+  }, [isStartMode]);
+
   // 直接进入三年级关卡地图
   const [currentScreen, setCurrentScreen] = useState<Screen>('map');
   const [currentGrade, setCurrentGrade] = useState<GradeKey>('3');
@@ -112,6 +147,19 @@ export default function App() {
   const [showRewardCard, setShowRewardCard] = useState(false);
   const [debugLevel, setDebugLevel] = useState<number>(1);
   const [debugPanelMinimized, setDebugPanelMinimized] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingLevelStart, setPendingLevelStart] = useState<number | null>(null);
+  const [authState, setAuthState] = useState<AuthState>(() => {
+    const saved = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!saved) return emptyAuthState;
+
+    try {
+      const parsed = JSON.parse(saved);
+      return isAuthState(parsed) ? parsed : emptyAuthState;
+    } catch {
+      return emptyAuthState;
+    }
+  });
 
   useEffect(() => {
     localStorage.setItem('selectedBattleStageId', selectedBattleStageId.toString());
@@ -144,6 +192,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('gameDataV3', JSON.stringify(gameData));
   }, [gameData]);
+
+  useEffect(() => {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authState));
+  }, [authState]);
 
   const currentGradeData = gameData[currentGrade];
   const activeGrowthStage = getGrowthStageByExp(currentGradeData.puzzlePieces);
@@ -190,15 +242,16 @@ export default function App() {
   ]);
 
   const handleLevelComplete = (levelStats: { accuracy: number; time: number; maxCombo: number }) => {
-    const rewardConfig = getLevelRewardConfig(currentLevelId);
+    const isLevelZero = isLevelZeroTutorial(currentGrade, currentLevelId);
+    const rewardConfig = isLevelZero ? null : getLevelRewardConfig(currentLevelId);
     const totalBefore = currentGradeData.puzzlePieces;
-    const totalAfter = Math.max(currentGradeData.puzzlePieces, rewardConfig.cumulativeExp);
+    const totalAfter = rewardConfig ? Math.max(currentGradeData.puzzlePieces, rewardConfig.cumulativeExp) : totalBefore;
     const beforeStage = getGrowthStageByExp(totalBefore);
     const afterStage = getGrowthStageByExp(totalAfter);
 
     setStats({
       ...levelStats,
-      expGained: rewardConfig.exp,
+      expGained: rewardConfig?.exp ?? 0,
     });
 
     // 使用 completedLevels 判断是否首次通关
@@ -231,14 +284,96 @@ export default function App() {
 
     // 仅在首次通关时显示奖励卡片
     if (isFirstTimeClear) {
-      setRewardCard(buildRewardCardModel(currentLevelId, totalBefore, totalAfter));
+      setRewardCard(
+        isLevelZero
+          ? buildLevelZeroRewardCardModel(totalBefore, totalAfter)
+          : buildRewardCardModel(currentLevelId, totalBefore, totalAfter)
+      );
       setShowRewardCard(true);
     }
-    if (afterStage.id > beforeStage.id) {
+    const autoEquipUpdates = rewardConfig
+      ? getAutoEquipUpdatesForExpChange(totalBefore, totalAfter, {
+          getStageIdForExp: (exp) => getGrowthStageByExp(exp).id,
+          getEffectNameForExp: (exp) => getCurrentAttackEffect(exp).name,
+          getGemNameForExp,
+          getMapThemeNameForExp,
+        })
+      : {};
+
+    if (autoEquipUpdates.stageId !== undefined) {
+      setSelectedBattleStageId(autoEquipUpdates.stageId);
+    } else if (afterStage.id > beforeStage.id) {
       setSelectedBattleStageId(afterStage.id);
     }
-    applyBattleLoadoutFromExp(totalAfter);
+    if (autoEquipUpdates.effectName !== undefined) {
+      setSelectedBattleEffectName(autoEquipUpdates.effectName);
+    }
+    if (autoEquipUpdates.gemName !== undefined) {
+      setSelectedBattleGemName(autoEquipUpdates.gemName);
+    }
+    if (autoEquipUpdates.mapThemeName !== undefined) {
+      setSelectedBattleMapTheme(autoEquipUpdates.mapThemeName);
+    }
     setCurrentScreen('result');
+  };
+
+  const startLevel = (levelId: number) => {
+    setRewardCard(null);
+    setShowRewardCard(false);
+    setCurrentLevelId(levelId);
+    setCurrentScreen('quiz');
+  };
+
+  const requestStartLevel = (levelId: number) => {
+    if (!shouldRequireLoginForLevel(levelId) || authState.isLoggedIn) {
+      startLevel(levelId);
+      return;
+    }
+
+    setPendingLevelStart(levelId);
+    setShowLoginModal(true);
+  };
+
+  const handleLoginSubmit = async (payload: {
+    method: LoginMethod;
+    phone: string;
+    password?: string;
+    code?: string;
+  }) => {
+    const nextAuthState =
+      payload.method === 'password'
+        ? await authService.loginWithPassword({
+            phone: payload.phone,
+            password: payload.password ?? '',
+          })
+        : await authService.loginWithCode({
+            phone: payload.phone,
+            code: payload.code ?? '',
+          });
+
+    setAuthState(nextAuthState);
+    setShowLoginModal(false);
+
+    if (pendingLevelStart !== null) {
+      const nextLevel = pendingLevelStart;
+      setPendingLevelStart(null);
+      startLevel(nextLevel);
+    }
+  };
+
+  const handleSendCode = async ({ phone }: { phone: string }) => {
+    await authService.sendSmsCode({ phone });
+  };
+
+  const handleLoginCancel = () => {
+    setShowLoginModal(false);
+    setPendingLevelStart(null);
+  };
+
+  const handleClearLogin = () => {
+    setAuthState(emptyAuthState);
+    setShowLoginModal(false);
+    setPendingLevelStart(null);
   };
   // 当前可玩关卡 = 已完成关卡的最大值 + 1（如果有的话）
   const realHighestUnlockedLevel = Math.max(
@@ -283,8 +418,10 @@ export default function App() {
     setShowRewardCard(false);
     setCurrentScreen('map');
   };
-  // 直接使用真实数据
-  const effectiveUnlockedLevels = currentGradeData.unlockedLevels;
+  // 直接使用真实数据，正式模式下隐藏第0关
+  const effectiveUnlockedLevels = isDebugMode
+    ? currentGradeData.unlockedLevels
+    : currentGradeData.unlockedLevels.filter((level: number) => level !== 0);
   const effectiveCompletedLevels = currentGradeData.completedLevels;
   const effectivePuzzlePieces = currentGradeData.puzzlePieces;
   const debugChainExp = getLevelRewardConfig(debugLevel).cumulativeExp;
@@ -340,29 +477,31 @@ export default function App() {
             completedLevels={effectiveCompletedLevels}
             puzzlePieces={effectivePuzzlePieces}
             maxLevels={MAX_LEVELS}
-            onStart={(levelId) => {
-              setRewardCard(null);
-              setShowRewardCard(false);
-              setCurrentLevelId(levelId);
-              setCurrentScreen('quiz');
-            }}
+            onStart={requestStartLevel}
             onOpenPokedex={() => {
               setPokedexDefaultTab('stage');
               setShowPokedexModal(true);
             }}
+            onClearLogin={handleClearLogin}
+            showLevelZero={isDebugMode}
+            showClearLoginButton={isDebugMode}
           />
         )}
         {currentScreen === 'quiz' && (
           <QuizScreen
             gradeId={currentGrade}
             levelId={currentLevelId}
-            selectedPet={growthStages.find((stage) => stage.id === selectedBattleStageId) ?? growthStages[1]}
+            selectedPet={
+              isLevelZeroTutorial(currentGrade, currentLevelId)
+                ? growthStages.find((stage) => stage.id === 0) ?? growthStages[0]
+                : growthStages.find((stage) => stage.id === selectedBattleStageId) ?? growthStages[1]
+            }
             attackEffect={getAttackEffectProfileByName(selectedBattleEffectName)}
             gemImage={getGemImage(selectedBattleGemName) ?? getGemImageForExp(effectivePuzzlePieces)}
             backgroundImage={getMapThemeImage(selectedBattleMapTheme) ?? getBattleBackgroundForExp(effectivePuzzlePieces)}
             onFinish={handleLevelComplete}
             onBack={() => setCurrentScreen('map')}
-            showDebugTools={import.meta.env.DEV}
+            showDebugTools={isDebugMode}
           />
         )}
         {currentScreen === 'result' && (
@@ -371,10 +510,7 @@ export default function App() {
             onBack={() => setCurrentScreen('map')}
             onNextLevel={() => {
               if (currentLevelId < MAX_LEVELS) {
-                setRewardCard(null);
-                setShowRewardCard(false);
-                setCurrentLevelId(currentLevelId + 1);
-                setCurrentScreen('quiz');
+                requestStartLevel(currentLevelId + 1);
               } else {
                 setCurrentScreen('map');
               }
@@ -408,7 +544,15 @@ export default function App() {
           defaultTab={pokedexDefaultTab}
         />
 
-        {import.meta.env.DEV && (
+        <LoginModal
+          isOpen={showLoginModal}
+          pendingLevelId={pendingLevelStart}
+          onSubmit={handleLoginSubmit}
+          onSendCode={handleSendCode}
+          onCancel={handleLoginCancel}
+        />
+
+        {isDebugMode && (
           debugPanelMinimized ? (
             <button
               onClick={() => setDebugPanelMinimized(false)}

@@ -20,6 +20,8 @@ import foothillThemeImage from '../../UI v2.0/群岩山麓.png';
 import summitThemeImage from '../../UI v2.0/苍穹峰.png';
 import altarThemeImage from '../../UI v2.0/远古祭坛.png';
 import defaultBattleBackground from '../../UI v2.0/关卡内背景v2.jpg';
+import { isRewardLevelUnlockedAtExp } from '../progression';
+import { buildLevelZeroRewardCardModelData } from './levelZeroReward';
 
 export type RewardType = 'evolution' | 'sfx' | 'gem' | 'bg' | 'hidden' | 'none';
 export type RewardFocus = 'new_reward' | 'next_reward' | 'next_evolution' | 'finale' | 'hidden_finale';
@@ -500,7 +502,7 @@ export function getUnlockedAttackEffectOptions(exp: number): BattleVisualOption[
     name,
     image: getAttackEffectRewardImage(name),
     unlockLevel: unlockLevels[name],
-    unlocked: getTotalExpBeforeLevel(unlockLevels[name]) <= exp || unlockLevels[name] <= 1,
+    unlocked: isRewardLevelUnlockedAtExp(unlockLevels[name], exp, (level) => getLevelRewardConfig(level).cumulativeExp),
     description: attackEffectDescriptions[name],
   }));
 }
@@ -521,7 +523,7 @@ export function getUnlockedGemOptions(exp: number): BattleVisualOption[] {
     name,
     image: getGemImage(name),
     unlockLevel: unlockLevels[name],
-    unlocked: getTotalExpBeforeLevel(Math.max(unlockLevels[name], 1)) <= exp || unlockLevels[name] === 0,
+    unlocked: isRewardLevelUnlockedAtExp(unlockLevels[name], exp, (level) => getLevelRewardConfig(level).cumulativeExp),
     description: gemDescriptions[name],
   }));
 }
@@ -541,7 +543,7 @@ export function getUnlockedMapThemeOptions(exp: number): BattleVisualOption[] {
     name,
     image: getMapThemeImage(name),
     unlockLevel: unlockLevels[name],
-    unlocked: getTotalExpBeforeLevel(Math.max(unlockLevels[name], 1)) <= exp || unlockLevels[name] === 0,
+    unlocked: isRewardLevelUnlockedAtExp(unlockLevels[name], exp, (level) => getLevelRewardConfig(level).cumulativeExp),
     description: mapThemeDescriptions[name],
   }));
 }
@@ -1191,4 +1193,16 @@ export function buildRewardCardModel(level: number, totalBefore: number, totalAf
     teaserText,
     rewardHeroImage,
   };
+}
+
+export function buildLevelZeroRewardCardModel(totalBefore: number, totalAfter: number): RewardCardModel {
+  const rewardStage = growthStages.find((stage) => stage.name === '橙尾幼灵') ?? growthStages[1];
+  const nextStage = growthStages.find((stage) => stage.name === '跃焰灵狐') ?? null;
+
+  return buildLevelZeroRewardCardModelData({
+    totalBefore,
+    totalAfter,
+    rewardHeroImage: rewardStage.image,
+    nextStage,
+  });
 }

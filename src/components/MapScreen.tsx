@@ -100,18 +100,24 @@ export default function MapScreen({
   gradeId,
   onStart,
   onOpenPokedex,
+  onClearLogin,
   unlockedLevels,
   completedLevels,
   puzzlePieces,
-  maxLevels = MAX_LEVELS
+  maxLevels = MAX_LEVELS,
+  showLevelZero = false,
+  showClearLoginButton = false,
 }: {
   gradeId: string;
   onStart: (levelId: number) => void;
   onOpenPokedex: () => void;
+  onClearLogin?: () => void;
   unlockedLevels: number[];
   completedLevels: number[];
   puzzlePieces: number;
   maxLevels?: number;
+  showLevelZero?: boolean;
+  showClearLoginButton?: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentLevelRef = useRef<HTMLDivElement>(null);
@@ -602,7 +608,7 @@ export default function MapScreen({
       {/* 地图区域 - 可滚动 */}
       <div
         ref={scrollRef}
-        className="flex-1 relative overflow-y-auto overflow-x-hidden pt-20"
+        className="flex-1 relative overflow-y-auto overflow-x-hidden pt-20 pb-24"
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -818,13 +824,23 @@ export default function MapScreen({
         </motion.button>
       )}
 
-      {gradeId === '3' && (
-        <button
-          onClick={() => onStart(0)}
-          className="absolute bottom-6 right-6 z-20 rounded-full bg-white/85 px-4 py-2 text-sm font-semibold text-gray-700 shadow-md border border-white/70 hover:bg-white active:scale-95 transition-all"
-        >
-          第0关
-        </button>
+      {gradeId === '3' && showLevelZero && (
+        <div className="absolute bottom-6 right-6 z-20 flex flex-col items-end gap-3">
+          {showClearLoginButton && onClearLogin && (
+            <button
+              onClick={onClearLogin}
+              className="rounded-full bg-[#fff2d8]/90 px-4 py-2 text-sm font-semibold text-[#8b5a18] shadow-md border border-white/80 hover:bg-[#fff6e6] active:scale-95 transition-all"
+            >
+              清除登录
+            </button>
+          )}
+          <button
+            onClick={() => onStart(0)}
+            className="rounded-full bg-white/85 px-4 py-2 text-sm font-semibold text-gray-700 shadow-md border border-white/70 hover:bg-white active:scale-95 transition-all"
+          >
+            第0关
+          </button>
+        </div>
       )}
     </div>
   );

@@ -4,28 +4,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { allLevelsData } from '../data/questions';
 import { type AttackEffectProfile } from '../data/growthRewards';
 import { playCloudPuffBreak, playCloudPuffBurst, playCloudPuffCharge, primeBattleSfx, startBattleBgm, stopBattleBgm, warmupBattleBgm } from './battleSfx';
+import { getLevelZeroShotPlan, isLevelZeroTutorial, LEVEL_ZERO_BATTLE_CONFIG } from './levelZeroBattle';
 import { getBreakFeedbackProfile, getCameraShakeProfile, getChargeDuration, getExplosionProfile, getRemovalCount, getShotTier, getShotTiming, type ShotTier } from './quizTiming';
 
-const TOTAL_BATTLE_BLOCKS = 35;
-const BATTLE_BLOCK_COLUMNS = 5;
-const BATTLE_BLOCK_ROWS = 7;
-
-const BLOCK_CLEAR_ORDER = Array.from({ length: TOTAL_BATTLE_BLOCKS }, (_, index) => index).sort((a, b) => {
-  const rowA = Math.floor(a / BATTLE_BLOCK_COLUMNS);
-  const rowB = Math.floor(b / BATTLE_BLOCK_COLUMNS);
-  const colA = a % BATTLE_BLOCK_COLUMNS;
-  const colB = b % BATTLE_BLOCK_COLUMNS;
-
-  if (rowA !== rowB) return rowB - rowA;
-  return colB - colA;
-});
-
-const BLOCK_CLEAR_RANK = BLOCK_CLEAR_ORDER.reduce<Record<number, number>>((acc, index, rank) => {
-  acc[index] = rank;
-  return acc;
-}, {});
-
-const BATTLE_BLOCK_INDEXES = Array.from({ length: TOTAL_BATTLE_BLOCKS }, (_, index) => index);
+const DEFAULT_BATTLE_BLOCKS = 35;
+const DEFAULT_BATTLE_BLOCK_COLUMNS = 5;
+const DEFAULT_BATTLE_BLOCK_ROWS = 7;
 
 const BLOCK_WOBBLE_ANIMATE = {
   x: [-1.4, 1.6, -1.2],
@@ -325,19 +309,53 @@ const BattleBlockGrid = memo(
     shotTier,
     effect,
     gemImage,
+    totalBlocks,
+    columns,
+    rows,
   }: {
     clearedBlocks: number;
     lastRemoval: number;
     shotTier: ShotTier;
     effect: AttackEffectProfile;
     gemImage: string | undefined;
+    totalBlocks: number;
+    columns: number;
+    rows: number;
   }) => {
+    const blockIndexes = useMemo(() => Array.from({ length: totalBlocks }, (_, index) => index), [totalBlocks]);
+    const blockClearOrder = useMemo(
+      () =>
+        [...blockIndexes].sort((a, b) => {
+          const rowA = Math.floor(a / columns);
+          const rowB = Math.floor(b / columns);
+          const colA = a % columns;
+          const colB = b % columns;
+
+          if (rowA !== rowB) return rowB - rowA;
+          return colB - colA;
+        }),
+      [blockIndexes, columns],
+    );
+    const blockClearRank = useMemo(
+      () =>
+        blockClearOrder.reduce<Record<number, number>>((acc, index, rank) => {
+          acc[index] = rank;
+          return acc;
+        }, {}),
+      [blockClearOrder],
+    );
     const recentClearStart = Math.max(0, clearedBlocks - lastRemoval);
 
     return (
-      <div className="grid h-full w-full min-h-0 grid-cols-5 grid-rows-7 gap-x-3 gap-y-1.5 place-items-stretch">
-        {BATTLE_BLOCK_INDEXES.map((index) => {
-          const clearRank = BLOCK_CLEAR_RANK[index];
+      <div
+        className="grid h-full w-full min-h-0 gap-x-3 gap-y-1.5 place-items-stretch"
+        style={{
+          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+        }}
+      >
+        {blockIndexes.map((index) => {
+          const clearRank = blockClearRank[index];
           const cleared = clearRank < clearedBlocks;
           const justCleared = cleared && clearRank >= recentClearStart;
           const clearDelay = justCleared ? (clearRank - recentClearStart) * 0.055 : 0;
@@ -439,6 +457,9 @@ const BattleStage = memo(({
   lastRemoval,
   shotSequence,
   impactSequence,
+  totalBlocks,
+  blockColumns,
+  blockRows,
 }: {
   selectedPet: any;
   combo: number;
@@ -450,6 +471,9 @@ const BattleStage = memo(({
   lastRemoval: number;
   shotSequence: number;
   impactSequence: number;
+  totalBlocks: number;
+  blockColumns: number;
+  blockRows: number;
 }) => {
   const [cameraShakePulse, setCameraShakePulse] = useState(0);
   const showImpact = shotTier !== 'idle' && shotTier !== 'break';
@@ -663,6 +687,9 @@ const BattleStage = memo(({
               shotTier={shotTier}
               effect={effect}
               gemImage={gemImage}
+              totalBlocks={totalBlocks}
+              columns={blockColumns}
+              rows={blockRows}
             />
           </div>
         </div>
@@ -869,6 +896,18 @@ export default function QuizScreen({
   const [impactSequence, setImpactSequence] = useState(0);
   const battleGemImage = gemImage;
   const battleBackgroundImage = backgroundImage;
+  const isTutorialLevelZero = useMemo(() => isLevelZeroTutorial(gradeId, levelId), [gradeId, levelId]);
+  const battleBlockConfig = useMemo(
+    () =>
+      isTutorialLevelZero
+        ? LEVEL_ZERO_BATTLE_CONFIG
+        : {
+            totalBlocks: DEFAULT_BATTLE_BLOCKS,
+            columns: DEFAULT_BATTLE_BLOCK_COLUMNS,
+            rows: DEFAULT_BATTLE_BLOCK_ROWS,
+          },
+    [isTutorialLevelZero],
+  );
 
   // 从新的数据源获取关卡数据
   const gradeLevels = useMemo(() => allLevelsData[gradeId as keyof typeof allLevelsData], [gradeId]);
@@ -936,9 +975,10 @@ export default function QuizScreen({
   };
 
   const registerCorrectAnswer = (newCombo: number) => {
-    const tier = getShotTier(newCombo);
-    const remainingBlocks = Math.max(0, TOTAL_BATTLE_BLOCKS - clearedBlocks);
-    const removal = getRemovalCount(newCombo, remainingBlocks);
+    const remainingBlocks = Math.max(0, battleBlockConfig.totalBlocks - clearedBlocks);
+    const tutorialPlan = isTutorialLevelZero ? getLevelZeroShotPlan(currentIndex, remainingBlocks) : null;
+    const tier = tutorialPlan?.tier ?? getShotTier(newCombo);
+    const removal = tutorialPlan?.removal ?? getRemovalCount(newCombo, remainingBlocks);
     const newCorrectCount = correctCount + 1;
     const { shotDelay, advanceDelay } = getShotTiming(tier, newCombo);
     const soundTier = tier === 'final' || tier === 'super' || tier === 'boost' || tier === 'normal' ? tier : 'normal';
@@ -956,7 +996,7 @@ export default function QuizScreen({
       void playCloudPuffBurst(soundTier);
       setDisplayCombo(newCombo);
       setLastRemoval(removal);
-      setClearedBlocks((prev) => Math.min(TOTAL_BATTLE_BLOCKS, prev + removal));
+      setClearedBlocks((prev) => Math.min(battleBlockConfig.totalBlocks, prev + removal));
       setImpactSequence((prev) => prev + 1);
     }, shotDelay);
 
@@ -1171,6 +1211,92 @@ export default function QuizScreen({
   };
 
   const activeIndex = useMemo(() => getActiveIndex(), [answers, feedback, multiVerticalStep, question]);
+  const tutorialHintDigit =
+    isTutorialLevelZero &&
+    currentIndex === 0 &&
+    feedback === null &&
+    question?.type === 'input' &&
+    question.answer.length === 1 &&
+    !answers[0]
+      ? question.answer
+      : null;
+  const renderTutorialKeypadButton = (num: number) => {
+    const isHintTarget = tutorialHintDigit === num.toString();
+
+    return (
+      <div key={num} className="relative">
+        {isHintTarget ? (
+          <>
+            <motion.div
+              initial={{ opacity: 0.55, scale: 0.82 }}
+              animate={{ opacity: [0.45, 0.95, 0.45], scale: [0.82, 1.36, 1.68] }}
+              transition={{ duration: 1.25, repeat: Infinity, ease: 'easeOut' }}
+              className="pointer-events-none absolute inset-[-10px] z-10 rounded-[1.9rem] border-[5px] border-[#ff8a1f]/70"
+              style={{ boxShadow: '0 0 34px rgba(255,138,31,0.48)' }}
+            />
+            <motion.div
+              initial={{ opacity: 0.3, scale: 0.94 }}
+              animate={{ opacity: [0.25, 0.68, 0.25], scale: [0.94, 1.14, 0.94] }}
+              transition={{ duration: 0.72, repeat: Infinity, ease: 'easeInOut' }}
+              className="pointer-events-none absolute inset-[-8px] z-10 rounded-[1.85rem] bg-[radial-gradient(circle,rgba(255,240,194,0.92)_0%,rgba(255,171,61,0.5)_45%,rgba(255,138,31,0)_72%)]"
+            />
+            <motion.div
+              initial={{ opacity: 0.94, y: 0 }}
+              animate={{ opacity: [0.88, 1, 0.88], y: [-6, 4, -6] }}
+              transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }}
+              className="pointer-events-none absolute bottom-[calc(100%+10px)] left-1/2 z-20 flex -translate-x-1/2 flex-col items-center"
+            >
+              <motion.div
+                animate={{ scale: [0.98, 1.04, 0.98] }}
+                transition={{ duration: 0.95, repeat: Infinity, ease: 'easeInOut' }}
+                className="min-w-[112px] rounded-full border-[3px] border-[#fff2cb] bg-[linear-gradient(135deg,#ff9c23_0%,#ff6b2c_100%)] px-4 py-2 text-center text-base font-black text-white shadow-[0_12px_24px_rgba(255,107,44,0.34)]"
+              >
+                选这个
+              </motion.div>
+              <motion.div
+                animate={{ height: [18, 30, 18], opacity: [0.45, 0.9, 0.45] }}
+                transition={{ duration: 0.95, repeat: Infinity, ease: 'easeInOut' }}
+                className="mt-2 w-[6px] rounded-full bg-[linear-gradient(180deg,rgba(255,242,203,0.98)_0%,rgba(255,138,31,0.92)_100%)] shadow-[0_0_14px_rgba(255,164,56,0.48)]"
+              />
+              <motion.div
+                animate={{ y: [-3, 3, -3], scale: [0.96, 1.08, 0.96] }}
+                transition={{ duration: 0.95, repeat: Infinity, ease: 'easeInOut' }}
+                className="mt-[-2px] text-[44px] leading-none text-[#ff7a1a]"
+                style={{
+                  textShadow: `
+                    0 8px 16px rgba(255,122,26,0.34),
+                    0 0 18px rgba(255,183,77,0.52),
+                    0 0 6px rgba(255,255,255,0.72)
+                  `,
+                }}
+              >
+                ↓
+              </motion.div>
+            </motion.div>
+          </>
+        ) : null}
+        <motion.button
+          whileHover={feedback === null ? { scale: 1.02, y: -1 } : {}}
+          whileTap={feedback === null ? { scale: 0.98, y: 1 } : {}}
+          onClick={() => handleKeyPress(num.toString())}
+          className={`relative overflow-visible rounded-2xl h-14 w-full text-3xl font-bold transition-all ${
+            isHintTarget
+              ? 'bg-[linear-gradient(180deg,#fff7d8_0%,#ffd978_100%)] text-[#7a3a00] shadow-[0_0_0_4px_rgba(255,241,199,0.95),0_0_0_10px_rgba(255,155,39,0.42),0_8px_0_#f08a1c,0_22px_36px_rgba(255,131,28,0.34)]'
+              : 'bg-white text-gray-700 shadow-[0_5px_0_#e5e7eb]'
+          } active:shadow-none active:translate-y-1`}
+        >
+          {isHintTarget ? (
+            <motion.div
+              animate={{ opacity: [0.2, 0.52, 0.2], scale: [0.9, 1.06, 0.9] }}
+              transition={{ duration: 0.75, repeat: Infinity, ease: 'easeInOut' }}
+              className="pointer-events-none absolute inset-[2px] rounded-[0.95rem] bg-[radial-gradient(circle,rgba(255,255,255,0.9)_0%,rgba(255,236,177,0.72)_42%,rgba(255,189,77,0)_78%)]"
+            />
+          ) : null}
+          <span className="relative z-10">{num}</span>
+        </motion.button>
+      </div>
+    );
+  };
 
   const renderNumberComparison = () => {
     return (
@@ -1698,6 +1824,9 @@ export default function QuizScreen({
             lastRemoval={lastRemoval}
             shotSequence={shotSequence}
             impactSequence={impactSequence}
+            totalBlocks={battleBlockConfig.totalBlocks}
+            blockColumns={battleBlockConfig.columns}
+            blockRows={battleBlockConfig.rows}
           />
         </motion.div>
 
@@ -1785,26 +1914,10 @@ export default function QuizScreen({
           ) : (
             <div className="w-full max-w-3xl mx-auto flex flex-col gap-4 items-center">
               <div className="grid w-full grid-cols-5 gap-4">
-                {[1, 2, 3, 4, 5].map(num => (
-                  <button
-                    key={num}
-                    onClick={() => handleKeyPress(num.toString())}
-                    className="bg-white rounded-2xl h-14 w-full text-3xl font-bold text-gray-700 shadow-[0_5px_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all"
-                  >
-                    {num}
-                  </button>
-                ))}
+                {[1, 2, 3, 4, 5].map((num) => renderTutorialKeypadButton(num))}
               </div>
               <div className="grid w-full grid-cols-5 gap-4">
-                {[6, 7, 8, 9, 0].map(num => (
-                  <button
-                    key={num}
-                    onClick={() => handleKeyPress(num.toString())}
-                    className="bg-white rounded-2xl h-14 w-full text-3xl font-bold text-gray-700 shadow-[0_5px_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all"
-                  >
-                    {num}
-                  </button>
-                ))}
+                {[6, 7, 8, 9, 0].map((num) => renderTutorialKeypadButton(num))}
               </div>
               <button
                 onClick={() => handleKeyPress('delete')}

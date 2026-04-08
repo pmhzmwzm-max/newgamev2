@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm list:*)"
+      "Bash(npm list:*)",
+      "Bash(node review-chain.js)",
+      "Bash(grep -o '>\\\\\\( {0,2}\\\\\\)[^<]*<[td]' \"/Users/wongziming/Documents/口算精灵v0.1/三年级题库v4.html\")",
+      "Bash(npx tsc:*)",
+      "Bash(node -e ':*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(ls -la src/data/*.ts)"
     ]
   }
 }

@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>题型修复演示</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Nunito', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    .game-container {
+      width: 1024px;
+      height: 768px;
+      background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
+      border-radius: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .question-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    /* ============================================
+       统一输入框样式系统（遵循 QUIZ_TYPE_DEMO.html）
+       ============================================ */
+
+    .answer-box {
+      min-width: 72px;
+      height: 56px;
+      border-radius: 12px;
+      border: 3px solid #d1d5db;
+      background: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 900;
+      color: #1f2937;
+      box-shadow: 0 3px 0 #9ca3af;
+      transition: all 0.15s ease;
+      margin: 0 2px;
+      vertical-align: middle;
+    }
+
+    /* 空状态 - 显示问号 */
+    .answer-box.empty {
+      background: #f9fafb;
+      border-color: #d1d5db;
+      color: #9ca3af;
+      box-shadow: 0 3px 0 #9ca3af;
+    }
+    .answer-box.empty::before {
+      content: '?';
+    }
+
+    /* 活跃状态 - 等待输入（黄色实线） */
+    .answer-box.active {
+      background: #fffbeb;
+      border-color: #fbbf24;
+      color: #f59e0b;
+      box-shadow: 0 3px 0 #f59e0b, 0 0 15px rgba(251, 191, 36, 0.4);
+      animation: pulse-waiting 1.5s ease-in-out infinite;
+    }
+    .answer-box.active::before {
+      content: '?';
+    }
+
+    /* 已填充状态（蓝色实线） */
+    .answer-box.filled {
+      background: #eff6ff;
+      border-color: #3b82f6;
+      color: #1d4ed8;
+      box-shadow: 0 3px 0 #1d4ed8;
+    }
+
+    /* 正确状态（绿色实线） */
+    .answer-box.correct {
+      background: #dcfce7;
+      border-color: #22c55e;
+      color: #16a34a;
+      box-shadow: 0 3px 0 #16a34a;
+    }
+
+    /* 错误状态（红色实线） */
+    .answer-box.wrong {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #dc2626;
+      box-shadow: 0 3px 0 #dc2626;
+      animation: shake 0.4s ease;
+    }
+
+    /* 大号输入框 */
+    .answer-box.large {
+      min-width: 96px;
+      height: 64px;
+      font-size: 32px;
+      border-radius: 16px;
+      border-width: 4px;
+      box-shadow: 0 4px 0 #9ca3af;
+    }
+
+    /* 选择题按钮样式 */
+    .choice-btn {
+      background: white;
+      border: 4px solid #e5e7eb;
+      border-radius: 16px;
+      box-shadow: 0 5px 0 #9ca3af;
+      transition: all 0.1s ease;
+      font-weight: 900;
+    }
+    .choice-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 #9ca3af;
+      border-color: #3b82f6;
+    }
+    .choice-btn:active, .choice-btn.selected {
+      transform: translateY(5px);
+      box-shadow: 0 0px 0 #9ca3af;
+    }
+    .choice-btn.correct {
+      background: #22c55e;
+      border-color: #16a34a;
+      color: white;
+      box-shadow: 0 5px 0 #15803d;
+    }
+    .choice-btn.wrong {
+      background: #ef4444;
+      border-color: #dc2626;
+      color: white;
+      box-shadow: 0 5px 0 #b91c1c;
+    }
+
+    @keyframes pulse-waiting {
+      0%, 100% {
+        box-shadow: 0 3px 0 #f59e0b, 0 0 15px rgba(251, 191, 36, 0.4);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 3px 0 #f59e0b, 0 0 25px rgba(251, 191, 36, 0.6);
+        transform: scale(1.02);
+      }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    /* ============================================
+       数字键盘样式
+       ============================================ */
+
+    .numpad-btn {
+      background: white;
+      border: 4px solid #e5e7eb;
+      border-radius: 16px;
+      box-shadow: 0 5px 0 #9ca3af;
+      transition: all 0.1s ease;
+      font-weight: 900;
+    }
+    .numpad-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 #9ca3af;
+    }
+    .numpad-btn:active {
+      transform: translateY(5px);
+      box-shadow: 0 0px 0 #9ca3af;
+    }
+
+    /* ============================================
+       导航按钮样式
+       ============================================ */
+
+    .nav-btn {
+      background: white;
+      border: 3px solid #e5e7eb;
+      box-shadow: 0 3px 0 #d1d5db;
+      transition: all 0.1s ease;
+    }
+    .nav-btn:hover {
+      transform: translateY(-1px);
+    }
+    .nav-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 0px 0 #d1d5db;
+    }
+    .nav-btn.active {
+      background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+      color: white;
+      border-color: #1e40af;
+      box-shadow: 0 3px 0 #1e3a8a;
+    }
+
+    .text-part {
+      font-size: 36px;
+      font-weight: 900;
+      color: #374151;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-200 flex items-center justify-center p-8">
+
+  <div class="game-container relative overflow-hidden flex flex-col">
+
+    <!-- 顶部信息栏 -->
+    <div class="flex items-center justify-between px-8 pt-6 relative z-10">
+      <div class="flex items-center gap-4">
+        <div class="bg-white/90 backdrop-blur rounded-2xl px-6 py-3 shadow-lg border-2 border-white">
+          <span class="font-black text-xl text-gray-800" id="levelTitle">题型修复演示</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 题型切换导航 -->
+    <div class="flex flex-wrap justify-center gap-2 px-8 py-4">
+      <button class="nav-btn active px-4 py-2 rounded-xl font-bold text-sm" onclick="switchType('fill_blank_1')" id="nav-fill_blank_1">填空题1: ( )÷5=6</button>
+      <button class="nav-btn px-4 py-2 rounded-xl font-bold text-sm text-gray-600" onclick="switchType('fill_blank_2')" id="nav-fill_blank_2">填空题2: 205÷( )=34</button>
+      <button class="nav-btn px-4 py-2 rounded-xl font-bold text-sm text-gray-600" onclick="switchType('input')" id="nav-input">输入数字</button>
+      <button class="nav-btn px-4 py-2 rounded-xl font-bold text-sm text-gray-600" onclick="switchType('choice')" id="nav-choice">选择答案</button>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="flex-1 flex flex-col items-center justify-center px-12 pb-4 relative z-10">
+      <div class="question-card w-full max-w-xl p-8 min-h-[280px] flex flex-col items-center justify-center relative" id="questionCard">
+
+        <!-- 题目内容区 -->
+        <div class="text-center w-full" id="questionContent">
+          <!-- 动态内容 -->
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 数字键盘区域 -->
+    <div class="bg-white/20 backdrop-blur-md rounded-t-[2rem] p-6 pb-10" id="numpadArea">
+      <!-- 动态键盘 -->
+    </div>
+
+  </div>
+
+  <script>
+    let currentType = 'fill_blank_1';
+    let answers = [''];  // 填空题的答案
+    let selectedChoice = null;  // 选择题的答案
+    let feedback = null;
+
+    // ============================================
+    // 题目数据
+    // ============================================
+
+    const questions = {
+      // 填空题1: ( )÷5=6
+      fill_blank_1: {
+        title: '填空题',
+        // 原始题目字符串
+        raw: '( )÷5=6',
+        // 解析后的parts
+        parts: [
+          { type: 'blank', answer: '30' },
+          { type: 'text', value: '÷' },
+          { type: 'text', value: '5' },
+          { type: 'text', value: '=' },
+          { type: 'text', value: '6' }
+        ],
+        answer: '30'
+      },
+
+      // 填空题2: 205÷( )=34
+      fill_blank_2: {
+        title: '填空题',
+        raw: '205÷( )=34',
+        parts: [
+          { type: 'text', value: '205' },
+          { type: 'text', value: '÷' },
+          { type: 'blank', answer: '6' },
+          { type: 'text', value: '=' },
+          { type: 'text', value: '34' }
+        ],
+        answer: '6'
+      },
+
+      // 输入数字题
+      input: {
+        title: '输入数字',
+        question: '25 × 4 =',
+        answer: '100'
+      },
+
+      // 选择题
+      choice: {
+        title: '选择答案',
+        question: '326 ÷ 3 =',
+        options: ['108……2', '106……1', '105……7', '109……2'],
+        answer: '108……2'
+      }
+    };
+
+    // ============================================
+    // 解析填空题字符串
+    // ============================================
+
+    function parseFillBlankQuestion(str) {
+      // 匹配 ( ) 或 (  ) 模式
+      const parts = [];
+      let lastIndex = 0;
+      const regex = /\(\s*\)/g;
+      let match;
+
+      while ((match = regex.exec(str)) !== null) {
+        // 添加空白前的文本
+        if (match.index > lastIndex) {
+          const textPart = str.substring(lastIndex, match.index);
+          if (textPart) {
+            // 将连续的字符拆分成单个字符或数字
+            const tokens = tokenize(textPart);
+            tokens.forEach(t => parts.push({ type: 'text', value: t }));
+          }
+        }
+        // 添加空白
+        parts.push({ type: 'blank', answer: '' });
+        lastIndex = match.index + match[0].length;
+      }
+
+      // 添加剩余文本
+      if (lastIndex < str.length) {
+        const textPart = str.substring(lastIndex);
+        const tokens = tokenize(textPart);
+        tokens.forEach(t => parts.push({ type: 'text', value: t }));
+      }
+
+      return parts;
+    }
+
+    // 将文本拆分成标记（数字、运算符）
+    function tokenize(str) {
+      const tokens = [];
+      let current = '';
+
+      for (const char of str) {
+        if (/[0-9]/.test(char)) {
+          current += char;
+        } else {
+          if (current) {
+            tokens.push(current);
+            current = '';
+          }
+          if (char.trim()) {
+            tokens.push(char);
+          }
+        }
+      }
+      if (current) tokens.push(current);
+
+      return tokens;
+    }
+
+    // ============================================
+    // 渲染函数
+    // ============================================
+
+    function renderQuestion(type) {
+      const content = document.getElementById('questionContent');
+      const numpad = document.getElementById('numpadArea');
+
+      // 重置状态
+      feedback = null;
+      selectedChoice = null;
+
+      switch(type) {
+        case 'fill_blank_1':
+        case 'fill_blank_2':
+          answers = [''];
+          renderFillBlank(questions[type], content);
+          break;
+        case 'input':
+          answers = [''];
+          renderInput(questions[type], content);
+          break;
+        case 'choice':
+          renderChoice(questions[type], content);
+          break;
+      }
+
+      renderNumberNumpad(numpad);
+    }
+
+    // ============================================
+    // 填空题渲染（空格修复）
+    // ============================================
+
+    function renderFillBlank(q, container) {
+      const partsHtml = q.parts.map((part, index) => {
+        if (part.type === 'blank') {
+          return `<div class="answer-box active" id="blankSlot" data-index="0"></div>`;
+        } else {
+          return `<span class="text-part">${part.value}</span>`;
+        }
+      }).join('');
+
+      container.innerHTML = `
+        <div class="text-lg font-bold text-gray-400 mb-6 tracking-wider">${q.title}</div>
+        <div class="flex items-center justify-center flex-wrap" style="line-height: 72px;">
+          ${partsHtml}
+        </div>
+        <div class="mt-6 text-sm text-gray-400">点击空格，输入答案</div>
+      `;
+    }
+
+    // ============================================
+    // 输入数字题渲染（遵循 QUIZ_TYPE_DEMO 样式）
+    // ============================================
+
+    function renderInput(q, container) {
+      const hasValue = answers[0] && answers[0].length > 0;
+      const state = feedback || '';
+
+      // 决定状态类
+      let boxClass = 'answer-box large';
+      if (state === 'correct') {
+        boxClass += ' correct';
+      } else if (state === 'wrong') {
+        boxClass += ' wrong';
+      } else if (hasValue) {
+        boxClass += ' filled';
+      } else {
+        boxClass += ' active';
+      }
+
+      container.innerHTML = `
+        <div class="text-lg font-bold text-gray-400 mb-6 tracking-wider">${q.title}</div>
+        <div class="flex items-center justify-center gap-4">
+          <span class="text-5xl font-black text-gray-800">${q.question}</span>
+          <div class="${boxClass}" id="inputSlot">${answers[0] || ''}</div>
+        </div>
+      `;
+    }
+
+    // ============================================
+    // 选择题渲染（遵循 QUIZ_TYPE_DEMO 样式）
+    // ============================================
+
+    function renderChoice(q, container) {
+      const hasChoice = selectedChoice !== null;
+      const state = feedback || '';
+
+      // 答案框状态（与输入数字题一致）
+      let boxClass = 'answer-box large';
+      if (state === 'correct') {
+        boxClass += ' correct';
+      } else if (state === 'wrong') {
+        boxClass += ' wrong';
+      } else if (hasChoice) {
+        boxClass += ' filled';
+      } else {
+        boxClass += ' active';
+      }
+
+      // 渲染选项按钮
+      const optionsHtml = q.options.map((opt, i) => {
+        let btnClass = 'choice-btn py-5 px-6 text-2xl text-gray-700 rounded-2xl';
+        if (state === 'correct' && opt === q.answer) {
+          btnClass += ' correct';
+        } else if (state === 'wrong' && opt === q.answer) {
+          btnClass += ' correct';
+        } else if (state === 'wrong' && selectedChoice === opt) {
+          btnClass += ' wrong';
+        } else if (selectedChoice === opt) {
+          btnClass += ' selected';
+        }
+        return `<button class="${btnClass}" onclick="selectChoice('${opt}')">${opt}</button>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="text-lg font-bold text-gray-400 mb-6 tracking-wider">${q.title}</div>
+        <div class="flex items-center justify-center gap-4 mb-8">
+          <span class="text-4xl font-black text-gray-800">${q.question}</span>
+          <div class="${boxClass}" id="choiceSlot">${selectedChoice || ''}</div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          ${optionsHtml}
+        </div>
+      `;
+    }
+
+    // ============================================
+    // 键盘渲染
+    // ============================================
+
+    function renderNumberNumpad(container) {
+      container.innerHTML = `
+        <div class="flex flex-col gap-4 items-center">
+          <div class="grid grid-cols-5 gap-3">
+            ${[1,2,3,4,5].map(n => `
+              <button class="numpad-btn h-16 w-20 text-3xl text-gray-700 rounded-xl" onclick="handleNumber('${n}')">${n}</button>
+            `).join('')}
+          </div>
+          <div class="grid grid-cols-5 gap-3">
+            ${[6,7,8,9,0].map(n => `
+              <button class="numpad-btn h-16 w-20 text-3xl text-gray-700 rounded-xl" onclick="handleNumber('${n}')">${n}</button>
+            `).join('')}
+          </div>
+          <button class="numpad-btn h-14 flex items-center justify-center text-red-500 rounded-xl" style="width: calc(5 * 80px + 4 * 12px)" onclick="handleDelete()">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
+              <line x1="18" y1="9" x2="12" y2="15"/>
+              <line x1="12" y1="9" x2="18" y2="15"/>
+            </svg>
+            <span class="ml-2 text-lg font-bold">删除</span>
+          </button>
+        </div>
+      `;
+    }
+
+    // ============================================
+    // 输入处理
+    // ============================================
+
+    function handleNumber(num) {
+      if (feedback === 'correct') return;
+
+      if (currentType === 'choice') {
+        // 选择题不支持键盘输入
+        return;
+      }
+
+      // 填空题和输入数字题
+      answers[0] = (answers[0] || '') + num;
+      // 限制长度
+      if (answers[0].length > 5) {
+        answers[0] = answers[0].slice(0, 5);
+      }
+      updateInputDisplay();
+
+      // 输入数字题：自动检查答案
+      if (currentType === 'input') {
+        const q = questions.input;
+        if (answers[0] === q.answer) {
+          checkInputAnswer(q);
+        }
+      }
+    }
+
+    function handleDelete() {
+      if (feedback === 'correct') return;
+
+      answers[0] = answers[0].slice(0, -1);
+      feedback = null;
+      updateInputDisplay();
+    }
+
+    function selectChoice(opt) {
+      if (feedback === 'correct') return;
+
+      selectedChoice = opt;
+
+      const q = questions.choice;
+      if (opt === q.answer) {
+        feedback = 'correct';
+      } else {
+        feedback = 'wrong';
+      }
+
+      renderChoice(q, document.getElementById('questionContent'));
+
+      // 如果错误，重置状态
+      if (feedback === 'wrong') {
+        setTimeout(() => {
+          feedback = null;
+          selectedChoice = null;
+          renderChoice(q, document.getElementById('questionContent'));
+        }, 800);
+      }
+    }
+
+    // ============================================
+    // 更新显示
+    // ============================================
+
+    function updateInputDisplay() {
+      const q = questions[currentType];
+      const hasValue = answers[0] && answers[0].length > 0;
+
+      if (currentType === 'fill_blank_1' || currentType === 'fill_blank_2') {
+        const slot = document.getElementById('blankSlot');
+        if (!slot) return;
+
+        const state = feedback || '';
+        let boxClass = 'answer-box';
+        if (state === 'correct') {
+          boxClass += ' correct';
+        } else if (state === 'wrong') {
+          boxClass += ' wrong';
+        } else if (hasValue) {
+          boxClass += ' filled';
+        } else {
+          boxClass += ' active';
+        }
+        slot.className = boxClass;
+        slot.textContent = answers[0] || '';
+
+        // 自动检查答案
+        if (answers[0] === q.answer) {
+          checkFillBlankAnswer(q);
+        }
+      } else if (currentType === 'input') {
+        const slot = document.getElementById('inputSlot');
+        if (!slot) return;
+
+        const state = feedback || '';
+        let boxClass = 'answer-box large';
+        if (state === 'correct') {
+          boxClass += ' correct';
+        } else if (state === 'wrong') {
+          boxClass += ' wrong';
+        } else if (hasValue) {
+          boxClass += ' filled';
+        } else {
+          boxClass += ' active';
+        }
+        slot.className = boxClass;
+        slot.textContent = answers[0] || '';
+      }
+    }
+
+    // ============================================
+    // 答案检查
+    // ============================================
+
+    function checkFillBlankAnswer(q) {
+      if (answers[0] === q.answer) {
+        feedback = 'correct';
+        updateInputDisplay();
+        setTimeout(() => alert('✅ 正确！'), 300);
+      }
+    }
+
+    function checkInputAnswer(q) {
+      if (answers[0] === q.answer) {
+        feedback = 'correct';
+        updateInputDisplay();
+        setTimeout(() => alert('✅ 正确！'), 300);
+      }
+    }
+
+    // ============================================
+    // 题型切换
+    // ============================================
+
+    function switchType(type) {
+      currentType = type;
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.classList.add('text-gray-600');
+      });
+      const activeBtn = document.getElementById('nav-' + type);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.classList.remove('text-gray-600');
+      }
+
+      renderQuestion(type);
+    }
+
+    // 初始化
+    renderQuestion('fill_blank_1');
+  </script>
+
+</body>
+</html>
