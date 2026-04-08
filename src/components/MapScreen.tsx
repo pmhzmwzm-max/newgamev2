@@ -625,6 +625,7 @@ export default function MapScreen({
             const isCurrent = Math.max(...unlockedLevels, 0) === level.id && isUnlocked;
             const isCompleted = completedLevels.includes(level.id);
             const isHiddenFinalNode = level.id === 159;
+            const showPendingGuide = isUnlocked && !isCompleted;
             const rewardType = getMapRewardType(level.id);
             const showRewardBadge = Boolean(rewardType) && !isCompleted;
             // 将level.top (240 到 -804) 映射到 CSS百分比 (100% 到 0%)
@@ -648,6 +649,33 @@ export default function MapScreen({
                     onClick={() => onStart(level.id)}
                     className="relative flex flex-col items-center cursor-pointer"
                   >
+                    {showPendingGuide && (
+                      <>
+                        <motion.div
+                          initial={{ opacity: 0.46, scale: 0.84 }}
+                          animate={{ opacity: [0.4, 0.9, 0.4], scale: [0.84, 1.16, 1.34] }}
+                          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeOut' }}
+                          className="pointer-events-none absolute inset-[-12px] z-[30] rounded-[42%_58%_62%_38%/47%_50%_53%_50%] border-[5px]"
+                          style={{
+                            borderColor: isHiddenFinalNode ? 'rgba(149, 76, 233, 0.72)' : 'rgba(255, 138, 31, 0.7)',
+                            boxShadow: isHiddenFinalNode
+                              ? '0 0 28px rgba(149,76,233,0.4)'
+                              : '0 0 28px rgba(255,138,31,0.42)',
+                          }}
+                        />
+                        <motion.div
+                          initial={{ opacity: 0.28, scale: 0.92 }}
+                          animate={{ opacity: [0.22, 0.58, 0.22], scale: [0.92, 1.05, 0.92] }}
+                          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }}
+                          className="pointer-events-none absolute inset-[-9px] z-[29] rounded-[42%_58%_62%_38%/47%_50%_53%_50%]"
+                          style={{
+                            background: isHiddenFinalNode
+                              ? 'radial-gradient(circle, rgba(246,236,255,0.9) 0%, rgba(171,120,255,0.42) 45%, rgba(149,76,233,0) 74%)'
+                              : 'radial-gradient(circle, rgba(255,242,210,0.92) 0%, rgba(255,177,74,0.46) 45%, rgba(255,138,31,0) 74%)',
+                          }}
+                        />
+                      </>
+                    )}
                     {showRewardBadge && <LevelRewardBadge type={rewardType!} />}
 
                     {/* 当前关卡标记 - 使用头像切图，最高层级，放大20% */}
