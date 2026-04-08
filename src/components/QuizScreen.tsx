@@ -1174,8 +1174,8 @@ export default function QuizScreen({
 
   const renderNumberComparison = () => {
     return (
-      <div className="flex flex-col items-center justify-center w-full">
-        <div className="text-2xl font-bold text-gray-500 mb-6 tracking-wider">比大小</div>
+      <div className="flex flex-col items-center justify-center w-full h-full">
+        <div className="text-2xl font-bold text-gray-500 mb-4 tracking-wider">比大小</div>
         <div className="flex items-center justify-center gap-6 w-full px-4">
           <div className="flex-1 text-right text-5xl font-bold text-gray-700">{question.num1}</div>
           <motion.div
@@ -1381,31 +1381,136 @@ export default function QuizScreen({
     );
   };
 
-  // 输入题渲染（算式 + 答案框）
+  // 解析填空题：检测 ( ) 或 (  ) 并解析为部件
+  const parseFillBlankQuestion = (questionText: string): { type: 'text' | 'blank'; value: string }[] => {
+    const parts: { type: 'text' | 'blank'; value: string }[] = [];
+    // 匹配 ( ) 或 (  ) 格式的填空
+    const blankPattern = /\( {0,2}\)/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = blankPattern.exec(questionText)) !== null) {
+      // 添加填空前的文本
+      if (match.index > lastIndex) {
+        parts.push({ type: 'text', value: questionText.slice(lastIndex, match.index) });
+      }
+      // 添加填空位置
+      parts.push({ type: 'blank', value: '' });
+      lastIndex = match.index + match[0].length;
+    }
+    // 添加剩余文本（去除末尾多余的空格和等号）
+    if (lastIndex < questionText.length) {
+      let remaining = questionText.slice(lastIndex);
+      // 去除末尾的 " =" 或 " = " 等格式
+      remaining = remaining.replace(/\s*=\s*$/, '');
+      if (remaining) {
+        parts.push({ type: 'text', value: remaining });
+      }
+    }
+    return parts;
+  };
+
+  // 判断是否为填空题
+  const isFillBlankQuestion = (questionText: string): boolean => {
+    return /\( {0,2}\)/.test(questionText);
+  };
+
+  // 输入题渲染（算式 + 答案框）- 遵循 QUIZ_TYPE_DEMO 样式
   const renderInput = () => {
+    const questionText = question.question || '';
+    const hasFillBlank = isFillBlankQuestion(questionText);
+
+    // 填空题：解析并渲染
+    if (hasFillBlank) {
+      const parts = parseFillBlankQuestion(questionText);
+      const hasValue = answers[0] && answers[0].length > 0;
+
+      // 决定答案框状态
+      let boxState = 'active'; // 默认黄色
+      if (feedback === 'correct') boxState = 'correct';
+      else if (feedback === 'wrong') boxState = 'wrong';
+      else if (hasValue) boxState = 'filled';
+
+      const boxClass = {
+        active: 'bg-[#fffbeb] border-[#fbbf24] text-[#f59e0b] shadow-[0_4px_0_#f59e0b,0_0_15px_rgba(251,191,36,0.4)]',
+        filled: 'bg-[#eff6ff] border-[#3b82f6] text-[#1d4ed8] shadow-[0_4px_0_#1d4ed8]',
+        correct: 'bg-[#dcfce7] border-[#22c55e] text-[#16a34a] shadow-[0_4px_0_#16a34a]',
+        wrong: 'bg-[#fee2e2] border-[#ef4444] text-[#dc2626] shadow-[0_4px_0_#dc2626]',
+      }[boxState];
+
+      return (
+        <div className="flex items-center justify-center flex-wrap" style={{ lineHeight: '64px' }}>
+          {parts.map((part, index) => {
+            if (part.type === 'blank') {
+              return (
+                <motion.div
+                  key={index}
+                  animate={
+                    feedback === 'wrong'
+                      ? { x: [-5, 5, -5, 5, 0] }
+                      : hasValue
+                        ? {}
+                        : { scale: [1, 1.02, 1] }
+                  }
+                  transition={
+                    feedback === 'wrong'
+                      ? { duration: 0.4 }
+                      : hasValue
+                        ? {}
+                        : { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
+                  }
+                  className={`min-w-[72px] h-14 px-4 rounded-xl border-[3px] flex items-center justify-center text-3xl font-black transition-colors ${boxClass}`}
+                >
+                  {answers[0] || '?'}
+                </motion.div>
+              );
+            } else {
+              return (
+                <span key={index} className="text-4xl font-black text-gray-800 mx-1">
+                  {part.value}
+                </span>
+              );
+            }
+          })}
+        </div>
+      );
+    }
+
+    // 普通输入题：算式 + 答案框
+    const hasValue = answers[0] && answers[0].length > 0;
+
+    // 决定答案框状态
+    let boxState = 'active'; // 默认黄色
+    if (feedback === 'correct') boxState = 'correct';
+    else if (feedback === 'wrong') boxState = 'wrong';
+    else if (hasValue) boxState = 'filled';
+
+    const boxClass = {
+      active: 'bg-[#fffbeb] border-[#fbbf24] text-[#f59e0b] shadow-[0_4px_0_#f59e0b,0_0_15px_rgba(251,191,36,0.4)]',
+      filled: 'bg-[#eff6ff] border-[#3b82f6] text-[#1d4ed8] shadow-[0_4px_0_#1d4ed8]',
+      correct: 'bg-[#dcfce7] border-[#22c55e] text-[#16a34a] shadow-[0_4px_0_#16a34a]',
+      wrong: 'bg-[#fee2e2] border-[#ef4444] text-[#dc2626] shadow-[0_4px_0_#dc2626]',
+    }[boxState];
+
     return (
       <div className="flex items-center justify-center gap-4">
-        <span className="text-5xl font-black text-gray-800">{question.question}</span>
+        <span className="text-5xl font-black text-gray-800">{questionText}</span>
         <motion.div
           animate={
-            feedback === 'wrong' && answers[0] !== question.answer
+            feedback === 'wrong'
               ? { x: [-5, 5, -5, 5, 0] }
-              : answers[0] && answers[0].length > 0
-                ? { scale: 1, boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)" }
-                : { scale: 1.1, boxShadow: "0 0 30px rgba(253,224,71,0.8)" }
+              : hasValue
+                ? {}
+                : { scale: [1, 1.02, 1] }
           }
           transition={
-            feedback === 'wrong' && answers[0] !== question.answer
+            feedback === 'wrong'
               ? { duration: 0.4 }
-              : answers[0] && answers[0].length > 0
-                ? { duration: 0.2 }
-                : { repeat: Infinity, duration: 1.2, ease: "easeInOut", repeatType: "reverse" }
+              : hasValue
+                ? {}
+                : { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
           }
-          className={`min-w-[80px] px-6 h-16 rounded-xl flex items-center justify-center text-3xl font-bold transition-colors
-            ${answers[0] ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-400'}
-            ${feedback === 'wrong' && answers[0] !== question.answer ? 'bg-red-100 text-red-500' : ''}
-            ${!answers[0] || answers[0].length === 0 ? 'ring-4 ring-yellow-300 bg-yellow-50' : ''}
-          `}
+          className={`min-w-[96px] px-6 h-16 rounded-2xl border-[4px] flex items-center justify-center text-4xl font-black transition-colors ${boxClass}`}
         >
           {answers[0] || '?'}
         </motion.div>
@@ -1461,34 +1566,48 @@ export default function QuizScreen({
     );
   };
 
-  // 选择题渲染
+  // 选择题渲染 - 遵循 QUIZ_TYPE_DEMO 样式
   const renderChoice = () => {
+    const hasChoice = selectedChoice !== null;
+
+    // 决定答案框状态（与输入数字题一致）
+    let boxState = 'active'; // 默认黄色
+    if (feedback === 'correct') boxState = 'correct';
+    else if (feedback === 'wrong') boxState = 'wrong';
+    else if (hasChoice) boxState = 'filled';
+
+    const boxClass = {
+      active: 'bg-[#fffbeb] border-[#fbbf24] text-[#f59e0b] shadow-[0_4px_0_#f59e0b,0_0_15px_rgba(251,191,36,0.4)]',
+      filled: 'bg-[#eff6ff] border-[#3b82f6] text-[#1d4ed8] shadow-[0_4px_0_#1d4ed8]',
+      correct: 'bg-[#dcfce7] border-[#22c55e] text-[#16a34a] shadow-[0_4px_0_#16a34a]',
+      wrong: 'bg-[#fee2e2] border-[#ef4444] text-[#dc2626] shadow-[0_4px_0_#dc2626]',
+    }[boxState];
+
+    // 清理题目文本：去掉 ? 和 (  ) 等填空标记
+    const cleanQuestion = (question.question || '')
+      .replace('?', '')
+      .replace(/\( {0,2}\)/g, '');
+
     return (
-      <div className="text-center w-full">
-        <div className="text-2xl font-bold text-gray-500 mb-6 tracking-wider">选择正确答案</div>
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <span className="text-4xl font-black text-gray-800">{question.question.replace('?', '')}</span>
+      <div className="text-center w-full flex flex-col items-center justify-center h-full">
+        <div className="flex items-center justify-center gap-4">
+          <span className="text-4xl font-black text-gray-800">{cleanQuestion}</span>
           <motion.div
             animate={
-              feedback === 'wrong' && selectedChoice !== question.answer
+              feedback === 'wrong'
                 ? { x: [-5, 5, -5, 5, 0] }
-                : selectedChoice
-                  ? { scale: 1 }
-                  : { scale: 1.1, boxShadow: "0 0 30px rgba(253,224,71,0.8)" }
+                : hasChoice
+                  ? {}
+                  : { scale: [1, 1.02, 1] }
             }
             transition={
               feedback === 'wrong'
                 ? { duration: 0.4 }
-                : selectedChoice
-                ? { duration: 0.2 }
-                : { repeat: Infinity, duration: 1.2, ease: "easeInOut", repeatType: "reverse" }
+                : hasChoice
+                  ? {}
+                  : { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
             }
-            className={`min-w-[96px] px-6 h-20 rounded-2xl flex items-center justify-center text-4xl font-black transition-colors border-4 shadow-[0_4px_0_#9ca3af]
-              ${selectedChoice ? 'bg-blue-100 text-blue-700 border-blue-500' : 'bg-gray-100 text-gray-400 border-gray-300'}
-              ${feedback === 'correct' ? '!bg-green-100 !text-green-600 !border-green-500 shadow-[0_4px_0_#16a34a]' : ''}
-              ${feedback === 'wrong' ? '!bg-red-100 !text-red-600 !border-red-500 shadow-[0_4px_0_#dc2626]' : ''}
-              ${!selectedChoice ? 'ring-4 ring-yellow-300 bg-yellow-50' : ''}
-            `}
+            className={`min-w-[96px] px-6 h-16 rounded-2xl border-[4px] flex items-center justify-center text-4xl font-black transition-colors ${boxClass}`}
           >
             {selectedChoice || '?'}
           </motion.div>
@@ -1499,30 +1618,25 @@ export default function QuizScreen({
 
   const renderChoiceButtons = () => {
     const options = question.options || [];
+    // 选项按钮始终保持默认样式，不因选择或反馈而变色
+    const btnClass = 'bg-white border-[#e5e7eb] text-gray-700 shadow-[0_5px_0_#9ca3af]';
+
     return (
-      <div className="grid grid-cols-4 gap-4">
-        {options.map((option, i) => (
-          <motion.button
-            key={i}
-            whileHover={feedback === null ? { scale: 1.02, y: -2 } : {}}
-            whileTap={feedback === null ? { y: 6, scale: 0.98 } : {}}
-            onClick={() => handleChoiceSelect(option)}
-            disabled={feedback !== null}
-            className={`h-24 rounded-2xl border-4 text-3xl font-black transition-all ${
-              feedback === 'correct' && option === question.answer
-                ? 'bg-green-500 text-white border-green-600 shadow-[0_6px_0_#15803d]'
-                : feedback === 'wrong' && option === question.answer
-                ? 'bg-green-500 text-white border-green-600 shadow-[0_6px_0_#15803d]'
-                : feedback === 'wrong' && selectedChoice === option
-                ? 'bg-red-500 text-white border-red-600 shadow-[0_6px_0_#b91c1c]'
-                : selectedChoice === option
-                ? 'bg-white text-gray-700 border-blue-500 shadow-[0_0_0_#9ca3af]'
-                : 'bg-white text-gray-700 border-gray-200 shadow-[0_6px_0_#9ca3af]'
-            }`}
-          >
-            {option}
-          </motion.button>
-        ))}
+      <div className="mx-auto h-[200px] w-full max-w-3xl">
+        <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-4">
+          {options.slice(0, 4).map((option, i) => (
+            <motion.button
+              key={i}
+              whileHover={feedback === null ? { scale: 1.02, y: -2 } : {}}
+              whileTap={feedback === null ? { y: 5, scale: 0.98 } : {}}
+              onClick={() => handleChoiceSelect(option)}
+              disabled={feedback !== null}
+              className={`h-full w-full rounded-2xl border-4 px-4 text-center text-2xl font-black transition-colors ${btnClass}`}
+            >
+              {option}
+            </motion.button>
+          ))}
+        </div>
       </div>
     );
   };
