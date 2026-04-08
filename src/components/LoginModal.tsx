@@ -17,109 +17,66 @@ interface LoginModalProps {
 const SMS_COUNTDOWN_SECONDS = 60;
 const guardianImage = growthStages.find((stage) => stage.name === '火纹守望者')?.image ?? '';
 
-const agreementSections = [
-  {
-    title: '《用户协议》',
-    body:
-      '本协议由您（以下简称"用户")与广州六一信息科技有限公司（以下简称"精灵口算")之间订立。"精灵口算"为欢乐童年官方网站旗下子产品之一，为Web端在线学习类工具。',
-  },
-  {
-    title: '一、协议的接受与适用',
-    body:
-      '用户在注册、登录或使用本产品前，应仔细阅读本协议。用户使用本产品的行为，视为已阅读并同意本协议全部内容。如用户不同意本协议，应立即停止使用本产品。',
-  },
-  {
-    title: '二、账号注册与使用',
-    body:
-      '本产品支持手机号注册与登录。用户应确保信息真实、合法。用户应妥善保管账号信息，并对账号下的全部行为负责。用户不得发布违法违规信息、干扰或破坏系统运行、冒用他人信息或账号。',
-  },
-  {
-    title: '三、用户内容与责任',
-    body:
-      '用户在使用过程中产生或上传的内容（包括但不限于昵称、头像、记录等），应合法、真实、适宜未成年人。用户对其内容承担全部法律责任。精灵口算有权删除违规内容或限制账号。',
-  },
-  {
-    title: '四、产品服务说明',
-    body:
-      '本产品为在线学习辅助工具，提供计算练习与互动功能。当前为免费服务，不涉及付费、广告或第三方登录。精灵口算有权根据运营需要对服务进行调整、中断或终止。',
-  },
-  {
-    title: '五、教育产品说明（重要）',
-    body:
-      '本产品仅作为学习辅助工具，不构成学历教育、校外培训服务、成绩或升学承诺。产品中的内容与反馈仅供参考，不作为专业教育评估依据。用户及监护人应理性看待学习效果。',
-  },
-  {
-    title: '六、未成年人保护',
-    body:
-      '本产品主要面向未成年人。未成年人应在监护人同意与指导下使用。监护人应履行监督责任，包括审核注册行为、指导使用方式、合理控制使用时间。',
-  },
-  {
-    title: '七、知识产权',
-    body:
-      '本产品的所有内容（包括但不限于程序、界面、文字、图片等）均归精灵口算或权利人所有。未经许可，用户不得复制、传播或用于商业用途。',
-  },
-  {
-    title: '八、责任限制与风险控制',
-    body:
-      '精灵口算不对学习效果或成绩提升结果、因用户使用方式不当产生的影响、用户理解偏差带来的后果承担责任。出现异常使用或作弊行为，平台有权采取措施。',
-  },
-  {
-    title: '九、协议变更与终止',
-    body:
-      '精灵口算有权根据法律或业务需要修改本协议。修改后将在产品内公示，继续使用视为接受。用户违反本协议的，平台有权终止服务。',
-  },
-  {
-    title: '十、适用法律与争议解决',
-    body: '本协议适用中华人民共和国法律。如发生争议，提交公司所在地人民法院解决。',
-  },
-  {
-    title: '十一、联系方式',
-    body: '如有问题，请联系：kefu@hltn.com',
-  },
-  {
-    title: '《隐私政策》',
-    body:
-      '本隐私政策由广州六一信息科技有限公司制定并适用于"精灵口算"产品。我们重视用户隐私，尤其是未成年人信息保护。',
-  },
-  {
-    title: '一、我们收集的信息',
-    body:
-      '我们仅收集必要信息：1. 账号信息：手机号码（用于注册与登录）；2. 使用数据：学习记录、关卡进度、操作行为数据、基础设备信息（用于保障服务运行）。',
-  },
-  {
-    title: '二、信息使用方式',
-    body:
-      '我们仅将信息用于：提供与维护产品功能、优化用户体验、数据分析与产品改进、保障系统安全。',
-  },
-  {
-    title: '三、信息共享与披露',
-    body:
-      '不向第三方出售用户信息。仅在法律法规要求、行政或司法机关要求的情况下披露。',
-  },
-  {
-    title: '四、未成年人信息保护',
-    body:
-      '我们高度重视未成年人隐私。未成年人应在监护人同意下使用。如监护人认为信息使用不当，可联系我们处理。',
-  },
-  {
-    title: '五、信息存储与安全',
-    body:
-      '信息存储在中国境内服务器。采取合理技术措施保护数据安全。达到目的后依法删除或匿名化处理。',
-  },
-  {
-    title: '六、用户权利',
-    body:
-      '用户或监护人有权：查询、更正信息；删除账号；撤回授权。可通过邮箱 kefu@hltn.com 申请处理。',
-  },
-  {
-    title: '七、政策更新',
-    body: '本政策可能根据法律或业务进行更新，更新后将在产品内公示。',
-  },
-  {
-    title: '八、联系方式',
-    body: '如有问题，请联系：kefu@hltn.com',
-  },
-];
+const userAgreementText = `本协议由您（以下简称"用户")与广州六一信息科技有限公司（以下简称"精灵口算")之间订立。"精灵口算"为欢乐童年官方网站旗下子产品之一，为Web端在线学习类工具。
+
+一、协议的接受与适用
+用户在注册、登录或使用本产品前，应仔细阅读本协议。用户使用本产品的行为，视为已阅读并同意本协议全部内容。如用户不同意本协议，应立即停止使用本产品。
+
+二、账号注册与使用
+本产品支持手机号注册与登录。用户应确保信息真实、合法。用户应妥善保管账号信息，并对账号下的全部行为负责。用户不得发布违法违规信息、干扰或破坏系统运行、冒用他人信息或账号。
+
+三、用户内容与责任
+用户在使用过程中产生或上传的内容（包括但不限于昵称、头像、记录等），应合法、真实、适宜未成年人。用户对其内容承担全部法律责任。精灵口算有权删除违规内容或限制账号。
+
+四、产品服务说明
+本产品为在线学习辅助工具，提供计算练习与互动功能。当前为免费服务，不涉及付费、广告或第三方登录。精灵口算有权根据运营需要对服务进行调整、中断或终止。
+
+五、教育产品说明（重要）
+本产品仅作为学习辅助工具，不构成学历教育、校外培训服务、成绩或升学承诺。产品中的内容与反馈仅供参考，不作为专业教育评估依据。用户及监护人应理性看待学习效果。
+
+六、未成年人保护
+本产品主要面向未成年人。未成年人应在监护人同意与指导下使用。监护人应履行监督责任，包括审核注册行为、指导使用方式、合理控制使用时间。
+
+七、知识产权
+本产品的所有内容（包括但不限于程序、界面、文字、图片等）均归精灵口算或权利人所有。未经许可，用户不得复制、传播或用于商业用途。
+
+八、责任限制与风险控制
+精灵口算不对学习效果或成绩提升结果、因用户使用方式不当产生的影响、用户理解偏差带来的后果承担责任。出现异常使用或作弊行为，平台有权采取措施。
+
+九、协议变更与终止
+精灵口算有权根据法律或业务需要修改本协议。修改后将在产品内公示，继续使用视为接受。用户违反本协议的，平台有权终止服务。
+
+十、适用法律与争议解决
+本协议适用中华人民共和国法律。如发生争议，提交公司所在地人民法院解决。
+
+十一、联系方式
+如有问题，请联系：kefu@hltn.com`;
+
+const privacyPolicyText = `本隐私政策由广州六一信息科技有限公司制定并适用于"精灵口算"产品。我们重视用户隐私，尤其是未成年人信息保护。
+
+一、我们收集的信息
+我们仅收集必要信息：1. 账号信息：手机号码（用于注册与登录）；2. 使用数据：学习记录、关卡进度、操作行为数据、基础设备信息（用于保障服务运行）。
+
+二、信息使用方式
+我们仅将信息用于：提供与维护产品功能、优化用户体验、数据分析与产品改进、保障系统安全。
+
+三、信息共享与披露
+不向第三方出售用户信息。仅在法律法规要求、行政或司法机关要求的情况下披露。
+
+四、未成年人信息保护
+我们高度重视未成年人隐私。未成年人应在监护人同意下使用。如监护人认为信息使用不当，可联系我们处理。
+
+五、信息存储与安全
+信息存储在中国境内服务器。采取合理技术措施保护数据安全。达到目的后依法删除或匿名化处理。
+
+六、用户权利
+用户或监护人有权：查询、更正信息；删除账号；撤回授权。可通过邮箱 kefu@hltn.com 申请处理。
+
+七、政策更新
+本政策可能根据法律或业务进行更新，更新后将在产品内公示。
+
+八、联系方式
+如有问题，请联系：kefu@hltn.com`;
 
 export default function LoginModal({
   isOpen,
@@ -134,7 +91,7 @@ export default function LoginModal({
   const [code, setCode] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [showAgreement, setShowAgreement] = useState(false);
+  const [showAgreement, setShowAgreement] = useState<'user' | 'privacy' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -148,7 +105,7 @@ export default function LoginModal({
     setCode('');
     setAgreed(false);
     setToastMessage('');
-    setShowAgreement(false);
+    setShowAgreement(null);
     setIsSubmitting(false);
     setIsSendingCode(false);
     setCountdown(0);
@@ -386,7 +343,7 @@ export default function LoginModal({
                   我已阅读并同意
                   <button
                     type="button"
-                    onClick={() => setShowAgreement(true)}
+                    onClick={() => setShowAgreement('user')}
                     className="mx-1 font-black text-[#eb7b23] underline decoration-[#f2aa5c] underline-offset-4"
                   >
                     《用户协议》
@@ -394,7 +351,7 @@ export default function LoginModal({
                   与
                   <button
                     type="button"
-                    onClick={() => setShowAgreement(true)}
+                    onClick={() => setShowAgreement('privacy')}
                     className="ml-1 font-black text-[#eb7b23] underline decoration-[#f2aa5c] underline-offset-4"
                   >
                     《隐私政策》
@@ -443,21 +400,18 @@ export default function LoginModal({
                 >
                   <div>
                     <div className="mb-4">
-                      <h3 className="mt-1 text-2xl font-black text-[#5a3411]">用户协议与隐私政策</h3>
+                      <h3 className="mt-1 text-2xl font-black text-[#5a3411]">
+                        {showAgreement === 'user' ? '用户协议' : '隐私政策'}
+                      </h3>
                     </div>
 
-                    <div className="max-h-[420px] space-y-4 overflow-y-auto rounded-[22px] bg-white/72 p-4 text-sm leading-7 text-[#6f4a27]">
-                      {agreementSections.map((section) => (
-                        <section key={section.title}>
-                          <h4 className="font-black text-[#5a3411]">{section.title}</h4>
-                          <p className="mt-1">{section.body}</p>
-                        </section>
-                      ))}
+                    <div className="max-h-[420px] overflow-y-auto rounded-[22px] bg-white/72 p-4 text-sm leading-7 text-[#6f4a27] whitespace-pre-wrap">
+                      {showAgreement === 'user' ? userAgreementText : privacyPolicyText}
                     </div>
 
                     <button
                       type="button"
-                      onClick={() => setShowAgreement(false)}
+                      onClick={() => setShowAgreement(null)}
                       className="mt-5 h-14 w-full rounded-[20px] bg-[linear-gradient(180deg,#7b6048_0%,#5d4735_100%)] text-[18px] font-black text-white shadow-[0_12px_22px_rgba(86,63,40,0.22)] transition active:scale-[0.99]"
                     >
                       我知道了
