@@ -72,6 +72,12 @@ export interface RewardCardModel {
   mysteryHintLabel: string;
   teaserText: string;
   rewardHeroImage?: string;
+  evolutionCinematic?: {
+    fromName: string;
+    toName: string;
+    fromImage?: string;
+    toImage?: string;
+  };
 }
 
 export interface AttackEffectProfile {
@@ -999,6 +1005,7 @@ export function getProgressRatio(exp: number, target: number): number {
 
 export function buildRewardCardModel(level: number, totalBefore: number, totalAfter: number): RewardCardModel {
   const config = getLevelRewardConfig(level);
+  const previousStage = getGrowthStageByExp(totalBefore);
   const currentStage = getGrowthStageByExp(totalAfter);
   const nextStage = getNextGrowthStage(totalAfter);
   const isHiddenArc = level > 80;
@@ -1090,6 +1097,12 @@ export function buildRewardCardModel(level: number, totalBefore: number, totalAf
       mysteryHintLabel: '隐藏终局',
       teaserText,
       rewardHeroImage,
+      evolutionCinematic: {
+        fromName: previousStage.name,
+        toName: currentStage.name,
+        fromImage: previousStage.image,
+        toImage: currentStage.image,
+      },
     };
   }
 
@@ -1192,16 +1205,27 @@ export function buildRewardCardModel(level: number, totalBefore: number, totalAf
     mysteryHintLabel,
     teaserText,
     rewardHeroImage,
+    evolutionCinematic:
+      config.rewardType === 'evolution'
+        ? {
+            fromName: previousStage.name,
+            toName: currentStage.name,
+            fromImage: previousStage.image,
+            toImage: currentStage.image,
+          }
+        : undefined,
   };
 }
 
 export function buildLevelZeroRewardCardModel(totalBefore: number, totalAfter: number): RewardCardModel {
+  const previousStage = growthStages.find((stage) => stage.name === '熔心之种') ?? null;
   const rewardStage = growthStages.find((stage) => stage.name === '橙尾幼灵') ?? growthStages[1];
   const nextStage = growthStages.find((stage) => stage.name === '跃焰灵狐') ?? null;
 
   return buildLevelZeroRewardCardModelData({
     totalBefore,
     totalAfter,
+    previousStage,
     rewardHeroImage: rewardStage.image,
     nextStage,
   });

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Lock } from 'lucide-react';
 import type { RewardCardModel } from '../data/growthRewards';
+import EvolutionCinematicOverlay, { EVOLUTION_CINEMATIC_DURATION_MS } from './EvolutionCinematicOverlay';
 
 interface GrowthRewardModalProps {
   isOpen: boolean;
@@ -10,17 +11,83 @@ interface GrowthRewardModalProps {
   onViewPokedex: () => void;
 }
 
+export function shouldPlayRewardCinematic(reward: RewardCardModel | null): boolean {
+  return Boolean(reward?.evolutionCinematic?.toImage);
+}
+
 export default function GrowthRewardModal({
   isOpen,
   reward,
   onClose,
   onViewPokedex,
 }: GrowthRewardModalProps) {
+  const [showEvolutionCinematic, setShowEvolutionCinematic] = useState(false);
+  const [evolutionCinematicComplete, setEvolutionCinematicComplete] = useState(false);
+  const shouldPlayEvolutionCinematic = shouldPlayRewardCinematic(reward);
+
+  useEffect(() => {
+    const imageUrls = [
+      reward?.evolutionCinematic?.fromImage,
+      reward?.evolutionCinematic?.toImage,
+    ].filter((value): value is string => Boolean(value));
+
+    if (imageUrls.length === 0) {
+      return;
+    }
+
+    const preloaders = imageUrls.map((url) => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = url;
+      if (typeof image.decode === 'function') {
+        image.decode().catch(() => undefined);
+      }
+      return image;
+    });
+
+    return () => {
+      preloaders.forEach((image) => {
+        image.src = '';
+      });
+    };
+  }, [reward?.evolutionCinematic?.fromImage, reward?.evolutionCinematic?.toImage]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowEvolutionCinematic(false);
+      setEvolutionCinematicComplete(false);
+    }
+  }, [isOpen, reward?.level]);
+
+  useEffect(() => {
+    if (!isOpen || !shouldPlayEvolutionCinematic) {
+      return undefined;
+    }
+
+    setShowEvolutionCinematic(true);
+    setEvolutionCinematicComplete(false);
+
+    const timer = window.setTimeout(() => {
+      setEvolutionCinematicComplete(true);
+    }, EVOLUTION_CINEMATIC_DURATION_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [isOpen, reward?.level, shouldPlayEvolutionCinematic]);
+
   if (!reward) return null;
+
+  const handleDismiss = () => {
+    if (showEvolutionCinematic) {
+      return;
+    }
+    onClose();
+  };
 
   const handleAcknowledge = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    onClose();
+    handleDismiss();
   };
 
   const nextStage = reward.nextStage;
@@ -96,7 +163,7 @@ export default function GrowthRewardModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="absolute inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-purple-900/90 via-indigo-900/90 to-blue-900/90 backdrop-blur-md"
-          onClick={onClose}
+          onClick={handleDismiss}
         >
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             {[...Array(20)].map((_, i) => (
@@ -122,7 +189,7 @@ export default function GrowthRewardModal({
             animate={{ scale: 1, rotate: 0, y: 0, opacity: 1 }}
             transition={{ type: 'spring', bounce: 0.3, duration: 1.2, delay: 0.3 }}
             onClick={(event) => event.stopPropagation()}
-            className="relative"
+            className={`relative ${showEvolutionCinematic ? 'pointer-events-none' : ''}`}
           >
             <motion.div
               animate={{
@@ -392,6 +459,17 @@ export default function GrowthRewardModal({
               </div>
             </motion.div>
           </motion.div>
+
+          {showEvolutionCinematic ? (
+            <EvolutionCinematicOverlay
+              reward={reward}
+              isComplete={evolutionCinematicComplete}
+              onDismiss={() => {
+                setShowEvolutionCinematic(false);
+                setEvolutionCinematicComplete(false);
+              }}
+            />
+          ) : null}
         </motion.div>
       )}
     </AnimatePresence>
