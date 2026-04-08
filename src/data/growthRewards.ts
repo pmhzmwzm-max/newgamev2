@@ -82,6 +82,7 @@ export interface RewardCardModel {
 
 export interface AttackEffectProfile {
   name: string;
+  family: AttackEffectFamily;
   coreColor: string;
   glowColor: string;
   tailColor: string;
@@ -98,6 +99,8 @@ export interface AttackEffectProfile {
   orbScale: number;
   shardScale: number;
 }
+
+export type AttackEffectFamily = 'ember' | 'gale' | 'beam' | 'star' | 'radiant' | 'arcane';
 
 function svgDataUrl(svg: string): string {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
@@ -132,6 +135,7 @@ const ABILITY_ORDER = [
 export const attackEffectProfiles: Record<string, AttackEffectProfile> = {
   晨火I: {
     name: '晨火I',
+    family: 'ember',
     coreColor: '#fff3b5',
     glowColor: 'rgba(255,163,52,0.96)',
     tailColor: 'rgba(255,103,31,0.54)',
@@ -150,6 +154,7 @@ export const attackEffectProfiles: Record<string, AttackEffectProfile> = {
   },
   晨火II: {
     name: '晨火II',
+    family: 'ember',
     coreColor: '#fff7c8',
     glowColor: 'rgba(255,173,62,0.98)',
     tailColor: 'rgba(255,122,33,0.58)',
@@ -168,6 +173,7 @@ export const attackEffectProfiles: Record<string, AttackEffectProfile> = {
   },
   晨火III: {
     name: '晨火III',
+    family: 'ember',
     coreColor: '#fff9d8',
     glowColor: 'rgba(255,185,73,1)',
     tailColor: 'rgba(255,127,36,0.62)',
@@ -186,6 +192,7 @@ export const attackEffectProfiles: Record<string, AttackEffectProfile> = {
   },
   风火I: {
     name: '风火I',
+    family: 'gale',
     coreColor: '#f1ffd8',
     glowColor: 'rgba(109,232,101,0.96)',
     tailColor: 'rgba(38,186,122,0.56)',
@@ -204,6 +211,7 @@ export const attackEffectProfiles: Record<string, AttackEffectProfile> = {
   },
   风火II: {
     name: '风火II',
+    family: 'gale',
     coreColor: '#f7ffe7',
     glowColor: 'rgba(127,245,124,1)',
     tailColor: 'rgba(31,189,132,0.64)',
@@ -222,6 +230,7 @@ export const attackEffectProfiles: Record<string, AttackEffectProfile> = {
   },
   流光I: {
     name: '流光I',
+    family: 'beam',
     coreColor: '#f4fcff',
     glowColor: 'rgba(110,204,255,0.96)',
     tailColor: 'rgba(63,128,255,0.58)',
@@ -240,6 +249,7 @@ export const attackEffectProfiles: Record<string, AttackEffectProfile> = {
   },
   流光II: {
     name: '流光II',
+    family: 'beam',
     coreColor: '#ffffff',
     glowColor: 'rgba(132,222,255,1)',
     tailColor: 'rgba(54,136,255,0.62)',
@@ -258,6 +268,7 @@ export const attackEffectProfiles: Record<string, AttackEffectProfile> = {
   },
   星焰I: {
     name: '星焰I',
+    family: 'star',
     coreColor: '#f7e8ff',
     glowColor: 'rgba(181,122,255,0.98)',
     tailColor: 'rgba(112,72,232,0.58)',
@@ -276,6 +287,7 @@ export const attackEffectProfiles: Record<string, AttackEffectProfile> = {
   },
   星焰II: {
     name: '星焰II',
+    family: 'star',
     coreColor: '#fbf0ff',
     glowColor: 'rgba(171,102,255,1)',
     tailColor: 'rgba(93,55,220,0.62)',
@@ -294,6 +306,7 @@ export const attackEffectProfiles: Record<string, AttackEffectProfile> = {
   },
   曦辉I: {
     name: '曦辉I',
+    family: 'radiant',
     coreColor: '#fffdf4',
     glowColor: 'rgba(255,219,101,0.98)',
     tailColor: 'rgba(255,178,57,0.58)',
@@ -312,6 +325,7 @@ export const attackEffectProfiles: Record<string, AttackEffectProfile> = {
   },
   曦辉II: {
     name: '曦辉II',
+    family: 'radiant',
     coreColor: '#ffffff',
     glowColor: 'rgba(255,229,122,1)',
     tailColor: 'rgba(255,192,72,0.62)',
@@ -330,6 +344,7 @@ export const attackEffectProfiles: Record<string, AttackEffectProfile> = {
   },
   智慧之力: {
     name: '智慧之力',
+    family: 'arcane',
     coreColor: '#ffffff',
     glowColor: 'rgba(255,244,186,1)',
     tailColor: 'rgba(255,214,125,0.68)',

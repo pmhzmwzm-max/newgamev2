@@ -1,8 +1,8 @@
 import { useRef, useEffect, useState } from 'react';
 import { Lock } from 'lucide-react';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { allLevelsData } from '../data/questions';
-import { getLevelRewardConfig, type RewardType } from '../data/growthRewards';
+import { getLevelRewardConfig, growthStages, type RewardType } from '../data/growthRewards';
 import {
   getHighestUnlockedLevel,
   getLevelProgressRatio,
@@ -107,6 +107,8 @@ export default function MapScreen({
   maxLevels = MAX_LEVELS,
   showLevelZero = false,
   showClearLoginButton = false,
+  playLevelZeroRouteIntro = false,
+  onLevelZeroRouteIntroComplete,
 }: {
   gradeId: string;
   onStart: (levelId: number) => void;
@@ -118,19 +120,24 @@ export default function MapScreen({
   maxLevels?: number;
   showLevelZero?: boolean;
   showClearLoginButton?: boolean;
+  playLevelZeroRouteIntro?: boolean;
+  onLevelZeroRouteIntroComplete?: () => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentLevelRef = useRef<HTMLDivElement>(null);
   const [isCurrentLevelVisible, setIsCurrentLevelVisible] = useState(true);
+  const [isRouteIntroPlaying, setIsRouteIntroPlaying] = useState(false);
+  const [routeIntroStageIndex, setRouteIntroStageIndex] = useState(0);
+  const [routeIntroPromptVisible, setRouteIntroPromptVisible] = useState(false);
 
   const gradeData = allLevelsData[gradeId as keyof typeof allLevelsData];
 
-  // 三年级使用一年级背景图
+  // 三年级流程页使用独立背景图
   const gradeBackgrounds: Record<string, string> = {
     'k': '/images/幼儿园关卡背景图.png',
     '1': '/images/一年级关卡背景图.png',
     '2': '/images/二年级关卡背景图.png',
-    '3': '/images/一年级关卡背景图.png' // 三年级使用一年级背景
+    '3': '/images/流程背景v2.jpg'
   };
 
   // 宠物图鉴按钮切图
@@ -309,6 +316,8 @@ export default function MapScreen({
 
   // 组件挂载后执行一次滚动
   useEffect(() => {
+    if (playLevelZeroRouteIntro) return;
+
     const scrollToCurrentLevel = (attemptNumber: number) => {
       if (!scrollRef.current || unlockedLevels.length === 0) {
         console.log(`Attempt ${attemptNumber}: Cannot scroll - ref or levels missing`);
@@ -373,7 +382,7 @@ export default function MapScreen({
     });
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unlockedLevels]);
+  }, [playLevelZeroRouteIntro, unlockedLevels]);
 
   useEffect(() => {
     warmupMapBgm();
@@ -395,6 +404,8 @@ export default function MapScreen({
 
   // 监听滚动，检测当前关卡头像是否在可视区域内
   useEffect(() => {
+    if (playLevelZeroRouteIntro) return;
+
     const scrollContainer = scrollRef.current;
     if (!scrollContainer || unlockedLevels.length === 0) return;
 
@@ -419,7 +430,84 @@ export default function MapScreen({
     checkVisibility();
     scrollContainer.addEventListener('scroll', checkVisibility, { passive: true });
     return () => scrollContainer.removeEventListener('scroll', checkVisibility);
-  }, [unlockedLevels]);
+  }, [playLevelZeroRouteIntro, unlockedLevels]);
+
+  useEffect(() => {
+    if (!playLevelZeroRouteIntro || !scrollRef.current || gradeId !== '3') return;
+
+    const scrollContainer = scrollRef.current;
+    const levelOne = levels.find((level) => level.id === 1);
+    if (!levelOne) return;
+
+    const routeIntroStages = growthStages.slice(1).reverse();
+    const stageCount = routeIntroStages.length;
+    const stageBeatMs = 500;
+    const holdAtTopMs = 2000;
+    const scrollDurationMs = stageCount * stageBeatMs;
+    const promptHoldMs = 1400;
+    let frameId = 0;
+    let stageIntervalId: number | undefined;
+    let scrollTimeoutId: number | undefined;
+    let promptTimeoutId: number | undefined;
+
+    const finalScrollTop = getScrollTopForLevel({
+      levelTop: levelOne.top,
+      scrollHeight: scrollContainer.scrollHeight,
+      containerHeight: scrollContainer.clientHeight,
+    });
+
+    const easeInCubic = (value: number) => value * value * value;
+
+    setIsRouteIntroPlaying(true);
+    setRouteIntroPromptVisible(false);
+    setRouteIntroStageIndex(0);
+    scrollContainer.scrollTop = 0;
+
+    scrollTimeoutId = window.setTimeout(() => {
+      const start = performance.now();
+
+      stageIntervalId = window.setInterval(() => {
+        setRouteIntroStageIndex((prev) => {
+          if (prev >= stageCount - 1) return prev;
+          return prev + 1;
+        });
+      }, stageBeatMs);
+
+      const tick = (now: number) => {
+        const elapsed = now - start;
+        const progress = Math.min(1, elapsed / scrollDurationMs);
+        scrollContainer.scrollTop = finalScrollTop * easeInCubic(progress);
+
+        if (progress < 1) {
+          frameId = window.requestAnimationFrame(tick);
+          return;
+        }
+
+        if (stageIntervalId !== undefined) {
+          window.clearInterval(stageIntervalId);
+        }
+        setRouteIntroStageIndex(stageCount - 1);
+        setRouteIntroPromptVisible(true);
+
+        promptTimeoutId = window.setTimeout(() => {
+          setRouteIntroPromptVisible(false);
+          setIsRouteIntroPlaying(false);
+          onLevelZeroRouteIntroComplete?.();
+        }, promptHoldMs);
+      };
+
+      frameId = window.requestAnimationFrame(tick);
+    }, holdAtTopMs);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      if (stageIntervalId !== undefined) window.clearInterval(stageIntervalId);
+      if (scrollTimeoutId !== undefined) window.clearTimeout(scrollTimeoutId);
+      if (promptTimeoutId !== undefined) window.clearTimeout(promptTimeoutId);
+      setIsRouteIntroPlaying(false);
+      setRouteIntroPromptVisible(false);
+    };
+  }, [gradeId, onLevelZeroRouteIntroComplete, playLevelZeroRouteIntro]);
 
   // 生成蜿蜒路径的SVG路径数据
   const generateWindingPath = () => {
@@ -493,6 +581,20 @@ export default function MapScreen({
       behavior: 'smooth'
     });
   };
+
+  const obtainedStageIds = new Set(
+    growthStages
+      .filter((stage) => puzzlePieces >= stage.threshold)
+      .map((stage) => stage.id)
+  );
+  if (gradeId === '3' && completedLevels.includes(0)) {
+    obtainedStageIds.add(0);
+    obtainedStageIds.add(1);
+  }
+  const routeIntroStages = growthStages.slice(1).reverse();
+  const activeRouteStage = routeIntroStages[routeIntroStageIndex] ?? routeIntroStages[0];
+  const isActiveRouteStageUnlocked = obtainedStageIds.has(activeRouteStage.id);
+  const mapInteractionLocked = isRouteIntroPlaying || routeIntroPromptVisible;
 
   return (
     <div className="w-full h-full relative flex flex-col overflow-hidden">
@@ -571,7 +673,7 @@ export default function MapScreen({
       {/* 地图区域 - 可滚动 */}
       <div
         ref={scrollRef}
-        className="flex-1 relative overflow-y-auto overflow-x-hidden pt-20 pb-24"
+        className="flex-1 relative overflow-y-auto overflow-x-hidden pt-20 pb-[32vh]"
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -785,7 +887,7 @@ export default function MapScreen({
       </div>
 
       {/* 返回当前关卡按钮 - 弱化UI，仅在头像不在可视区域时显示 */}
-      {!isCurrentLevelVisible && (
+      {!isCurrentLevelVisible && !mapInteractionLocked && (
         <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -820,6 +922,59 @@ export default function MapScreen({
           </button>
         </div>
       )}
+
+      <AnimatePresence>
+        {mapInteractionLocked && gradeId === '3' && playLevelZeroRouteIntro ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[120] bg-[linear-gradient(180deg,rgba(15,23,42,0.08)_0%,rgba(15,23,42,0.18)_100%)] backdrop-blur-[1px]"
+          >
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <AnimatePresence mode="wait">
+                {isRouteIntroPlaying ? (
+                  <motion.div
+                    key={activeRouteStage.id}
+                    initial={{ opacity: 0, scale: 0.92, y: 12 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 1.04, y: -10 }}
+                    transition={{ duration: 0.1, ease: 'easeOut' }}
+                    className="flex flex-col items-center"
+                  >
+                    <img
+                      src={activeRouteStage.image ?? ''}
+                      alt={activeRouteStage.name}
+                      draggable={false}
+                      className="h-[220px] w-[220px] object-contain"
+                      style={{
+                        filter: isActiveRouteStageUnlocked
+                          ? 'drop-shadow(0 18px 28px rgba(255,255,255,0.18))'
+                          : 'brightness(0) saturate(0) contrast(1)',
+                        opacity: 1,
+                      }}
+                    />
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {routeIntroPromptVisible ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 18, scale: 0.94 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -12, scale: 0.98 }}
+                    transition={{ duration: 0.28, ease: 'easeOut' }}
+                    className="absolute bottom-24 rounded-full border border-white/40 bg-[linear-gradient(135deg,#fff2c9_0%,#ffcb78_100%)] px-10 py-4 text-[30px] font-black tracking-[0.16em] text-[#7c3d00] shadow-[0_18px_34px_rgba(255,171,61,0.32)]"
+                  >
+                    开始升级之路
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

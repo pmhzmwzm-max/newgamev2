@@ -1,11 +1,34 @@
 import React, { memo, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Delete, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { allLevelsData } from '../data/questions';
-import { type AttackEffectProfile } from '../data/growthRewards';
+import { allLevelsData, type Question } from '../data/questions';
+import { type AttackEffectFamily, type AttackEffectProfile } from '../data/growthRewards';
 import { playCloudPuffBreak, playCloudPuffBurst, playCloudPuffCharge, primeBattleSfx, startBattleBgm, stopBattleBgm, warmupBattleBgm } from './battleSfx';
 import { getLevelZeroShotPlan, isLevelZeroTutorial, LEVEL_ZERO_BATTLE_CONFIG } from './levelZeroBattle';
 import { getBreakFeedbackProfile, getCameraShakeProfile, getChargeDuration, getExplosionProfile, getRemovalCount, getShotTier, getShotTiming, type ShotTier } from './quizTiming';
+
+/**
+ * 错题详情（用于传递给父组件记录）
+ */
+export interface WrongAnswerDetail {
+  questionId: string;        // 题目ID
+  questionText: string;      // 题干描述
+  correctAnswer: string;     // 正确答案
+  userAnswer: string;        // 用户答案
+}
+
+/**
+ * 关卡完成统计数据
+ */
+export interface LevelFinishStats {
+  accuracy: number;          // 正确率（0-100）
+  time: number;              // 通关用时（秒）
+  maxCombo: number;          // 最大连击
+  expGained: number;         // 获得经验
+  totalQuestions: number;    // 总题数
+  correctCount: number;      // 正确题数
+  wrongAnswers: WrongAnswerDetail[]; // 错题列表
+}
 
 const DEFAULT_BATTLE_BLOCKS = 35;
 const DEFAULT_BATTLE_BLOCK_COLUMNS = 5;
@@ -70,6 +93,110 @@ const createSeededRandom = (seed: number) => {
   };
 };
 
+const getEffectRank = (effect: AttackEffectProfile) => {
+  if (effect.name.includes('智慧之力')) return 4;
+  if (effect.name.includes('III')) return 3;
+  if (effect.name.includes('II')) return 2;
+  return 1;
+};
+
+const getFamilyTempoMultiplier = (family: AttackEffectFamily, rank: number) => {
+  switch (family) {
+    case 'ember':
+      return Math.max(0.64, 0.96 - rank * 0.06);
+    case 'gale':
+      return Math.max(0.56, 0.82 - rank * 0.08);
+    case 'beam':
+      return Math.max(0.48, 0.76 - rank * 0.08);
+    case 'star':
+      return Math.max(0.72, 1.02 - rank * 0.06);
+    case 'radiant':
+      return 1.06 + rank * 0.06;
+    case 'arcane':
+      return 0.96 + rank * 0.05;
+    default:
+      return 1;
+  }
+};
+
+const getImpactTravelProfile = (family: AttackEffectFamily, rank: number) => {
+  switch (family) {
+    case 'gale':
+      return {
+        width: 104 + rank * 18,
+        height: 34 + rank * 7,
+        borderRadius: '999px',
+        startX: 34 + rank * 10,
+        midX: -18 - rank * 6,
+        endX: -54 - rank * 14,
+        startY: 14,
+        midY: -8 - rank,
+        endY: -10 - rank,
+      };
+    case 'beam':
+      return {
+        width: 136 + rank * 28,
+        height: 18 + rank * 3,
+        borderRadius: '999px',
+        startX: 64 + rank * 18,
+        midX: 12 + rank * 4,
+        endX: -66 - rank * 18,
+        startY: 4,
+        midY: 0,
+        endY: -2,
+      };
+    case 'star':
+      return {
+        width: 74 + rank * 12,
+        height: 74 + rank * 12,
+        borderRadius: '1.4rem',
+        startX: 18,
+        midX: -10 - rank * 3,
+        endX: -28 - rank * 6,
+        startY: 8,
+        midY: 0,
+        endY: -3,
+      };
+    case 'radiant':
+      return {
+        width: 112 + rank * 22,
+        height: 112 + rank * 22,
+        borderRadius: '999px',
+        startX: 14,
+        midX: -10,
+        endX: -22 - rank * 4,
+        startY: 10,
+        midY: 2,
+        endY: 0,
+      };
+    case 'arcane':
+      return {
+        width: 92 + rank * 18,
+        height: 92 + rank * 18,
+        borderRadius: '1.6rem',
+        startX: 16,
+        midX: -8 - rank * 3,
+        endX: -26 - rank * 6,
+        startY: 10,
+        midY: 1,
+        endY: -2,
+      };
+    case 'ember':
+    default:
+      return {
+        width: 78 + rank * 12,
+        height: 78 + rank * 12,
+        borderRadius: '999px',
+        startX: 18,
+        midX: -12 - rank * 4,
+        endX: -34 - rank * 7,
+        startY: 8,
+        midY: 0,
+        endY: -2,
+      };
+  }
+};
+
 const getShardColors = (tier: ShotTier, effect: AttackEffectProfile) =>
   tier === 'final'
     ? [effect.coreColor, effect.glowColor, effect.tailColor, effect.ringColor, 'rgba(255,255,255,0.95)']
@@ -83,35 +210,105 @@ const getSparkColors = (tier: ShotTier, effect: AttackEffectProfile) =>
     : ['#FFFFFF', effect.coreColor, effect.glowColor];
 
 const getExplosionPreset = (tier: ShotTier, seed: number, profile: ReturnType<typeof getExplosionProfile>, effect: AttackEffectProfile) => {
-  const cacheKey = `${tier}:${seed}:${effect.name}`;
+  const cacheKey = `${tier}:${seed}:${effect.name}:${effect.family}`;
   const cached = explosionPresetCache.get(cacheKey);
   if (cached) return cached;
 
   const shardColors = getShardColors(tier, effect);
   const sparkColors = getSparkColors(tier, effect);
   const rand = createSeededRandom(seed + 1);
+  const family = effect.family;
+  const rank = getEffectRank(effect);
 
   const preset: ExplosionPreset = {
     shards: Array.from({ length: profile.shardCount }, (_, i) => {
-      const angle = (i / profile.shardCount) * Math.PI * 2 + (i % 2 === 0 ? -0.12 : 0.18);
-      const distance = profile.shardDistanceBase + (i % 4) * 18;
+      let angle = (i / profile.shardCount) * Math.PI * 2 + (i % 2 === 0 ? -0.12 : 0.18);
+      let distance = profile.shardDistanceBase + (i % 4) * (18 + rank * 2);
+      let width = (tier === 'final' ? 16 : tier === 'super' ? 14 : 12) + rank;
+      let height = i % 3 === 0 ? 8 + Math.floor(rank / 2) : 6 + Math.floor(rank / 3);
+
+      if (family === 'gale') {
+        angle -= 0.56;
+        distance *= 1.12 + (i % 2) * 0.16;
+        width += 8;
+        height = 4;
+      } else if (family === 'beam') {
+        angle = (i % 2 === 0 ? 0 : Math.PI) + (rand() - 0.5) * 0.48;
+        distance *= 1.24 + (i % 3) * 0.22 + rank * 0.08;
+        width += 12 + rank * 2;
+        height = 4;
+      } else if (family === 'star') {
+        angle = ((i % 4) * Math.PI) / 2 + (Math.floor(i / 4) % 2 === 0 ? 0 : Math.PI / 4);
+        distance *= 1.08 + (i % 3) * 0.18 + rank * 0.06;
+        width += 4 + rank;
+      } else if (family === 'radiant') {
+        distance *= 1 + (i % 4) * 0.1 + rank * 0.04;
+        width += 6 + rank;
+        height += 4 + Math.floor(rank / 2);
+      } else if (family === 'arcane') {
+        angle = ((i % 4) * Math.PI) / 2 + (i % 2 === 0 ? 0 : Math.PI / 4);
+        distance *= 1.14 + (i % 3) * 0.18 + rank * 0.06;
+        width = (tier === 'final' ? 18 : 14) + rank;
+        height = width;
+      }
+
+      let x = Math.cos(angle) * distance;
+      let y = Math.sin(angle) * distance;
+      if (family === 'gale') {
+        x *= 1.28;
+        y *= 0.68;
+      } else if (family === 'beam') {
+        y *= 0.45;
+      } else if (family === 'arcane') {
+        x *= 0.92;
+        y *= 0.92;
+      }
+
       return {
-        x: Math.cos(angle) * distance,
-        y: Math.sin(angle) * distance,
+        x,
+        y,
         rotation: (rand() - 0.5) * 240,
-        width: tier === 'final' ? 16 : tier === 'super' ? 14 : 12,
-        height: i % 3 === 0 ? 8 : 6,
+        width,
+        height,
         color: shardColors[i % shardColors.length],
         delayOffset: 0.02 + (i % 3) * 0.012,
       };
     }),
     sparks: Array.from({ length: profile.sparkCount }, (_, i) => {
-      const angle = (i / profile.sparkCount) * Math.PI * 2 + Math.sin(i * 1.7) * 0.08;
-      const distance = profile.sparkDistanceBase + (i % 5) * 16;
-      const size = i % 4 === 0 ? 9 : 6;
+      let angle = (i / profile.sparkCount) * Math.PI * 2 + Math.sin(i * 1.7) * 0.08;
+      let distance = profile.sparkDistanceBase + (i % 5) * (16 + rank * 2);
+      let size = (i % 4 === 0 ? 9 : 6) + Math.floor(rank / 2);
+
+      if (family === 'gale') {
+        angle -= 0.44;
+        distance *= 1.14;
+      } else if (family === 'beam') {
+        angle = (i % 2 === 0 ? 0 : Math.PI) + (rand() - 0.5) * 0.38;
+        distance *= 1.4 + rank * 0.08;
+      } else if (family === 'star') {
+        angle = ((i % 8) * Math.PI) / 4;
+        distance *= i % 2 === 0 ? 1.34 + rank * 0.06 : 0.9 + rank * 0.03;
+        size = i % 2 === 0 ? 10 + rank : 5 + Math.floor(rank / 2);
+      } else if (family === 'radiant') {
+        distance *= 0.96 + (i % 4) * 0.12 + rank * 0.04;
+        size += 3 + Math.floor(rank / 2);
+      } else if (family === 'arcane') {
+        angle = ((i % 4) * Math.PI) / 2 + Math.PI / 4;
+        distance *= 1.16 + (i % 3) * 0.2 + rank * 0.05;
+      }
+
+      let x = Math.cos(angle) * distance;
+      let y = Math.sin(angle) * distance;
+      if (family === 'beam') {
+        y *= 0.42;
+      } else if (family === 'gale') {
+        x *= 1.22;
+        y *= 0.74;
+      }
+
       return {
-        x: Math.cos(angle) * distance,
-        y: Math.sin(angle) * distance,
+        x,
+        y,
         width: size,
         height: size,
         color: sparkColors[i % sparkColors.length],
@@ -120,12 +317,22 @@ const getExplosionPreset = (tier: ShotTier, seed: number, profile: ReturnType<ty
     }),
     screenShards: profile.hasScreenFacingShards
       ? Array.from({ length: profile.screenShardCount }, (_, i) => ({
-          offsetX: (rand() - 0.5) * (tier === 'final' ? 90 : 70),
-          offsetY: (rand() - 0.5) * (tier === 'final' ? 76 : 58),
+          offsetX:
+            family === 'beam'
+              ? (i % 2 === 0 ? 1 : -1) * (tier === 'final' ? 112 : 88)
+              : family === 'gale'
+              ? (rand() - 0.2) * (tier === 'final' ? 118 : 92)
+              : (rand() - 0.5) * (tier === 'final' ? 90 : 70),
+          offsetY:
+            family === 'beam'
+              ? (rand() - 0.5) * 26
+              : family === 'gale'
+              ? (rand() - 0.5) * (tier === 'final' ? 52 : 42)
+              : (rand() - 0.5) * (tier === 'final' ? 76 : 58),
           rotationMid: (i % 2 === 0 ? 1 : -1) * 48,
           rotationEnd: (i % 2 === 0 ? 1 : -1) * 112,
-          width: tier === 'final' ? 22 : 18,
-          height: tier === 'final' ? 14 : 12,
+          width: family === 'arcane' ? (tier === 'final' ? 20 : 16) : tier === 'final' ? 22 : 18,
+          height: family === 'beam' || family === 'gale' ? 8 : tier === 'final' ? 14 : 12,
           color: shardColors[i % shardColors.length],
           delayOffset: 0.03 + i * 0.02,
         }))
@@ -140,24 +347,150 @@ const BlockExplosion = memo(({ delay = 0, tier = 'normal', seed, effect }: { del
   const profile = useMemo(() => getExplosionProfile(tier), [tier]);
   const preset = useMemo(() => getExplosionPreset(tier, seed, profile, effect), [effect, profile, seed, tier]);
   const burstScale = tier === 'final' ? 3.9 : 3.1;
+  const rank = getEffectRank(effect);
+  const familyTempo = getFamilyTempoMultiplier(effect.family, rank);
+  const flashDuration = (tier === 'final' ? 0.48 : 0.42) * familyTempo;
+  const shockwaveDuration = (tier === 'final' ? 0.66 : 0.58) * familyTempo;
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-visible">
       <motion.div
         initial={{ scale: 0.2, opacity: 0.98 }}
-        animate={{ scale: [0.2, profile.flashScale * 0.72, profile.flashScale], opacity: [0.98, 0.62, 0] }}
-        transition={{ duration: 0.42, delay, ease: 'easeOut', times: [0, 0.24, 1] }}
-        className="absolute inset-[2%] rounded-full"
+        animate={{ scale: [0.2, profile.flashScale * (0.7 + rank * 0.04), profile.flashScale * (1 + rank * 0.05)], opacity: [0.98, 0.7, 0] }}
+        transition={{ duration: flashDuration, delay, ease: 'easeOut', times: [0, 0.24, 1] }}
+        className={`absolute inset-[2%] ${effect.family === 'beam' ? 'rounded-[999px]' : 'rounded-full'}`}
         style={{
           background: `radial-gradient(circle, rgba(255,255,255,1), ${effect.coreColor} 20%, ${effect.glowColor} 42%, ${effect.tailColor} 68%, transparent 100%)`,
+          transform: effect.family === 'gale' ? 'rotate(-24deg)' : effect.family === 'beam' ? 'scaleX(1.7)' : undefined,
           willChange: 'transform, opacity',
         }}
       />
 
+      {effect.family === 'gale' && (
+        <motion.div
+          initial={{ opacity: 0, x: -12, scaleX: 0.3 }}
+          animate={{ opacity: [0, 0.98, 0.2, 0], x: [-12, 10 + rank * 4, 30 + rank * 8, 50 + rank * 10], scaleX: [0.3, 1.1, 1.32 + rank * 0.08, 1.42 + rank * 0.08] }}
+          transition={{ duration: (0.4 + rank * 0.04) * familyTempo, delay: delay + 0.01, ease: 'easeOut' }}
+          className="absolute left-1/2 top-1/2 h-4 w-[190%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{
+            background: `linear-gradient(90deg, transparent 0%, ${effect.tailColor} 24%, rgba(255,255,255,0.98) 50%, ${effect.glowColor} 76%, transparent 100%)`,
+            transform: 'rotate(-24deg)',
+            filter: 'blur(3px)',
+            willChange: 'transform, opacity',
+          }}
+        />
+      )}
+
+      {effect.family === 'beam' && (
+        <motion.div
+          initial={{ opacity: 0, x: 22, scaleX: 0.18 }}
+          animate={{ opacity: [0, 1, 0.62, 0], x: [22 + rank * 12, -6, -40 - rank * 8, -60 - rank * 12], scaleX: [0.18, 1.18, 1.48 + rank * 0.08, 1.56 + rank * 0.1] }}
+          transition={{ duration: (0.34 + rank * 0.03) * familyTempo, delay: delay + 0.01, ease: 'easeOut' }}
+          className="absolute left-1/2 top-1/2 h-3 w-[280%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{
+            background: `linear-gradient(90deg, transparent 0%, ${effect.tailColor} 18%, rgba(255,255,255,0.99) 50%, ${effect.glowColor} 78%, transparent 100%)`,
+            boxShadow: `0 0 24px ${effect.glowColor}`,
+            willChange: 'transform, opacity',
+          }}
+        />
+      )}
+
+      {effect.family === 'star' && (
+        <>
+          <motion.div
+            initial={{ opacity: 0, scaleX: 0.24 }}
+            animate={{ opacity: [0, 0.94, 0], scaleX: [0.24, 1.26 + rank * 0.08, 1.56 + rank * 0.1] }}
+            transition={{ duration: 0.46 * familyTempo, delay: delay + 0.02, ease: 'easeOut' }}
+            className="absolute left-1/2 top-1/2 h-[3px] w-[220%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ background: `linear-gradient(90deg, transparent, ${effect.ringColor}, transparent)`, willChange: 'transform, opacity' }}
+          />
+          <motion.div
+            initial={{ opacity: 0, scaleY: 0.24 }}
+            animate={{ opacity: [0, 0.94, 0], scaleY: [0.24, 1.26 + rank * 0.08, 1.56 + rank * 0.1] }}
+            transition={{ duration: 0.46 * familyTempo, delay: delay + 0.02, ease: 'easeOut' }}
+            className="absolute left-1/2 top-1/2 h-[220%] w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ background: `linear-gradient(180deg, transparent, ${effect.ringColor}, transparent)`, willChange: 'transform, opacity' }}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.24, rotate: 45 }}
+            animate={{ opacity: [0, 0.88, 0], scale: [0.24, 1.04 + rank * 0.08, 1.22 + rank * 0.1], rotate: 45 }}
+            transition={{ duration: 0.48 * familyTempo, delay: delay + 0.04, ease: 'easeOut' }}
+            className="absolute left-1/2 top-1/2 h-[180%] w-[180%] -translate-x-1/2 -translate-y-1/2"
+            style={{
+              background:
+                `linear-gradient(90deg, transparent calc(50% - 1.5px), ${effect.ringColor} 50%, transparent calc(50% + 1.5px)),
+                 linear-gradient(180deg, transparent calc(50% - 1.5px), ${effect.ringColor} 50%, transparent calc(50% + 1.5px))`,
+              willChange: 'transform, opacity',
+            }}
+          />
+        </>
+      )}
+
+      {effect.family === 'radiant' && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: [0, effect.flashOpacity + 0.42 + rank * 0.04, 0.22, 0], scale: [0.5, 1.3 + rank * 0.08, 1.64 + rank * 0.1, 1.86 + rank * 0.1] }}
+          transition={{ duration: (0.62 + rank * 0.06) * familyTempo, delay: delay + 0.01, ease: 'easeOut' }}
+          className="absolute inset-[-30%] rounded-full"
+          style={{
+            background: `radial-gradient(circle, rgba(255,255,255,0.92) 0%, ${effect.haloColor} 36%, rgba(255,255,255,0) 78%)`,
+            filter: 'blur(12px)',
+            willChange: 'transform, opacity',
+          }}
+        />
+      )}
+
+      {effect.family === 'arcane' && (
+        <>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.34, rotate: 0 }}
+            animate={{ opacity: [0, 0.88, 0], scale: [0.34, 1.02 + rank * 0.08, 1.26 + rank * 0.1], rotate: [0, 44, 88] }}
+            transition={{ duration: 0.58 * familyTempo, delay: delay + 0.02, ease: 'easeOut' }}
+            className="absolute left-1/2 top-1/2 h-[152%] w-[152%] -translate-x-1/2 -translate-y-1/2"
+            style={{ willChange: 'transform, opacity' }}
+          >
+            <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
+              <polygon
+                points="50,8 14,74 86,74"
+                fill="none"
+                stroke={effect.ringColor}
+                strokeWidth="2.4"
+                strokeLinejoin="round"
+                style={{ filter: `drop-shadow(0 0 8px ${effect.haloColor})` }}
+              />
+            </svg>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.34, rotate: 0 }}
+            animate={{ opacity: [0, 0.84, 0], scale: [0.34, 1 + rank * 0.08, 1.22 + rank * 0.1], rotate: [0, -38, -82] }}
+            transition={{ duration: 0.62 * familyTempo, delay: delay + 0.04, ease: 'easeOut' }}
+            className="absolute left-1/2 top-1/2 h-[152%] w-[152%] -translate-x-1/2 -translate-y-1/2"
+            style={{ willChange: 'transform, opacity' }}
+          >
+            <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
+              <polygon
+                points="50,92 14,26 86,26"
+                fill="none"
+                stroke={effect.coreColor}
+                strokeWidth="2.4"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.46, rotate: 0 }}
+            animate={{ opacity: [0, 0.58, 0], scale: [0.46, 1.04, 1.18], rotate: [0, 16, 32] }}
+            transition={{ duration: 0.7 * familyTempo, delay: delay + 0.06, ease: 'easeOut' }}
+            className="absolute left-1/2 top-1/2 h-[172%] w-[172%] -translate-x-1/2 -translate-y-1/2 rounded-full border"
+            style={{ borderColor: effect.haloColor, boxShadow: `0 0 20px ${effect.haloColor}`, willChange: 'transform, opacity' }}
+          />
+        </>
+      )}
+
       <motion.div
         initial={{ scale: 0.2, opacity: 0.9 }}
         animate={{ scale: [0.2, 1, 1.28], opacity: [0.9, 0.34, 0] }}
-        transition={{ duration: 0.58, delay: delay + 0.02, ease: 'easeOut', times: [0, 0.36, 1] }}
+        transition={{ duration: shockwaveDuration, delay: delay + 0.02, ease: 'easeOut', times: [0, 0.36, 1] }}
         className="absolute left-1/2 top-1/2 rounded-full border border-white/80"
         style={{
           width: profile.shockwaveSize,
@@ -165,6 +498,7 @@ const BlockExplosion = memo(({ delay = 0, tier = 'normal', seed, effect }: { del
           marginLeft: -profile.shockwaveSize / 2,
           marginTop: -profile.shockwaveSize / 2,
           boxShadow: '0 0 38px rgba(255,255,255,0.45)',
+          transform: effect.family === 'gale' ? 'rotate(-20deg)' : effect.family === 'beam' ? 'scaleX(1.35)' : undefined,
           willChange: 'transform, opacity',
         }}
       />
@@ -175,15 +509,35 @@ const BlockExplosion = memo(({ delay = 0, tier = 'normal', seed, effect }: { del
           initial={{ x: 0, y: 0, scale: 0.4, opacity: 1, rotate: 0 }}
           animate={{ x: shard.x, y: shard.y, scale: [0.4, 1.24, 0.78], opacity: [1, 1, 0], rotate: [0, shard.rotation, shard.rotation * 1.35] }}
           transition={{ duration: tier === 'final' ? 0.72 : 0.62, delay: delay + shard.delayOffset, ease: [0.12, 0.8, 0.2, 1] }}
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[0.35rem]"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           style={{
             width: shard.width,
             height: shard.height,
-            background: `linear-gradient(135deg, ${shard.color} 0%, rgba(255,255,255,0.95) 48%, rgba(251,146,60,0.4) 100%)`,
-            boxShadow: `0 0 22px ${shard.color}`,
             willChange: 'transform, opacity',
           }}
-        />
+        >
+          {effect.family === 'arcane' ? (
+            <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
+              <circle cx="50" cy="50" r="18" fill={shard.color} opacity="0.3" />
+              <path
+                d="M50 12 L59 34 L83 34 L64 49 L72 72 L50 58 L28 72 L36 49 L17 34 L41 34 Z"
+                fill="none"
+                stroke={shard.color}
+                strokeWidth="8"
+                strokeLinejoin="round"
+                style={{ filter: `drop-shadow(0 0 6px ${shard.color})` }}
+              />
+            </svg>
+          ) : (
+            <div
+              className="h-full w-full rounded-[0.35rem]"
+              style={{
+                background: `linear-gradient(135deg, ${shard.color} 0%, rgba(255,255,255,0.95) 48%, rgba(251,146,60,0.4) 100%)`,
+                boxShadow: `0 0 22px ${shard.color}`,
+              }}
+            />
+          )}
+        </motion.div>
       ))}
 
       {preset.sparks.map((spark, i) => (
@@ -215,15 +569,28 @@ const BlockExplosion = memo(({ delay = 0, tier = 'normal', seed, effect }: { del
             rotate: [0, screenShard.rotationMid, screenShard.rotationEnd],
           }}
           transition={{ duration: tier === 'final' ? 0.78 : 0.68, delay: delay + screenShard.delayOffset, ease: [0.16, 0.84, 0.2, 1] }}
-          className="absolute left-1/2 top-1/2 rounded-[0.55rem] -translate-x-1/2 -translate-y-1/2"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           style={{
             width: screenShard.width,
             height: screenShard.height,
-            background: `linear-gradient(135deg, rgba(255,255,255,0.98) 0%, ${screenShard.color} 52%, rgba(251,146,60,0.52) 100%)`,
-            boxShadow: `0 0 28px ${screenShard.color}`,
             willChange: 'transform, opacity',
           }}
-        />
+        >
+          {effect.family === 'arcane' ? (
+            <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
+              <circle cx="50" cy="50" r="34" fill="none" stroke={screenShard.color} strokeWidth="10" opacity="0.7" />
+              <circle cx="50" cy="50" r="16" fill={screenShard.color} opacity="0.2" />
+            </svg>
+          ) : (
+            <div
+              className="h-full w-full rounded-[0.55rem]"
+              style={{
+                background: `linear-gradient(135deg, rgba(255,255,255,0.98) 0%, ${screenShard.color} 52%, rgba(251,146,60,0.52) 100%)`,
+                boxShadow: `0 0 28px ${screenShard.color}`,
+              }}
+            />
+          )}
+        </motion.div>
       ))}
     </div>
   );
@@ -483,6 +850,11 @@ const BattleStage = memo(({
   const breakFeedback = getBreakFeedbackProfile(breakSourceTier);
   const cameraShake = getCameraShakeProfile(shotTier);
   const petScalePeak = shotTier === 'final' ? 1.34 : shotTier === 'super' ? 1.22 : shotTier === 'boost' ? 1.12 : 1.05;
+  const rank = getEffectRank(effect);
+  const familyTempo = getFamilyTempoMultiplier(effect.family, rank);
+  const impactTravel = getImpactTravelProfile(effect.family, rank);
+  const impactDuration = (chargeDuration + 0.62) * familyTempo;
+  const petChargeDuration = chargeDuration * familyTempo;
   useEffect(() => {
     if (!cameraShake.enabled || impactSequence === 0) return;
 
@@ -534,27 +906,142 @@ const BattleStage = memo(({
         {showImpact && (
           <motion.div
             key={`impact-${shotSequence}-${shotTier}-${effect.name}`}
-            initial={{ opacity: 0, scale: 0.18, x: 18, y: 8 }}
+            initial={{ opacity: 0, scale: 0.18, x: impactTravel.startX, y: impactTravel.startY }}
             animate={{
               opacity: [0, 0, 0.98, 0.48, 0],
               scale: [0.18, 0.18, impactScalePeak, impactScalePeak * 1.12, impactScalePeak * 1.26],
-              x: [18, 12, -12, -26, -34],
-              y: [8, 6, 0, -1, -2],
+              x: [impactTravel.startX, impactTravel.startX * 0.66, impactTravel.midX, (impactTravel.midX + impactTravel.endX) / 2, impactTravel.endX],
+              y: [impactTravel.startY, impactTravel.startY * 0.7, impactTravel.midY, (impactTravel.midY + impactTravel.endY) / 2, impactTravel.endY],
             }}
             exit={{ opacity: 0 }}
-            transition={{ duration: chargeDuration + 0.62, times: [0, 0.62, 0.72, 0.9, 1], ease: 'easeOut' }}
-            className="pointer-events-none absolute right-[26%] top-[56%] z-20 h-20 w-20 rounded-full"
+            transition={{ duration: impactDuration, times: [0, 0.62, 0.72, 0.9, 1], ease: 'easeOut' }}
+            className="pointer-events-none absolute right-[26%] top-[56%] z-20"
             style={{
+              width: impactTravel.width,
+              height: impactTravel.height,
+              borderRadius: impactTravel.borderRadius,
               background: `radial-gradient(circle, rgba(255,255,255,0.99), ${effect.coreColor} 28%, ${effect.glowColor} 56%, ${effect.tailColor} 76%, transparent 100%)`,
+              transform: effect.family === 'gale' ? 'rotate(-24deg)' : effect.family === 'beam' ? `scaleX(${1.34 + rank * 0.08})` : undefined,
               willChange: 'transform, opacity',
             }}
           >
+            {effect.family === 'gale' && (
+              <motion.div
+                initial={{ opacity: 0, x: 18, scaleX: 0.36 }}
+                animate={{ opacity: [0, 0.96, 0], x: [18, -10, -42], scaleX: [0.36, 1.06, 1.2] }}
+                transition={{ duration: impactDuration * 0.72, ease: 'easeOut' }}
+                className="absolute left-1/2 top-1/2 h-3 w-[240%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style={{
+                  background: `linear-gradient(90deg, transparent 0%, ${effect.tailColor} 24%, rgba(255,255,255,0.98) 52%, ${effect.glowColor} 76%, transparent 100%)`,
+                  transform: 'rotate(-26deg)',
+                  filter: 'blur(2px)',
+                  willChange: 'transform, opacity',
+                }}
+              />
+            )}
+            {effect.family === 'beam' && (
+              <motion.div
+                initial={{ opacity: 0, x: 56, scaleX: 0.14 }}
+                animate={{ opacity: [0, 1, 0.42, 0], x: [56, 16, -38, -66], scaleX: [0.14, 1, 1.18, 1.24] }}
+                transition={{ duration: impactDuration * 0.78, ease: 'easeOut' }}
+                className="absolute left-1/2 top-1/2 h-[0.7rem] w-[320%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style={{
+                  background: `linear-gradient(90deg, transparent 0%, ${effect.tailColor} 12%, rgba(255,255,255,1) 52%, ${effect.glowColor} 82%, transparent 100%)`,
+                  boxShadow: `0 0 28px ${effect.glowColor}`,
+                  willChange: 'transform, opacity',
+                }}
+              />
+            )}
+            {effect.family === 'star' && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, scaleX: 0.18 }}
+                  animate={{ opacity: [0, 0.92, 0], scaleX: [0.18, 1.2 + rank * 0.08, 1.52 + rank * 0.1] }}
+                  transition={{ duration: impactDuration * 0.66, ease: 'easeOut' }}
+                  className="absolute left-1/2 top-1/2 h-[4px] w-[220%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  style={{ background: `linear-gradient(90deg, transparent, ${effect.ringColor}, transparent)`, willChange: 'transform, opacity' }}
+                />
+                <motion.div
+                  initial={{ opacity: 0, scaleY: 0.18 }}
+                  animate={{ opacity: [0, 0.92, 0], scaleY: [0.18, 1.2 + rank * 0.08, 1.52 + rank * 0.1] }}
+                  transition={{ duration: impactDuration * 0.66, ease: 'easeOut' }}
+                  className="absolute left-1/2 top-1/2 h-[220%] w-[4px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  style={{ background: `linear-gradient(180deg, transparent, ${effect.ringColor}, transparent)`, willChange: 'transform, opacity' }}
+                />
+              </>
+            )}
+            {effect.family === 'radiant' && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.56 }}
+                animate={{ opacity: [0, effect.flashOpacity + 0.48 + rank * 0.03, 0.22, 0], scale: [0.56, 1.24 + rank * 0.08, 1.54 + rank * 0.1, 1.82 + rank * 0.12] }}
+                transition={{ duration: impactDuration * 0.92, ease: 'easeOut' }}
+                className="absolute inset-[-52%] rounded-full"
+                style={{
+                  background: `radial-gradient(circle, rgba(255,255,255,0.94) 0%, ${effect.haloColor} 34%, rgba(255,255,255,0) 78%)`,
+                  filter: 'blur(12px)',
+                  willChange: 'transform, opacity',
+                }}
+              />
+            )}
+            {effect.family === 'arcane' && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.34, rotate: 0 }}
+                  animate={{ opacity: [0, 0.88, 0], scale: [0.34, 1.02 + rank * 0.08, 1.26 + rank * 0.1], rotate: [0, 44, 88] }}
+                  transition={{ duration: impactDuration * 0.8, ease: 'easeOut' }}
+                  className="absolute left-1/2 top-1/2 h-[176%] w-[176%] -translate-x-1/2 -translate-y-1/2"
+                  style={{ willChange: 'transform, opacity' }}
+                >
+                  <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
+                    <polygon
+                      points="50,8 14,74 86,74"
+                      fill="none"
+                      stroke={effect.ringColor}
+                      strokeWidth="2.6"
+                      strokeLinejoin="round"
+                      style={{ filter: `drop-shadow(0 0 10px ${effect.haloColor})` }}
+                    />
+                    <circle cx="50" cy="50" r="26" fill="none" stroke={effect.haloColor} strokeWidth="1.6" opacity="0.7" />
+                  </svg>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.34, rotate: 0 }}
+                  animate={{ opacity: [0, 0.82, 0], scale: [0.34, 1 + rank * 0.08, 1.2 + rank * 0.1], rotate: [0, -38, -82] }}
+                  transition={{ duration: impactDuration * 0.88, delay: 0.04, ease: 'easeOut' }}
+                  className="absolute left-1/2 top-1/2 h-[176%] w-[176%] -translate-x-1/2 -translate-y-1/2"
+                  style={{ willChange: 'transform, opacity' }}
+                >
+                  <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
+                    <polygon
+                      points="50,92 14,26 86,26"
+                      fill="none"
+                      stroke={effect.coreColor}
+                      strokeWidth="2.6"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="50" cy="50" r="18" fill="none" stroke={effect.ringColor} strokeWidth="1.4" opacity="0.82" />
+                  </svg>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.44, rotate: 0 }}
+                  animate={{ opacity: [0, 0.6, 0], scale: [0.44, 1.04, 1.18], rotate: [0, 18, 36] }}
+                  transition={{ duration: impactDuration, delay: 0.06, ease: 'easeOut' }}
+                  className="absolute left-1/2 top-1/2 h-[196%] w-[196%] -translate-x-1/2 -translate-y-1/2 rounded-full border"
+                  style={{ borderColor: effect.haloColor, boxShadow: `0 0 22px ${effect.haloColor}`, willChange: 'transform, opacity' }}
+                />
+              </>
+            )}
             <motion.div
               initial={{ opacity: 0, scale: 0.2 }}
               animate={{ opacity: [0, 0, 0.92, 0], scale: [0.2, 0.2, impactRingPeak, impactRingPeak * 1.16] }}
-              transition={{ duration: chargeDuration + 0.62, times: [0, 0.64, 0.76, 1], ease: 'easeOut' }}
+              transition={{ duration: impactDuration, times: [0, 0.64, 0.76, 1], ease: 'easeOut' }}
               className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
-              style={{ borderColor: effect.ringColor, boxShadow: `0 0 28px ${effect.glowColor}`, willChange: 'transform, opacity' }}
+              style={{
+                borderColor: effect.ringColor,
+                boxShadow: `0 0 28px ${effect.glowColor}`,
+                transform: effect.family === 'beam' ? `scaleX(${1.2 + rank * 0.08})` : undefined,
+                willChange: 'transform, opacity',
+              }}
             />
             {showSecondRing && (
               <motion.div
@@ -563,15 +1050,20 @@ const BattleStage = memo(({
                   opacity: [0, 0, effect.secondRingOpacity * (shotTier === 'final' ? 1 : 0.9), 0],
                   scale: [0.22, 0.22, impactRingPeak * 1.12, impactRingPeak * 1.34],
                 }}
-                transition={{ duration: chargeDuration + 0.72, times: [0, 0.64, 0.8, 1], ease: 'easeOut' }}
+                transition={{ duration: impactDuration + 0.1, times: [0, 0.64, 0.8, 1], ease: 'easeOut' }}
                 className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
-                style={{ borderColor: effect.ringColor, boxShadow: `0 0 34px ${effect.haloColor}`, willChange: 'transform, opacity' }}
+                style={{
+                  borderColor: effect.ringColor,
+                  boxShadow: `0 0 34px ${effect.haloColor}`,
+                  transform: effect.family === 'beam' ? `scaleX(${1.28 + rank * 0.08})` : undefined,
+                  willChange: 'transform, opacity',
+                }}
               />
             )}
             <motion.div
               initial={{ opacity: 0, scale: 0.14 }}
               animate={{ opacity: [0, 1, 0], scale: [0.14, effect.orbScale, effect.orbScale * 1.28] }}
-              transition={{ duration: chargeDuration + 0.44, times: [0, 0.62, 1], ease: 'easeOut' }}
+              transition={{ duration: (chargeDuration + 0.44) * familyTempo, times: [0, 0.62, 1], ease: 'easeOut' }}
               className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full"
               style={{
                 background: `radial-gradient(circle, rgba(255,255,255,1) 0%, ${effect.coreColor} 40%, ${effect.glowColor} 72%, rgba(255,255,255,0) 100%)`,
@@ -583,7 +1075,7 @@ const BattleStage = memo(({
               <motion.div
                 initial={{ opacity: 0, scale: 0.72 }}
                 animate={{ opacity: [0, effect.residueOpacity * 0.72, 0], scale: [0.72, 1.02, 1.24] }}
-                transition={{ duration: chargeDuration + 0.92, times: [0, 0.42, 1], ease: 'easeOut' }}
+                transition={{ duration: (chargeDuration + 0.92) * familyTempo, times: [0, 0.42, 1], ease: 'easeOut' }}
                 className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full"
                 style={{
                   background: `radial-gradient(circle, rgba(255,255,255,0.92) 0%, ${effect.coreColor} 28%, ${effect.haloColor} 52%, rgba(255,255,255,0) 100%)`,
@@ -611,14 +1103,25 @@ const BattleStage = memo(({
                     rotate: [0, shard.r],
                     scale: [0.24, effect.shardScale],
                   }}
-                  transition={{ duration: chargeDuration + 0.24, delay: shard.delay, ease: 'easeOut' }}
-                  className="absolute left-1/2 top-1/2 h-2.5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                  style={{
-                    background: `linear-gradient(135deg, rgba(255,255,255,0.98), ${effect.coreColor} 55%, ${effect.tailColor} 100%)`,
-                    boxShadow: `0 0 24px ${effect.glowColor}`,
-                    willChange: 'transform, opacity',
-                  }}
-                />
+                  transition={{ duration: (chargeDuration + 0.24) * familyTempo, delay: shard.delay, ease: 'easeOut' }}
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                  style={{ width: effect.family === 'arcane' ? 18 : 20, height: effect.family === 'arcane' ? 18 : 10, willChange: 'transform, opacity' }}
+                >
+                  {effect.family === 'arcane' ? (
+                    <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
+                      <circle cx="50" cy="50" r="24" fill="none" stroke={effect.ringColor} strokeWidth="10" opacity="0.88" />
+                      <circle cx="50" cy="50" r="10" fill={effect.coreColor} opacity="0.5" />
+                    </svg>
+                  ) : (
+                    <div
+                      className="h-2.5 w-5 rounded-full"
+                      style={{
+                        background: `linear-gradient(135deg, rgba(255,255,255,0.98), ${effect.coreColor} 55%, ${effect.tailColor} 100%)`,
+                        boxShadow: `0 0 24px ${effect.glowColor}`,
+                      }}
+                    />
+                  )}
+                </motion.div>
               ))}
             {particleEnabled &&
               [
@@ -636,7 +1139,7 @@ const BattleStage = memo(({
                     y: [0, dot.y],
                     scale: [0.2, 1.08, 0.2],
                   }}
-                  transition={{ duration: chargeDuration + 0.14, delay: dot.delay, ease: 'easeOut' }}
+                  transition={{ duration: (chargeDuration + 0.14) * familyTempo, delay: dot.delay, ease: 'easeOut' }}
                   className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
                   style={{
                     background: `radial-gradient(circle, rgba(255,255,255,1) 0%, ${effect.coreColor} 55%, rgba(255,255,255,0) 100%)`,
@@ -768,7 +1271,7 @@ const BattleStage = memo(({
                         scale: [0.45, shotTier === 'final' ? 1.62 : shotTier === 'super' ? 1.34 : shotTier === 'boost' ? 1.2 : 1.08, shotTier === 'final' ? 1.92 : shotTier === 'super' ? 1.52 : shotTier === 'boost' ? 1.28 : 1.12, 1.04],
                       }}
                       exit={{ opacity: 0 }}
-                      transition={{ duration: chargeDuration, ease: 'easeOut', times: [0, 0.28, 0.72, 1] }}
+                      transition={{ duration: petChargeDuration, ease: 'easeOut', times: [0, 0.28, 0.72, 1] }}
                       className="pointer-events-none absolute inset-0 rounded-[2.6rem]"
                       style={{
                         background: `radial-gradient(circle, rgba(255,255,255,0.92), ${effect.haloColor} 44%, rgba(255,255,255,0) 78%)`,
@@ -786,7 +1289,7 @@ const BattleStage = memo(({
                           initial={{ opacity: 0, scale: 0.7 }}
                           animate={{ opacity: [0, effect.petGroundOpacity, 0], scale: [0.7, 1.08, 1.22] }}
                           exit={{ opacity: 0 }}
-                          transition={{ duration: chargeDuration + 0.42, ease: 'easeOut' }}
+                          transition={{ duration: (chargeDuration + 0.42) * familyTempo, ease: 'easeOut' }}
                           className="pointer-events-none absolute -bottom-1 h-12 w-[78%] rounded-full"
                           style={{
                             background: `radial-gradient(circle, rgba(255,255,255,0.9), ${effect.haloColor} 42%, rgba(255,255,255,0) 100%)`,
@@ -801,7 +1304,7 @@ const BattleStage = memo(({
                           initial={{ opacity: 0, scale: 0.64 }}
                           animate={{ opacity: [0, effect.petAuraOpacity, 0], scale: [0.64, 1.08, 1.26] }}
                           exit={{ opacity: 0 }}
-                          transition={{ duration: chargeDuration + 0.5, ease: 'easeOut' }}
+                          transition={{ duration: (chargeDuration + 0.5) * familyTempo, ease: 'easeOut' }}
                           className="pointer-events-none absolute inset-0 rounded-[50%]"
                           style={{
                             background: `radial-gradient(circle, rgba(255,255,255,0.7) 0%, ${effect.haloColor} 34%, rgba(255,255,255,0) 78%)`,
@@ -816,7 +1319,7 @@ const BattleStage = memo(({
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: [0, effect.petRimOpacity, 0], scale: [0.8, 1.04, 1.14] }}
                           exit={{ opacity: 0 }}
-                          transition={{ duration: chargeDuration + 0.46, ease: 'easeOut' }}
+                          transition={{ duration: (chargeDuration + 0.46) * familyTempo, ease: 'easeOut' }}
                           className="pointer-events-none absolute inset-[6%] rounded-[50%]"
                           style={{
                             background: `radial-gradient(circle, rgba(255,255,255,0) 44%, rgba(255,252,235,0.92) 62%, ${effect.haloColor} 76%, rgba(255,255,255,0) 92%)`,
@@ -875,7 +1378,7 @@ export default function QuizScreen({
   attackEffect: AttackEffectProfile;
   gemImage?: string;
   backgroundImage?: string;
-  onFinish: (stats: any) => void;
+  onFinish: (stats: LevelFinishStats) => void;
   onBack: () => void;
   showDebugTools?: boolean;
 }) {
@@ -894,6 +1397,7 @@ export default function QuizScreen({
   const [shotTier, setShotTier] = useState<ShotTier>('idle');
   const [shotSequence, setShotSequence] = useState(0);
   const [impactSequence, setImpactSequence] = useState(0);
+  const [wrongAnswers, setWrongAnswers] = useState<WrongAnswerDetail[]>([]);
   const battleGemImage = gemImage;
   const battleBackgroundImage = backgroundImage;
   const isTutorialLevelZero = useMemo(() => isLevelZeroTutorial(gradeId, levelId), [gradeId, levelId]);
@@ -930,6 +1434,7 @@ export default function QuizScreen({
     setShotTier('idle');
     setShotSequence(0);
     setImpactSequence(0);
+    setWrongAnswers([]);
   }, [gradeId, levelId]);
 
   useEffect(() => {
@@ -954,6 +1459,42 @@ export default function QuizScreen({
     }
   }, [currentIndex]);
 
+  /**
+   * 生成题干文本描述
+   */
+  const getQuestionText = (q: Question): string => {
+    switch (q.type) {
+      case 'vertical_addition':
+        return `${q.num1} ${q.operator} ${q.num2} = ?`;
+      case 'multi_vertical':
+        return `${q.num1} + ${q.num2} + ${q.num3} = ?`;
+      case 'number_comparison':
+        return `${q.num1} ? ${q.num2}`;
+      case 'text_to_number':
+        return `${q.text} ${q.label}`;
+      case 'counting':
+        return `数一数有几个 ${q.emoji}`;
+      case 'input':
+        return q.question || '';
+      case 'choice':
+        return q.question || q.text || '';
+      default:
+        return q.text || q.question || '';
+    }
+  };
+
+  /**
+   * 记录错题
+   */
+  const recordWrongAnswer = (q: Question, userAnswer: string) => {
+    setWrongAnswers((prev: WrongAnswerDetail[]) => [...prev, {
+      questionId: q.id,
+      questionText: getQuestionText(q),
+      correctAnswer: q.answer,
+      userAnswer,
+    }]);
+  };
+
   const finishLevel = (newCorrectCount: number, newCombo: number) => {
     const timeTaken = Math.floor((Date.now() - startTime) / 1000);
     onFinish({
@@ -961,6 +1502,9 @@ export default function QuizScreen({
       time: timeTaken,
       maxCombo: Math.max(maxCombo, newCombo),
       expGained: Math.max(1, Math.ceil(newCorrectCount / 4)),
+      totalQuestions: questions.length,
+      correctCount: newCorrectCount,
+      wrongAnswers,
     });
   };
 
@@ -1003,7 +1547,7 @@ export default function QuizScreen({
     scheduleAdvance(newCorrectCount, newCombo, advanceDelay);
   };
 
-  const registerWrongAnswer = (resetAnswers: () => void) => {
+  const registerWrongAnswer = (resetAnswers: () => void, userAnswer: string) => {
     const breakSoundTier = combo >= 10 ? 'final' : combo >= 6 ? 'super' : combo >= 3 ? 'boost' : 'normal';
     setFeedback('wrong');
     setCombo(0);
@@ -1011,6 +1555,9 @@ export default function QuizScreen({
     setShotTier('break');
     setLastRemoval(0);
     void playCloudPuffBreak(breakSoundTier);
+
+    // 记录错题
+    recordWrongAnswer(question, userAnswer);
 
     setTimeout(() => {
       resetAnswers();
@@ -1031,7 +1578,7 @@ export default function QuizScreen({
       const newCombo = combo + 1;
       registerCorrectAnswer(newCombo);
     } else {
-      registerWrongAnswer(() => {});
+      registerWrongAnswer(() => {}, option);
     }
   };
 
@@ -1124,7 +1671,7 @@ export default function QuizScreen({
         } else {
           registerWrongAnswer(() => {
             setAnswers(['', '', '', '']);
-          });
+          }, step1Answer);
         }
         return;
       } else {
@@ -1143,7 +1690,7 @@ export default function QuizScreen({
               next[3] = '';
               return next;
             });
-          });
+          }, step2Answer);
         }
         return;
       }
@@ -1164,7 +1711,7 @@ export default function QuizScreen({
     } else {
       registerWrongAnswer(() => {
         setAnswers(Array(question.answerLength).fill(''));
-      });
+      }, userAnswerStr);
     }
   };
 
@@ -1213,13 +1760,13 @@ export default function QuizScreen({
   const activeIndex = useMemo(() => getActiveIndex(), [answers, feedback, multiVerticalStep, question]);
   const tutorialHintDigit =
     isTutorialLevelZero &&
-    currentIndex === 0 &&
+    currentIndex <= 2 &&
     feedback === null &&
     question?.type === 'input' &&
-    question.answer.length === 1 &&
-    !answers[0]
-      ? question.answer
+    (answers[0]?.length ?? 0) < question.answer.length
+      ? question.answer[(answers[0]?.length ?? 0)] ?? null
       : null;
+  const tutorialHintLabel = currentIndex === 0 ? '填入正确答案' : '让小火苗苏醒';
   const renderTutorialKeypadButton = (num: number) => {
     const isHintTarget = tutorialHintDigit === num.toString();
 
@@ -1249,9 +1796,9 @@ export default function QuizScreen({
               <motion.div
                 animate={{ scale: [0.98, 1.04, 0.98] }}
                 transition={{ duration: 0.95, repeat: Infinity, ease: 'easeInOut' }}
-                className="min-w-[176px] whitespace-nowrap rounded-full border-[3px] border-[#fff2cb] bg-[linear-gradient(135deg,#ff9c23_0%,#ff6b2c_100%)] px-4 py-2 text-center text-base font-black text-white shadow-[0_12px_24px_rgba(255,107,44,0.34)]"
+                className="min-w-[196px] whitespace-nowrap rounded-full border-[3px] border-[#fff2cb] bg-[linear-gradient(135deg,#ff9c23_0%,#ff6b2c_100%)] px-4 py-2 text-center text-lg font-black text-white shadow-[0_12px_24px_rgba(255,107,44,0.34)]"
               >
-                填入正确答案
+                {tutorialHintLabel}
               </motion.div>
               <motion.div
                 animate={{ height: [18, 30, 18], opacity: [0.45, 0.9, 0.45] }}
@@ -1779,9 +2326,20 @@ export default function QuizScreen({
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 text-[#25344d] shrink-0">
-        <button onClick={onBack} className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#d97d2f] bg-gradient-to-b from-[#ffe487] to-[#ffbf52] text-[#7b3b12] shadow-[0_8px_0_rgba(191,114,37,0.26),0_12px_24px_rgba(121,59,18,0.14)] active:translate-y-[2px] active:shadow-[0_5px_0_rgba(191,114,37,0.24),0_8px_16px_rgba(121,59,18,0.12)]">
-          <ChevronLeft size={28} />
-        </button>
+        {isTutorialLevelZero ? (
+          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-white/90 bg-[linear-gradient(180deg,#fff7ea_0%,#ffe4ba_100%)] shadow-[0_8px_0_rgba(255,167,62,0.24),0_12px_24px_rgba(121,59,18,0.12)]">
+            <img
+              src="/images/我的头像.png"
+              alt="我的头像"
+              draggable={false}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        ) : (
+          <button onClick={onBack} className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#d97d2f] bg-gradient-to-b from-[#ffe487] to-[#ffbf52] text-[#7b3b12] shadow-[0_8px_0_rgba(191,114,37,0.26),0_12px_24px_rgba(121,59,18,0.14)] active:translate-y-[2px] active:shadow-[0_5px_0_rgba(191,114,37,0.24),0_8px_16px_rgba(121,59,18,0.12)]">
+            <ChevronLeft size={28} />
+          </button>
+        )}
         <div className="flex-1 mx-6">
           <div className="relative h-4 overflow-hidden rounded-full border-2 border-[#6ca7d8] bg-[#d8f0ff] shadow-[0_6px_14px_rgba(71,131,188,0.18),inset_0_2px_5px_rgba(255,255,255,0.65)]">
             <motion.div

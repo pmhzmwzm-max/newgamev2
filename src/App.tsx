@@ -576,6 +576,9 @@ export default function App() {
                 setCurrentScreen('map');
               }
             }}
+            onBeginAdventure={() => {
+              setCurrentScreen('map');
+            }}
             onOpenPokedex={() => {
               setPokedexDefaultTab('stage');
               setShowPokedexModal(true);
@@ -584,6 +587,7 @@ export default function App() {
             rewardCard={rewardCard}
             showRewardCard={showRewardCard}
             onCloseRewardCard={() => setShowRewardCard(false)}
+            isLevelZeroIntroResult={currentGrade === '3' && currentLevelId === 0}
           />
         )}
 
