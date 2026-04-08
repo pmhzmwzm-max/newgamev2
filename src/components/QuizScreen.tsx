@@ -1249,9 +1249,9 @@ export default function QuizScreen({
               <motion.div
                 animate={{ scale: [0.98, 1.04, 0.98] }}
                 transition={{ duration: 0.95, repeat: Infinity, ease: 'easeInOut' }}
-                className="min-w-[112px] rounded-full border-[3px] border-[#fff2cb] bg-[linear-gradient(135deg,#ff9c23_0%,#ff6b2c_100%)] px-4 py-2 text-center text-base font-black text-white shadow-[0_12px_24px_rgba(255,107,44,0.34)]"
+                className="min-w-[176px] whitespace-nowrap rounded-full border-[3px] border-[#fff2cb] bg-[linear-gradient(135deg,#ff9c23_0%,#ff6b2c_100%)] px-4 py-2 text-center text-base font-black text-white shadow-[0_12px_24px_rgba(255,107,44,0.34)]"
               >
-                选这个
+                填入正确答案
               </motion.div>
               <motion.div
                 animate={{ height: [18, 30, 18], opacity: [0.45, 0.9, 0.45] }}
