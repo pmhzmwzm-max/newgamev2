@@ -790,20 +790,7 @@ export default function MapScreen({
             );
           })}
 
-          {/* 终点旗帜 - 降低层级避免遮挡第159关 */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2 z-[5]"
-            style={{ top: `${((levels[158].top + 804) / 1044) * 100}%` }}
-          >
-            <motion.div
-              animate={{ rotate: [0, 8, 0, -8, 0] }}
-              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-              className="text-2xl"
-            >
-              🏆
-            </motion.div>
           </div>
-        </div>
       </div>
 
       {/* 返回当前关卡按钮 - 弱化UI，仅在头像不在可视区域时显示 */}
