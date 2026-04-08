@@ -34,13 +34,23 @@ import { getAutoEquipUpdatesForExpChange } from './progression';
 import {
   AUTH_STORAGE_KEY,
   createMockAuthService,
-  emptyAuthState,
-  isAuthState,
   type AuthState,
   type LoginMethod,
 } from './auth';
 import { shouldRequireLoginForLevel } from './levelGate';
 import { useDebugMode, useStartMode } from './hooks/useDebugMode';
+import { needsMigration, migrateToV4 } from './dataMigration';
+import {
+  UserGameData,
+  USER_DATA_STORAGE_KEY,
+  createDefaultUserData,
+  loadUserData,
+  saveUserData,
+  createLevelRecord,
+  createWrongAnswer,
+} from './userData';
+import { getOrCreateGuestIdentity } from './guestId';
+import { type LevelFinishStats, type WrongAnswerDetail } from './components/QuizScreen';
 
 type Screen = 'map' | 'quiz' | 'result';
 type GradeKey = 'k' | '1' | '2' | '3';
@@ -54,15 +64,7 @@ interface GradeData {
 type GameData = Record<GradeKey, GradeData>;
 
 const MAX_LEVELS = 159; // 每个年级159关
-const INITIAL_GRADE3_UNLOCKS = [0, 1];
 const authService = createMockAuthService();
-
-const defaultData: GameData = {
-  k: { unlockedLevels: [1], completedLevels: [], puzzlePieces: 0 },
-  '1': { unlockedLevels: [1], completedLevels: [], puzzlePieces: 0 },
-  '2': { unlockedLevels: [1], completedLevels: [], puzzlePieces: 0 },
-  '3': { unlockedLevels: INITIAL_GRADE3_UNLOCKS, completedLevels: [], puzzlePieces: 0 },
-};
 
 function normalizeUnlockedLevelsForGrade(grade: GradeKey, unlockedLevels: number[]): number[] {
   const highestUnlocked = unlockedLevels.reduce((max, value) => {
@@ -78,124 +80,135 @@ function normalizeUnlockedLevelsForGrade(grade: GradeKey, unlockedLevels: number
   return Array.from(new Set(contiguousLevels)).sort((a, b) => a - b);
 }
 
-function normalizeGameData(data: GameData): GameData {
-  return {
-    k: {
-      ...defaultData.k,
-      ...(data.k ?? {}),
-      unlockedLevels: normalizeUnlockedLevelsForGrade('k', data.k?.unlockedLevels ?? defaultData.k.unlockedLevels),
-      completedLevels: data.k?.completedLevels ?? [],
-    },
-    '1': {
-      ...defaultData['1'],
-      ...(data['1'] ?? {}),
-      unlockedLevels: normalizeUnlockedLevelsForGrade('1', data['1']?.unlockedLevels ?? defaultData['1'].unlockedLevels),
-      completedLevels: data['1']?.completedLevels ?? [],
-    },
-    '2': {
-      ...defaultData['2'],
-      ...(data['2'] ?? {}),
-      unlockedLevels: normalizeUnlockedLevelsForGrade('2', data['2']?.unlockedLevels ?? defaultData['2'].unlockedLevels),
-      completedLevels: data['2']?.completedLevels ?? [],
-    },
-    '3': {
-      ...defaultData['3'],
-      ...(data['3'] ?? {}),
-      unlockedLevels: normalizeUnlockedLevelsForGrade('3', data['3']?.unlockedLevels ?? defaultData['3'].unlockedLevels),
-      completedLevels: data['3']?.completedLevels ?? [],
-    },
-  };
-}
-
 export default function App() {
   const isDebugMode = useDebugMode();
   const isStartMode = useStartMode();
-
-  // ?start 参数：全新用户初始化，清除数据并进入第0关
-  useEffect(() => {
-    if (!isStartMode) return;
-
-    // 清除所有本地存储数据
-    localStorage.removeItem('gameDataV3');
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-    localStorage.removeItem('selectedBattleStageId');
-    localStorage.removeItem('selectedBattleEffectName');
-    localStorage.removeItem('selectedBattleGemName');
-    localStorage.removeItem('selectedBattleMapTheme');
-
-    // 直接进入第0关
-    setCurrentLevelId(0);
-    setCurrentScreen('quiz');
-  }, [isStartMode]);
 
   // 直接进入三年级关卡地图
   const [currentScreen, setCurrentScreen] = useState<Screen>('map');
   const [currentGrade, setCurrentGrade] = useState<GradeKey>('3');
   const [stats, setStats] = useState({ accuracy: 0, time: 0, maxCombo: 0 });
   const [currentLevelId, setCurrentLevelId] = useState<number>(1);
-  const [selectedBattleStageId, setSelectedBattleStageId] = useState<number>(() => {
-    const saved = localStorage.getItem('selectedBattleStageId');
-    const parsed = saved ? parseInt(saved, 10) : 1;
-    return growthStages.some((stage) => stage.id === parsed) ? parsed : 1;
-  });
-  const [selectedBattleEffectName, setSelectedBattleEffectName] = useState<string>(() => localStorage.getItem('selectedBattleEffectName') || '晨火I');
-  const [selectedBattleGemName, setSelectedBattleGemName] = useState<string>(() => localStorage.getItem('selectedBattleGemName') || '静思石');
-  const [selectedBattleMapTheme, setSelectedBattleMapTheme] = useState<string>(() => localStorage.getItem('selectedBattleMapTheme') || '起光原野');
   const [showPokedexModal, setShowPokedexModal] = useState(false);
   const [pokedexDefaultTab, setPokedexDefaultTab] = useState<'stage' | 'effect' | 'gem' | 'map'>('stage');
   const [rewardCard, setRewardCard] = useState<RewardCardModel | null>(null);
   const [showRewardCard, setShowRewardCard] = useState(false);
+  const [pendingLevelZeroRouteIntro, setPendingLevelZeroRouteIntro] = useState(false);
   const [debugLevel, setDebugLevel] = useState<number>(1);
   const [debugPanelMinimized, setDebugPanelMinimized] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingLevelStart, setPendingLevelStart] = useState<number | null>(null);
-  const [authState, setAuthState] = useState<AuthState>(() => {
-    const saved = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!saved) return emptyAuthState;
 
-    try {
-      const parsed = JSON.parse(saved);
-      return isAuthState(parsed) ? parsed : emptyAuthState;
-    } catch {
-      return emptyAuthState;
+  // 使用新的统一数据模型
+  const [userData, setUserData] = useState<UserGameData>(() => {
+    // ?start 模式：无痕模式，不读取 localStorage，直接使用默认数据
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('start')) {
+      return createDefaultUserData('start-mode-guest');
     }
+
+    // 检查是否需要迁移旧数据
+    if (needsMigration()) {
+      return migrateToV4();
+    }
+
+    // 加载已有数据或创建新数据
+    const existing = loadUserData();
+    if (existing) {
+      return existing;
+    }
+
+    // 创建新的游客数据
+    const guestIdentity = getOrCreateGuestIdentity();
+    return createDefaultUserData(guestIdentity.guestId);
   });
 
+  // 保存 userData 到 localStorage（无痕模式下跳过）
   useEffect(() => {
-    localStorage.setItem('selectedBattleStageId', selectedBattleStageId.toString());
-  }, [selectedBattleStageId]);
+    if (isStartMode) return; // ?start 模式下不保存到 localStorage
+    saveUserData(userData);
+  }, [userData, isStartMode]);
 
+  // ?start 参数：直接进入第0关
   useEffect(() => {
-    localStorage.setItem('selectedBattleEffectName', selectedBattleEffectName);
-  }, [selectedBattleEffectName]);
+    if (!isStartMode) return;
+    setCurrentLevelId(0);
+    setCurrentScreen('quiz');
+  }, [isStartMode]);
 
-  useEffect(() => {
-    localStorage.setItem('selectedBattleGemName', selectedBattleGemName);
-  }, [selectedBattleGemName]);
+  // 从 userData 提取旧格式兼容的数据（渐进式迁移）
+  const gameData: GameData = {
+    k: userData.grades.k,
+    '1': userData.grades['1'],
+    '2': userData.grades['2'],
+    '3': userData.grades['3'],
+  };
 
-  useEffect(() => {
-    localStorage.setItem('selectedBattleMapTheme', selectedBattleMapTheme);
-  }, [selectedBattleMapTheme]);
+  const authState: AuthState = {
+    isLoggedIn: userData.identity.type === 'registered',
+    loginMethod: userData.identity.loginMethod || null,
+    phone: userData.identity.phone || '',
+  };
 
-  const [gameData, setGameData] = useState<GameData>(() => {
-    const saved = localStorage.getItem('gameDataV3');
-    if (saved) {
-      try {
-        return normalizeGameData(JSON.parse(saved));
-      } catch {
-        return defaultData;
-      }
-    }
-    return defaultData;
-  });
+  const selectedBattleStageId = userData.preferences.selectedBattleStageId;
+  const selectedBattleEffectName = userData.preferences.selectedBattleEffectName;
+  const selectedBattleGemName = userData.preferences.selectedBattleGemName;
+  const selectedBattleMapTheme = userData.preferences.selectedBattleMapTheme;
 
-  useEffect(() => {
-    localStorage.setItem('gameDataV3', JSON.stringify(gameData));
-  }, [gameData]);
+  // 辅助函数：更新偏好设置
+  const setSelectedBattleStageId = (id: number) => {
+    setUserData((prev: UserGameData) => ({
+      ...prev,
+      preferences: { ...prev.preferences, selectedBattleStageId: id, updatedAt: Date.now() }
+    }));
+  };
+  const setSelectedBattleEffectName = (name: string) => {
+    setUserData((prev: UserGameData) => ({
+      ...prev,
+      preferences: { ...prev.preferences, selectedBattleEffectName: name, updatedAt: Date.now() }
+    }));
+  };
+  const setSelectedBattleGemName = (name: string) => {
+    setUserData((prev: UserGameData) => ({
+      ...prev,
+      preferences: { ...prev.preferences, selectedBattleGemName: name, updatedAt: Date.now() }
+    }));
+  };
+  const setSelectedBattleMapTheme = (theme: string) => {
+    setUserData((prev: UserGameData) => ({
+      ...prev,
+      preferences: { ...prev.preferences, selectedBattleMapTheme: theme, updatedAt: Date.now() }
+    }));
+  };
 
-  useEffect(() => {
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authState));
-  }, [authState]);
+  // 辅助函数：更新年级数据
+  const setGameData = (updater: (prev: GameData) => GameData) => {
+    setUserData((prev: UserGameData) => {
+      const newGameData = updater(gameData);
+      return {
+        ...prev,
+        grades: {
+          k: { ...newGameData.k, updatedAt: Date.now() },
+          '1': { ...newGameData['1'], updatedAt: Date.now() },
+          '2': { ...newGameData['2'], updatedAt: Date.now() },
+          '3': { ...newGameData['3'], updatedAt: Date.now() },
+        },
+      };
+    });
+  };
+
+  // 辅助函数：更新身份状态
+  const setAuthState = (newAuthState: AuthState) => {
+    setUserData((prev: UserGameData) => ({
+      ...prev,
+      identity: {
+        ...prev.identity,
+        type: newAuthState.isLoggedIn ? 'registered' : 'guest',
+        phone: newAuthState.phone,
+        loginMethod: newAuthState.loginMethod,
+      },
+    }));
+  };
 
   const currentGradeData = gameData[currentGrade];
   const activeGrowthStage = getGrowthStageByExp(currentGradeData.puzzlePieces);
@@ -241,7 +254,7 @@ export default function App() {
     unlockedMapOptions,
   ]);
 
-  const handleLevelComplete = (levelStats: { accuracy: number; time: number; maxCombo: number }) => {
+  const handleLevelComplete = (levelStats: LevelFinishStats) => {
     const isLevelZero = isLevelZeroTutorial(currentGrade, currentLevelId);
     const rewardConfig = isLevelZero ? null : getLevelRewardConfig(currentLevelId);
     const totalBefore = currentGradeData.puzzlePieces;
@@ -257,7 +270,40 @@ export default function App() {
     // 使用 completedLevels 判断是否首次通关
     const isFirstTimeClear = !currentGradeData.completedLevels.includes(currentLevelId);
 
-    setGameData(prev => {
+    // 创建闯关记录
+    const levelRecord = createLevelRecord({
+      grade: currentGrade,
+      levelId: currentLevelId,
+      timeTaken: levelStats.time,
+      accuracy: levelStats.accuracy,
+      totalQuestions: levelStats.totalQuestions,
+      correctCount: levelStats.correctCount,
+    });
+
+    // 保存闯关记录和错题记录
+    setUserData((prev: UserGameData) => {
+      const wrongAnswerRecords = levelStats.wrongAnswers.map((wrong: WrongAnswerDetail) =>
+        createWrongAnswer({
+          recordId: levelRecord.id,
+          grade: currentGrade,
+          levelId: currentLevelId,
+          questionId: wrong.questionId,
+          questionText: wrong.questionText,
+          correctAnswer: wrong.correctAnswer,
+          userAnswer: wrong.userAnswer,
+        })
+      );
+
+      return {
+        ...prev,
+        records: {
+          levelRecords: [...prev.records.levelRecords, levelRecord],
+          wrongAnswers: [...prev.records.wrongAnswers, ...wrongAnswerRecords],
+        },
+      };
+    });
+
+    setGameData((prev: GameData) => {
       const currentData = prev[currentGrade];
       const newUnlocked = [...currentData.unlockedLevels];
       const newCompleted = [...currentData.completedLevels];
@@ -290,6 +336,9 @@ export default function App() {
           : buildRewardCardModel(currentLevelId, totalBefore, totalAfter)
       );
       setShowRewardCard(true);
+      if (isLevelZero) {
+        setPendingLevelZeroRouteIntro(true);
+      }
     }
     const autoEquipUpdates = rewardConfig
       ? getAutoEquipUpdatesForExpChange(totalBefore, totalAfter, {
@@ -371,7 +420,16 @@ export default function App() {
   };
 
   const handleClearLogin = () => {
-    setAuthState(emptyAuthState);
+    // 重置身份为游客
+    const guestIdentity = getOrCreateGuestIdentity();
+    setUserData((prev: UserGameData) => ({
+      ...prev,
+      identity: {
+        type: 'guest',
+        guestId: guestIdentity.guestId,
+        createdAt: guestIdentity.createdAt,
+      },
+    }));
     setShowLoginModal(false);
     setPendingLevelStart(null);
   };
@@ -485,6 +543,8 @@ export default function App() {
             onClearLogin={handleClearLogin}
             showLevelZero={isDebugMode}
             showClearLoginButton={isDebugMode}
+            playLevelZeroRouteIntro={pendingLevelZeroRouteIntro}
+            onLevelZeroRouteIntroComplete={() => setPendingLevelZeroRouteIntro(false)}
           />
         )}
         {currentScreen === 'quiz' && (
@@ -509,6 +569,7 @@ export default function App() {
             stats={stats}
             onBack={() => setCurrentScreen('map')}
             onNextLevel={() => {
+              setPendingLevelZeroRouteIntro(false);
               if (currentLevelId < MAX_LEVELS) {
                 requestStartLevel(currentLevelId + 1);
               } else {
