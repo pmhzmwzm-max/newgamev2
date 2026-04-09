@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { allLevelsData, type Question } from '../data/questions';
 import { type AttackEffectFamily, type AttackEffectProfile } from '../data/growthRewards';
 import { playCloudPuffBreak, playCloudPuffBurst, playCloudPuffCharge, primeBattleSfx, startBattleBgm, stopBattleBgm, warmupBattleBgm } from './battleSfx';
+import { warmupBattleAssets } from './battleAssetWarmup';
+import { getBattleGridLayout } from './battleLayoutCache';
 import { getLevelZeroShotPlan, isLevelZeroTutorial, LEVEL_ZERO_BATTLE_CONFIG } from './levelZeroBattle';
 import { getBreakFeedbackProfile, getCameraShakeProfile, getChargeDuration, getExplosionProfile, getRemovalCount, getShotTier, getShotTiming, type ShotTier } from './quizTiming';
 
@@ -84,6 +86,8 @@ type ExplosionPreset = {
 };
 
 const explosionPresetCache = new Map<string, ExplosionPreset>();
+const effectRankCache = new Map<string, number>();
+const impactTravelProfileCache = new Map<string, ReturnType<typeof buildImpactTravelProfile>>();
 
 const createSeededRandom = (seed: number) => {
   let state = seed >>> 0;
@@ -94,10 +98,16 @@ const createSeededRandom = (seed: number) => {
 };
 
 const getEffectRank = (effect: AttackEffectProfile) => {
-  if (effect.name.includes('智慧之力')) return 4;
-  if (effect.name.includes('III')) return 3;
-  if (effect.name.includes('II')) return 2;
-  return 1;
+  const cached = effectRankCache.get(effect.name);
+  if (cached !== undefined) return cached;
+
+  let rank = 1;
+  if (effect.name.includes('智慧之力')) rank = 4;
+  else if (effect.name.includes('III')) rank = 3;
+  else if (effect.name.includes('II')) rank = 2;
+
+  effectRankCache.set(effect.name, rank);
+  return rank;
 };
 
 const getFamilyTempoMultiplier = (family: AttackEffectFamily, rank: number) => {
@@ -119,7 +129,7 @@ const getFamilyTempoMultiplier = (family: AttackEffectFamily, rank: number) => {
   }
 };
 
-const getImpactTravelProfile = (family: AttackEffectFamily, rank: number) => {
+const buildImpactTravelProfile = (family: AttackEffectFamily, rank: number) => {
   switch (family) {
     case 'gale':
       return {
@@ -195,6 +205,16 @@ const getImpactTravelProfile = (family: AttackEffectFamily, rank: number) => {
         endY: -2,
       };
   }
+};
+
+const getImpactTravelProfile = (family: AttackEffectFamily, rank: number) => {
+  const cacheKey = `${family}:${rank}`;
+  const cached = impactTravelProfileCache.get(cacheKey);
+  if (cached) return cached;
+
+  const profile = buildImpactTravelProfile(family, rank);
+  impactTravelProfileCache.set(cacheKey, profile);
+  return profile;
 };
 
 const getShardColors = (tier: ShotTier, effect: AttackEffectProfile) =>
@@ -667,7 +687,15 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
       )}
     </div>
   );
-});
+}, (prevProps, nextProps) =>
+  prevProps.index === nextProps.index &&
+  prevProps.cleared === nextProps.cleared &&
+  prevProps.justCleared === nextProps.justCleared &&
+  prevProps.shotTier === nextProps.shotTier &&
+  prevProps.clearDelay === nextProps.clearDelay &&
+  prevProps.effect === nextProps.effect &&
+  prevProps.gemImage === nextProps.gemImage
+);
 
 const BattleBlockGrid = memo(
   ({
@@ -679,6 +707,7 @@ const BattleBlockGrid = memo(
     totalBlocks,
     columns,
     rows,
+    isLevelZero,
   }: {
     clearedBlocks: number;
     lastRemoval: number;
@@ -688,38 +717,27 @@ const BattleBlockGrid = memo(
     totalBlocks: number;
     columns: number;
     rows: number;
+    isLevelZero?: boolean;
   }) => {
-    const blockIndexes = useMemo(() => Array.from({ length: totalBlocks }, (_, index) => index), [totalBlocks]);
-    const blockClearOrder = useMemo(
-      () =>
-        [...blockIndexes].sort((a, b) => {
-          const rowA = Math.floor(a / columns);
-          const rowB = Math.floor(b / columns);
-          const colA = a % columns;
-          const colB = b % columns;
-
-          if (rowA !== rowB) return rowB - rowA;
-          return colB - colA;
-        }),
-      [blockIndexes, columns],
-    );
-    const blockClearRank = useMemo(
-      () =>
-        blockClearOrder.reduce<Record<number, number>>((acc, index, rank) => {
-          acc[index] = rank;
-          return acc;
-        }, {}),
-      [blockClearOrder],
-    );
+    const { blockIndexes, blockClearRank } = getBattleGridLayout(totalBlocks, columns);
     const recentClearStart = Math.max(0, clearedBlocks - lastRemoval);
+
+    // 第0关使用固定尺寸的宝石，不响应设备变化
+    const gridStyle = isLevelZero
+      ? {
+          gridTemplateColumns: `repeat(${columns}, 56px)`,
+          gridTemplateRows: `repeat(${rows}, 56px)`,
+          justifyContent: 'center' as const,
+        }
+      : {
+          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+        };
 
     return (
       <div
-        className="grid h-full w-full min-h-0 gap-x-2 sm:gap-x-3 gap-y-1 sm:gap-y-1.5 place-items-stretch"
-        style={{
-          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-        }}
+        className={`grid h-full w-full min-h-0 gap-x-2 sm:gap-x-3 gap-y-1 sm:gap-y-1.5 ${isLevelZero ? '' : 'place-items-stretch'}`}
+        style={gridStyle}
       >
         {blockIndexes.map((index) => {
           const clearRank = blockClearRank[index];
@@ -743,6 +761,15 @@ const BattleBlockGrid = memo(
       </div>
     );
   },
+  (prevProps, nextProps) =>
+    prevProps.clearedBlocks === nextProps.clearedBlocks &&
+    prevProps.lastRemoval === nextProps.lastRemoval &&
+    prevProps.shotTier === nextProps.shotTier &&
+    prevProps.effect === nextProps.effect &&
+    prevProps.gemImage === nextProps.gemImage &&
+    prevProps.totalBlocks === nextProps.totalBlocks &&
+    prevProps.columns === nextProps.columns &&
+    prevProps.rows === nextProps.rows,
 );
 
 const ComboHud = memo(({ displayCombo }: { displayCombo: number }) => {
@@ -811,7 +838,7 @@ const ComboHud = memo(({ displayCombo }: { displayCombo: number }) => {
       )}
     </AnimatePresence>
   );
-});
+}, (prevProps, nextProps) => prevProps.displayCombo === nextProps.displayCombo);
 
 const BattleStage = memo(({
   selectedPet,
@@ -827,6 +854,7 @@ const BattleStage = memo(({
   totalBlocks,
   blockColumns,
   blockRows,
+  isLevelZero,
 }: {
   selectedPet: any;
   combo: number;
@@ -841,6 +869,7 @@ const BattleStage = memo(({
   totalBlocks: number;
   blockColumns: number;
   blockRows: number;
+  isLevelZero?: boolean;
 }) => {
   const [cameraShakePulse, setCameraShakePulse] = useState(0);
   const showImpact = shotTier !== 'idle' && shotTier !== 'break';
@@ -1193,6 +1222,7 @@ const BattleStage = memo(({
               totalBlocks={totalBlocks}
               columns={blockColumns}
               rows={blockRows}
+              isLevelZero={isLevelZero}
             />
           </div>
         </div>
@@ -1357,7 +1387,21 @@ const BattleStage = memo(({
       </motion.div>
     </div>
   );
-});
+}, (prevProps, nextProps) =>
+  prevProps.selectedPet === nextProps.selectedPet &&
+  prevProps.combo === nextProps.combo &&
+  prevProps.displayCombo === nextProps.displayCombo &&
+  prevProps.shotTier === nextProps.shotTier &&
+  prevProps.effect === nextProps.effect &&
+  prevProps.gemImage === nextProps.gemImage &&
+  prevProps.clearedBlocks === nextProps.clearedBlocks &&
+  prevProps.lastRemoval === nextProps.lastRemoval &&
+  prevProps.shotSequence === nextProps.shotSequence &&
+  prevProps.impactSequence === nextProps.impactSequence &&
+  prevProps.totalBlocks === nextProps.totalBlocks &&
+  prevProps.blockColumns === nextProps.blockColumns &&
+  prevProps.blockRows === nextProps.blockRows,
+);
 
 export default function QuizScreen({
   gradeId = '1',
@@ -1452,6 +1496,10 @@ export default function QuizScreen({
       stopBattleBgm();
     };
   }, []);
+
+  useEffect(() => {
+    warmupBattleAssets(selectedPet?.image, gemImage, backgroundImage);
+  }, [backgroundImage, gemImage, selectedPet?.image]);
 
   useEffect(() => {
     if (question && question.answerLength) {
@@ -2393,6 +2441,7 @@ export default function QuizScreen({
             totalBlocks={battleBlockConfig.totalBlocks}
             blockColumns={battleBlockConfig.columns}
             blockRows={battleBlockConfig.rows}
+            isLevelZero={isTutorialLevelZero}
           />
 
         </motion.div>
