@@ -649,7 +649,7 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
             delay: wobbleDelay,
           }}
           className={isLevelZero
-            ? "relative overflow-visible will-change-transform w-14 h-14 sm:w-[97px] sm:h-[97px] md:w-[88px] md:h-[88px]"
+            ? "relative overflow-visible will-change-transform w-14 h-14 sm:w-[72px] sm:h-[72px] md:w-[97px] md:h-[97px] lg:w-[88px] lg:h-[88px]"
             : "relative h-full w-full overflow-visible will-change-transform"
           }
         >
@@ -673,7 +673,7 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
             animate={{ scale: [1, 1.08, 0.2], opacity: [1, 1, 0], rotate: [0, -6, 8] }}
             transition={{ duration: 0.44, delay: clearDelay, ease: 'easeOut' }}
             className={isLevelZero
-              ? "absolute overflow-visible w-14 h-14 sm:w-[97px] sm:h-[97px] md:w-[88px] md:h-[88px]"
+              ? "absolute overflow-visible w-14 h-14 sm:w-[72px] sm:h-[72px] md:w-[97px] md:h-[97px] lg:w-[88px] lg:h-[88px]"
               : "absolute h-full w-full overflow-visible"
             }
           >
