@@ -624,6 +624,7 @@ type BattleBlockProps = {
   clearDelay: number;
   effect: AttackEffectProfile;
   gemImage: string | undefined;
+  isLevelZero: boolean;
 };
 
 const BattleBlock: React.FC<BattleBlockProps> = memo(({
@@ -634,8 +635,21 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
   clearDelay,
   effect,
   gemImage,
+  isLevelZero,
 }) => {
   const wobbleDelay = (index % 5) * 0.12;
+
+  // 第0关使用固定的 56px 宝石尺寸，保持原始宽高比
+  const levelZeroGemStyle = isLevelZero ? {
+    width: '56px',
+    height: '56px',
+    aspectRatio: '1',
+  } : {};
+
+  const levelZeroContainerStyle = isLevelZero ? {
+    width: '56px',
+    height: '56px',
+  } : {};
 
   return (
     <div className="relative flex h-full w-full items-center justify-center">
@@ -646,17 +660,22 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
             ...BLOCK_WOBBLE_TRANSITION,
             delay: wobbleDelay,
           }}
-          className="relative h-full w-full overflow-visible will-change-transform"
+          className="relative overflow-visible will-change-transform"
+          style={isLevelZero ? levelZeroContainerStyle : { height: '100%', width: '100%' }}
         >
           <img
             src={gemImage ?? ''}
             alt=""
             draggable={false}
-            className="h-full w-full object-fill select-none"
+            className="select-none"
             style={{
               filter: 'drop-shadow(0 8px 14px rgba(49,104,201,0.2))',
-              maxWidth: '120%',
-              maxHeight: '110%',
+              ...levelZeroGemStyle,
+              objectFit: isLevelZero ? 'contain' : 'fill',
+              height: isLevelZero ? '56px' : '100%',
+              width: isLevelZero ? '56px' : '100%',
+              maxWidth: isLevelZero ? '56px' : '120%',
+              maxHeight: isLevelZero ? '56px' : '110%',
             }}
           />
         </motion.div>
@@ -694,7 +713,8 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
   prevProps.shotTier === nextProps.shotTier &&
   prevProps.clearDelay === nextProps.clearDelay &&
   prevProps.effect === nextProps.effect &&
-  prevProps.gemImage === nextProps.gemImage
+  prevProps.gemImage === nextProps.gemImage &&
+  prevProps.isLevelZero === nextProps.isLevelZero
 );
 
 const BattleBlockGrid = memo(
@@ -717,27 +737,18 @@ const BattleBlockGrid = memo(
     totalBlocks: number;
     columns: number;
     rows: number;
-    isLevelZero?: boolean;
+    isLevelZero: boolean;
   }) => {
     const { blockIndexes, blockClearRank } = getBattleGridLayout(totalBlocks, columns);
     const recentClearStart = Math.max(0, clearedBlocks - lastRemoval);
 
-    // 第0关使用固定尺寸的宝石，不响应设备变化
-    const gridStyle = isLevelZero
-      ? {
-          gridTemplateColumns: `repeat(${columns}, 56px)`,
-          gridTemplateRows: `repeat(${rows}, 56px)`,
-          justifyContent: 'center' as const,
-        }
-      : {
-          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-        };
-
     return (
       <div
-        className={`grid h-full w-full min-h-0 gap-x-2 sm:gap-x-3 gap-y-1 sm:gap-y-1.5 ${isLevelZero ? '' : 'place-items-stretch'}`}
-        style={gridStyle}
+        className="grid h-full w-full min-h-0 gap-x-2 sm:gap-x-3 gap-y-1 sm:gap-y-1.5 place-items-stretch"
+        style={{
+          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+        }}
       >
         {blockIndexes.map((index) => {
           const clearRank = blockClearRank[index];
@@ -755,6 +766,7 @@ const BattleBlockGrid = memo(
               clearDelay={clearDelay}
               effect={effect}
               gemImage={gemImage}
+              isLevelZero={isLevelZero}
             />
           );
         })}
@@ -869,7 +881,7 @@ const BattleStage = memo(({
   totalBlocks: number;
   blockColumns: number;
   blockRows: number;
-  isLevelZero?: boolean;
+  isLevelZero: boolean;
 }) => {
   const [cameraShakePulse, setCameraShakePulse] = useState(0);
   const showImpact = shotTier !== 'idle' && shotTier !== 'break';
@@ -1400,7 +1412,8 @@ const BattleStage = memo(({
   prevProps.impactSequence === nextProps.impactSequence &&
   prevProps.totalBlocks === nextProps.totalBlocks &&
   prevProps.blockColumns === nextProps.blockColumns &&
-  prevProps.blockRows === nextProps.blockRows,
+  prevProps.blockRows === nextProps.blockRows &&
+  prevProps.isLevelZero === nextProps.isLevelZero,
 );
 
 export default function QuizScreen({
