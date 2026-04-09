@@ -639,18 +639,6 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
 }) => {
   const wobbleDelay = (index % 5) * 0.12;
 
-  // 第0关使用固定的 56px 宝石尺寸，保持原始宽高比
-  const levelZeroGemStyle = isLevelZero ? {
-    width: '56px',
-    height: '56px',
-    aspectRatio: '1',
-  } : {};
-
-  const levelZeroContainerStyle = isLevelZero ? {
-    width: '56px',
-    height: '56px',
-  } : {};
-
   return (
     <div className="relative flex h-full w-full items-center justify-center">
       {!cleared && (
@@ -660,22 +648,19 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
             ...BLOCK_WOBBLE_TRANSITION,
             delay: wobbleDelay,
           }}
-          className="relative overflow-visible will-change-transform"
-          style={isLevelZero ? levelZeroContainerStyle : { height: '100%', width: '100%' }}
+          className={isLevelZero
+            ? "relative overflow-visible will-change-transform w-14 h-14 sm:w-[72px] sm:h-[72px] md:w-[88px] md:h-[88px]"
+            : "relative h-full w-full overflow-visible will-change-transform"
+          }
         >
           <img
             src={gemImage ?? ''}
             alt=""
             draggable={false}
-            className="select-none"
+            className={isLevelZero ? "select-none w-full h-full object-contain" : "h-full w-full object-fill select-none"}
             style={{
               filter: 'drop-shadow(0 8px 14px rgba(49,104,201,0.2))',
-              ...levelZeroGemStyle,
-              objectFit: isLevelZero ? 'contain' : 'fill',
-              height: isLevelZero ? '56px' : '100%',
-              width: isLevelZero ? '56px' : '100%',
-              maxWidth: isLevelZero ? '56px' : '120%',
-              maxHeight: isLevelZero ? '56px' : '110%',
+              ...(isLevelZero ? {} : { maxWidth: '120%', maxHeight: '110%' }),
             }}
           />
         </motion.div>
@@ -687,17 +672,19 @@ const BattleBlock: React.FC<BattleBlockProps> = memo(({
             initial={{ scale: 1, opacity: 1, rotate: 0 }}
             animate={{ scale: [1, 1.08, 0.2], opacity: [1, 1, 0], rotate: [0, -6, 8] }}
             transition={{ duration: 0.44, delay: clearDelay, ease: 'easeOut' }}
-            className="absolute h-full w-full overflow-visible"
+            className={isLevelZero
+              ? "absolute overflow-visible w-14 h-14 sm:w-[72px] sm:h-[72px] md:w-[88px] md:h-[88px]"
+              : "absolute h-full w-full overflow-visible"
+            }
           >
             <img
               src={gemImage ?? ''}
               alt=""
               draggable={false}
-              className="h-full w-full object-fill select-none"
+              className={isLevelZero ? "select-none w-full h-full object-contain" : "h-full w-full object-fill select-none"}
               style={{
                 filter: 'drop-shadow(0 9px 16px rgba(49,104,201,0.22))',
-                maxWidth: '120%',
-                maxHeight: '110%',
+                ...(isLevelZero ? {} : { maxWidth: '120%', maxHeight: '110%' }),
               }}
             />
           </motion.div>
