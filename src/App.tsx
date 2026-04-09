@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import ErrorBoundary from './components/ErrorBoundary';
 import MapScreen from './components/MapScreen';
 import QuizScreen from './components/QuizScreen';
 import ResultScreen from './components/ResultScreen';
@@ -526,8 +527,9 @@ export default function App() {
   };
 
   return (
-    <div className="w-full h-screen bg-gray-100 flex justify-center items-center overflow-hidden font-sans p-4">
-      <div className="w-[768px] h-[1024px] max-w-full max-h-full bg-white relative shadow-xl overflow-visible rounded-[2rem]">
+    <ErrorBoundary>
+    <div className="w-full h-screen bg-white relative overflow-hidden font-sans flex justify-center">
+      <div className="w-full h-full relative overflow-hidden xl:max-w-[768px]">
         {currentScreen === 'map' && (
           <MapScreen
             gradeId={currentGrade}
@@ -675,5 +677,6 @@ export default function App() {
         )}
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

@@ -655,7 +655,7 @@ export default function MapScreen({
       </div>
 
       {/* 顶部导航栏 */}
-      <div className="absolute top-0 left-0 w-full p-4 flex justify-end items-start z-20 pointer-events-none">
+      <div className="absolute top-0 left-0 w-full p-3 sm:p-4 flex justify-end items-start z-20 pointer-events-none">
         {/* 宠物图鉴按钮 - 使用切图，放大50% */}
         <button
           onClick={onOpenPokedex}
@@ -664,8 +664,8 @@ export default function MapScreen({
           <img
             src={pokedexButton}
             alt="宠物图鉴"
-            className="h-18 w-auto object-contain"
-            style={{ height: '72px' }}
+            className="h-14 sm:h-18 w-auto object-contain"
+            style={{ height: 'clamp(56px, 12vw, 72px)' }}
           />
         </button>
       </div>
@@ -673,7 +673,7 @@ export default function MapScreen({
       {/* 地图区域 - 可滚动 */}
       <div
         ref={scrollRef}
-        className="flex-1 relative overflow-y-auto overflow-x-hidden pt-20 pb-[32vh]"
+        className="flex-1 relative overflow-y-auto overflow-x-hidden pt-16 sm:pt-20 pb-[28vh] sm:pb-[32vh]"
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -831,8 +831,8 @@ export default function MapScreen({
                             : 'bg-gradient-to-br from-blue-300 to-blue-500'
                         }`}
                         style={{
-                          width: '84px',
-                          height: '84px',
+                          width: 'clamp(68px, 18vw, 84px)',
+                          height: 'clamp(68px, 18vw, 84px)',
                           borderRadius: '40% 60% 65% 35% / 45% 50% 55% 50%',
                           boxShadow: isHiddenFinalNode
                             ? '0 9px 0 #6B4FD1, 0 0 20px rgba(255,231,160,0.7), 0 12px 22px rgba(0,0,0,0.24)'
@@ -867,8 +867,8 @@ export default function MapScreen({
                           : 'bg-gradient-to-br from-gray-400 to-gray-500 border-white/50'
                       }`}
                       style={{
-                        width: '72px',
-                        height: '72px',
+                        width: 'clamp(58px, 15vw, 72px)',
+                        height: 'clamp(58px, 15vw, 72px)',
                         borderRadius: '35% 65% 70% 30% / 40% 55% 50% 45%',
                         boxShadow: isHiddenFinalNode
                           ? '0 7px 0 #56439a, 0 0 16px rgba(255,231,160,0.4)'

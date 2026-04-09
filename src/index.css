@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+:root {
+  /* 触摸目标最小尺寸 */
+  --touch-target-min: 44px;
+
+  /* 流式尺寸 */
+  --level-button-size: clamp(68px, 18vw, 84px);
+  --avatar-size: clamp(48px, 12vw, 56px);
+  --question-card-height: clamp(140px, 35vh, 170px);
+
+  /* 按钮高度 */
+  --button-height: clamp(48px, 12vw, 56px);
+  --keypad-button-height: clamp(56px, 14vw, 64px);
+}

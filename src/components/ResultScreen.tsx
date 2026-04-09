@@ -47,13 +47,13 @@ export default function ResultScreen({
          {[...Array(20)].map((_, i) => <span key={i} className="text-6xl">⭐</span>)}
       </div>
 
-      <div className="relative z-10 flex h-full flex-col items-center justify-center px-16 pt-16 pb-20">
+      <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 sm:px-16 pt-12 sm:pt-16 pb-16 sm:pb-20">
         {/* Title */}
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: 'spring' }}
-          className="text-5xl font-black text-white mb-10 tracking-wider text-center"
+          className="text-3xl sm:text-5xl font-black text-white mb-6 sm:mb-10 tracking-wider text-center"
           style={{ textShadow: '0 4px 0 #ff7a7a, 0 8px 10px rgba(0,0,0,0.2)' }}
         >
           {getEmotionalText()}
@@ -64,16 +64,16 @@ export default function ResultScreen({
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="w-full max-w-md flex flex-col gap-5"
+          className="w-full max-w-md flex flex-col gap-4 sm:gap-5"
         >
-          <div className="bg-white/90 backdrop-blur rounded-2xl p-5 flex items-center justify-between shadow-lg relative">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-500 text-2xl">
+          <div className="bg-white/90 backdrop-blur rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-lg relative">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-500 text-xl sm:text-2xl">
                 <Clock />
               </div>
-              <span className="text-gray-600 font-bold text-xl">闯关时间</span>
+              <span className="text-gray-600 font-bold text-lg sm:text-xl">闯关时间</span>
             </div>
-            <span className="text-4xl font-black text-orange-500">{formatTime(stats.time)}</span>
+            <span className="text-3xl sm:text-4xl font-black text-orange-500">{formatTime(stats.time)}</span>
             {stats.time < 30 && (
               <div className="absolute -top-4 -right-4 bg-red-400 text-white text-sm font-black px-4 py-1.5 rounded-full transform rotate-12 border-2 border-white shadow-md">
                 快如闪电
@@ -81,14 +81,14 @@ export default function ResultScreen({
             )}
           </div>
 
-          <div className="bg-white/90 backdrop-blur rounded-2xl p-5 flex items-center justify-between shadow-lg relative">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-500 text-2xl">
+          <div className="bg-white/90 backdrop-blur rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-lg relative">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-500 text-xl sm:text-2xl">
                 <CheckCircle />
               </div>
-              <span className="text-gray-600 font-bold text-xl">正确率</span>
+              <span className="text-gray-600 font-bold text-lg sm:text-xl">正确率</span>
             </div>
-            <span className="text-4xl font-black text-orange-500">{stats.accuracy}%</span>
+            <span className="text-3xl sm:text-4xl font-black text-orange-500">{stats.accuracy}%</span>
             {stats.accuracy === 100 && (
               <div className="absolute -top-4 -right-4 bg-yellow-400 text-white text-sm font-black px-4 py-1.5 rounded-full transform rotate-12 border-2 border-white shadow-md">
                 Perfect!
@@ -96,14 +96,14 @@ export default function ResultScreen({
             )}
           </div>
 
-          <div className="bg-white/90 backdrop-blur rounded-2xl p-5 flex items-center justify-between shadow-lg relative">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-500 text-2xl">
+          <div className="bg-white/90 backdrop-blur rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-lg relative">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-500 text-xl sm:text-2xl">
                 <Zap />
               </div>
-              <span className="text-gray-600 font-bold text-xl">最高连击</span>
+              <span className="text-gray-600 font-bold text-lg sm:text-xl">最高连击</span>
             </div>
-            <span className="text-4xl font-black text-orange-500">{stats.maxCombo}连击</span>
+            <span className="text-3xl sm:text-4xl font-black text-orange-500">{stats.maxCombo}连击</span>
           </div>
         </motion.div>
 
@@ -112,7 +112,7 @@ export default function ResultScreen({
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="w-full max-w-md flex flex-col gap-4 mt-10"
+          className="w-full max-w-md flex flex-col gap-3 sm:gap-4 mt-6 sm:mt-10"
         >
           {isLevelZeroIntroResult ? (
             <motion.button
@@ -127,7 +127,7 @@ export default function ResultScreen({
                 ],
               }}
               transition={{ duration: 1.15, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-full rounded-full border-4 border-white/80 bg-[linear-gradient(180deg,#ffcf63_0%,#ff972f_52%,#ff7b22_100%)] py-5 text-3xl font-black tracking-[0.12em] text-white"
+              className="w-full rounded-full border-4 border-white/80 bg-[linear-gradient(180deg,#ffcf63_0%,#ff972f_52%,#ff7b22_100%)] py-4 sm:py-5 text-2xl sm:text-3xl font-black tracking-[0.12em] text-white"
               style={{ textShadow: '0 3px 0 rgba(146,64,14,0.55)' }}
             >
               开始冒险
@@ -137,20 +137,20 @@ export default function ResultScreen({
               {hasNextLevel && (
                 <button
                   onClick={onNextLevel}
-                  className="w-full bg-[#2cc4f5] text-white text-2xl font-black py-5 rounded-full shadow-[0_10px_0_#1ba4d0] active:shadow-none active:translate-y-[10px] transition-all"
+                  className="w-full bg-[#2cc4f5] text-white text-xl sm:text-2xl font-black py-4 sm:py-5 rounded-full shadow-[0_10px_0_#1ba4d0] active:shadow-none active:translate-y-[10px] transition-all"
                 >
                   下一关
                 </button>
               )}
               <button
                 onClick={onBack}
-                className="w-full bg-white text-gray-700 text-xl font-bold py-4 rounded-full shadow-[0_8px_0_#e5e7eb] active:shadow-none active:translate-y-[8px] transition-all border-2 border-gray-100"
+                className="w-full bg-white text-gray-700 text-lg sm:text-xl font-bold py-3 sm:py-4 rounded-full shadow-[0_8px_0_#e5e7eb] active:shadow-none active:translate-y-[8px] transition-all border-2 border-gray-100"
               >
                 返回路线
               </button>
               <button
                 onClick={onOpenPokedex}
-                className="w-full text-white/80 text-lg font-bold py-3 active:scale-95 transition-all flex items-center justify-center gap-2"
+                className="w-full text-white/80 text-base sm:text-lg font-bold py-2 sm:py-3 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 查看图鉴 <BookOpen size={20} />
               </button>

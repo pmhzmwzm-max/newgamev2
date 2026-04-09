@@ -15,7 +15,7 @@ interface LoginModalProps {
 }
 
 const SMS_COUNTDOWN_SECONDS = 60;
-const guardianImage = growthStages.find((stage) => stage.name === '火纹守望者')?.image ?? '';
+const guardianImage = growthStages.find((stage) => stage.name === '跃焰灵狐')?.image ?? '';
 
 const userAgreementText = `本协议由您（以下简称"用户")与广州六一信息科技有限公司（以下简称"精灵口算")之间订立。"精灵口算"为欢乐童年官方网站旗下子产品之一，为Web端在线学习类工具。
 

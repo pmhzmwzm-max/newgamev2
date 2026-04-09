@@ -715,7 +715,7 @@ const BattleBlockGrid = memo(
 
     return (
       <div
-        className="grid h-full w-full min-h-0 gap-x-3 gap-y-1.5 place-items-stretch"
+        className="grid h-full w-full min-h-0 gap-x-2 sm:gap-x-3 gap-y-1 sm:gap-y-1.5 place-items-stretch"
         style={{
           gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
           gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
@@ -1169,7 +1169,7 @@ const BattleStage = memo(({
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 grid h-full grid-cols-[minmax(0,1fr)_clamp(168px,28%,246px)] gap-1 px-2 pb-1 pt-1 min-h-0">
+      <div className="relative z-10 grid h-full grid-cols-[minmax(0,1fr)_clamp(120px,22%,200px)] sm:grid-cols-[minmax(0,1fr)_clamp(168px,28%,246px)] gap-1 px-2 pb-1 pt-1 min-h-0">
         <div className="relative flex min-w-0 min-h-0 items-stretch justify-stretch rounded-[1.8rem] px-0 py-1">
           <motion.div
             animate={
@@ -1197,15 +1197,14 @@ const BattleStage = memo(({
           </div>
         </div>
 
-        <div className="relative min-w-0 min-h-0">
-          <div className="grid h-full min-h-0 grid-rows-[minmax(84px,0.34fr)_minmax(132px,0.66fr)] gap-2">
-            <div className="flex min-h-0 items-stretch">
+        <div className="relative min-w-0 min-h-0 flex flex-col justify-end gap-1 sm:gap-2 z-20">
+            <div className="flex min-h-0 items-stretch shrink-0">
               <div className="flex h-full w-full items-center justify-end rounded-[1.8rem] px-0 py-1">
                 <ComboHud displayCombo={displayCombo} />
               </div>
             </div>
 
-            <div className="flex min-h-0 items-end justify-end rounded-[1.8rem] px-0 pb-1">
+            <div className="flex min-h-0 items-end justify-end rounded-[1.8rem] px-0 sm:pb-1">
               <motion.div
                 key={`pet-hit-${shotSequence}-${shotTier}`}
                 animate={
@@ -1353,7 +1352,6 @@ const BattleStage = memo(({
                 />
               </motion.div>
             </div>
-          </div>
         </div>
       </div>
       </motion.div>
@@ -1440,7 +1438,17 @@ export default function QuizScreen({
   useEffect(() => {
     warmupBattleBgm();
     void startBattleBgm();
+
+    const resumeBattleBgm = () => {
+      void primeBattleSfx();
+    };
+
+    window.addEventListener('pointerdown', resumeBattleBgm, { passive: true });
+    window.addEventListener('keydown', resumeBattleBgm);
+
     return () => {
+      window.removeEventListener('pointerdown', resumeBattleBgm);
+      window.removeEventListener('keydown', resumeBattleBgm);
       stopBattleBgm();
     };
   }, []);
@@ -1826,7 +1834,7 @@ export default function QuizScreen({
           whileHover={feedback === null ? { scale: 1.02, y: -1 } : {}}
           whileTap={feedback === null ? { scale: 0.98, y: 1 } : {}}
           onClick={() => handleKeyPress(num.toString())}
-          className={`relative overflow-visible rounded-2xl h-14 w-full text-3xl font-bold transition-all ${
+          className={`relative overflow-visible rounded-2xl h-16 sm:h-14 w-full text-2xl sm:text-3xl font-bold transition-all ${
             isHintTarget
               ? 'bg-[linear-gradient(180deg,#fff7d8_0%,#ffd978_100%)] text-[#7a3a00] shadow-[0_0_0_4px_rgba(255,241,199,0.95),0_0_0_10px_rgba(255,155,39,0.42),0_8px_0_#f08a1c,0_22px_36px_rgba(255,131,28,0.34)]'
               : 'bg-white text-gray-700 shadow-[0_5px_0_#e5e7eb]'
@@ -2093,7 +2101,7 @@ export default function QuizScreen({
     const questionText = question.question || '';
     const hasFillBlank = isFillBlankQuestion(questionText);
 
-    // 填空题：解析并渲染
+    // 填空题：解析并渲染（响应式字体）
     if (hasFillBlank) {
       const parts = parseFillBlankQuestion(questionText);
       const hasValue = answers[0] && answers[0].length > 0;
@@ -2112,7 +2120,7 @@ export default function QuizScreen({
       }[boxState];
 
       return (
-        <div className="flex items-center justify-center flex-wrap" style={{ lineHeight: '64px' }}>
+        <div className="flex items-center justify-center flex-wrap gap-1 sm:gap-2" style={{ lineHeight: '48px' }}>
           {parts.map((part, index) => {
             if (part.type === 'blank') {
               return (
@@ -2132,14 +2140,14 @@ export default function QuizScreen({
                         ? {}
                         : { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
                   }
-                  className={`min-w-[72px] h-14 px-4 rounded-xl border-[3px] flex items-center justify-center text-3xl font-black transition-colors ${boxClass}`}
+                  className={`min-w-[56px] sm:min-w-[72px] h-10 sm:h-14 px-2 sm:px-4 rounded-lg sm:rounded-xl border-[2px] sm:border-[3px] flex items-center justify-center text-xl sm:text-3xl font-black shrink-0 transition-colors ${boxClass}`}
                 >
                   {answers[0] || '?'}
                 </motion.div>
               );
             } else {
               return (
-                <span key={index} className="text-4xl font-black text-gray-800 mx-1">
+                <span key={index} className="text-xl sm:text-2xl md:text-4xl font-black text-gray-800 mx-0.5 sm:mx-1 shrink-0">
                   {part.value}
                 </span>
               );
@@ -2149,7 +2157,7 @@ export default function QuizScreen({
       );
     }
 
-    // 普通输入题：算式 + 答案框
+    // 普通输入题：算式 + 答案框（响应式字体）
     const hasValue = answers[0] && answers[0].length > 0;
 
     // 决定答案框状态
@@ -2166,8 +2174,8 @@ export default function QuizScreen({
     }[boxState];
 
     return (
-      <div className="flex items-center justify-center gap-4">
-        <span className="text-5xl font-black text-gray-800">{questionText}</span>
+      <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
+        <span className="text-2xl sm:text-3xl md:text-5xl font-black text-gray-800 shrink-0">{questionText}</span>
         <motion.div
           animate={
             feedback === 'wrong'
@@ -2183,7 +2191,7 @@ export default function QuizScreen({
                 ? {}
                 : { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
           }
-          className={`min-w-[96px] px-6 h-16 rounded-2xl border-[4px] flex items-center justify-center text-4xl font-black transition-colors ${boxClass}`}
+          className={`min-w-[64px] sm:min-w-[96px] px-3 sm:px-6 h-12 sm:h-16 rounded-xl sm:rounded-2xl border-[3px] sm:border-[4px] flex items-center justify-center text-2xl sm:text-4xl font-black shrink-0 transition-colors ${boxClass}`}
         >
           {answers[0] || '?'}
         </motion.div>
@@ -2239,7 +2247,7 @@ export default function QuizScreen({
     );
   };
 
-  // 选择题渲染 - 遵循 QUIZ_TYPE_DEMO 样式
+  // 选择题渲染 - 遵循 QUIZ_TYPE_DEMO 样式（响应式字体）
   const renderChoice = () => {
     const hasChoice = selectedChoice !== null;
 
@@ -2263,8 +2271,8 @@ export default function QuizScreen({
 
     return (
       <div className="text-center w-full flex flex-col items-center justify-center h-full">
-        <div className="flex items-center justify-center gap-4">
-          <span className="text-4xl font-black text-gray-800">{cleanQuestion}</span>
+        <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
+          <span className="text-xl sm:text-2xl md:text-4xl font-black text-gray-800 shrink-0">{cleanQuestion}</span>
           <motion.div
             animate={
               feedback === 'wrong'
@@ -2280,7 +2288,7 @@ export default function QuizScreen({
                   ? {}
                   : { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
             }
-            className={`min-w-[96px] px-6 h-16 rounded-2xl border-[4px] flex items-center justify-center text-4xl font-black transition-colors ${boxClass}`}
+            className={`min-w-[64px] sm:min-w-[96px] px-3 sm:px-6 h-12 sm:h-16 rounded-xl sm:rounded-2xl border-[3px] sm:border-[4px] flex items-center justify-center text-2xl sm:text-4xl font-black shrink-0 transition-colors ${boxClass}`}
           >
             {selectedChoice || '?'}
           </motion.div>
@@ -2325,9 +2333,9 @@ export default function QuizScreen({
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 text-[#25344d] shrink-0">
+      <div className="flex items-center justify-between p-3 sm:p-4 text-[#25344d] shrink-0">
         {isTutorialLevelZero ? (
-          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-white/90 bg-[linear-gradient(180deg,#fff7ea_0%,#ffe4ba_100%)] shadow-[0_8px_0_rgba(255,167,62,0.24),0_12px_24px_rgba(121,59,18,0.12)]">
+          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center overflow-hidden rounded-full border-2 border-white/90 bg-[linear-gradient(180deg,#fff7ea_0%,#ffe4ba_100%)] shadow-[0_8px_0_rgba(255,167,62,0.24),0_12px_24px_rgba(121,59,18,0.12)]">
             <img
               src="/images/我的头像.png"
               alt="我的头像"
@@ -2336,12 +2344,12 @@ export default function QuizScreen({
             />
           </div>
         ) : (
-          <button onClick={onBack} className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#d97d2f] bg-gradient-to-b from-[#ffe487] to-[#ffbf52] text-[#7b3b12] shadow-[0_8px_0_rgba(191,114,37,0.26),0_12px_24px_rgba(121,59,18,0.14)] active:translate-y-[2px] active:shadow-[0_5px_0_rgba(191,114,37,0.24),0_8px_16px_rgba(121,59,18,0.12)]">
+          <button onClick={onBack} className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border-2 border-[#d97d2f] bg-gradient-to-b from-[#ffe487] to-[#ffbf52] text-[#7b3b12] shadow-[0_8px_0_rgba(191,114,37,0.26),0_12px_24px_rgba(121,59,18,0.14)] active:translate-y-[2px] active:shadow-[0_5px_0_rgba(191,114,37,0.24),0_8px_16px_rgba(121,59,18,0.12)]">
             <ChevronLeft size={28} />
           </button>
         )}
-        <div className="flex-1 mx-6">
-          <div className="relative h-4 overflow-hidden rounded-full border-2 border-[#6ca7d8] bg-[#d8f0ff] shadow-[0_6px_14px_rgba(71,131,188,0.18),inset_0_2px_5px_rgba(255,255,255,0.65)]">
+        <div className="flex-1 mx-4 sm:mx-6">
+          <div className="relative h-3 sm:h-4 overflow-hidden rounded-full border-2 border-[#6ca7d8] bg-[#d8f0ff] shadow-[0_6px_14px_rgba(71,131,188,0.18),inset_0_2px_5px_rgba(255,255,255,0.65)]">
             <motion.div
               className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#4f85db] via-[#4e79c8] to-[#6a67d8]"
               initial={{ width: `${(currentIndex / questions.length) * 100}%` }}
@@ -2352,13 +2360,13 @@ export default function QuizScreen({
         {showDebugTools ? (
           <button
             onClick={handleDebugSolveCurrent}
-            className="rounded-full border-2 border-[#6ca7d8] bg-gradient-to-b from-[#f8fdff] to-[#dff2ff] px-4 py-2 text-lg font-black text-[#24436a] shadow-[0_8px_0_rgba(108,167,216,0.28),0_12px_22px_rgba(71,131,188,0.12)] active:translate-y-[2px] active:shadow-[0_5px_0_rgba(108,167,216,0.24),0_8px_16px_rgba(71,131,188,0.12)]"
+            className="rounded-full border-2 border-[#6ca7d8] bg-gradient-to-b from-[#f8fdff] to-[#dff2ff] px-3 sm:px-4 py-1.5 sm:py-2 text-base sm:text-lg font-black text-[#24436a] shadow-[0_8px_0_rgba(108,167,216,0.28),0_12px_22px_rgba(71,131,188,0.12)] active:translate-y-[2px] active:shadow-[0_5px_0_rgba(108,167,216,0.24),0_8px_16px_rgba(71,131,188,0.12)]"
             title="调试：点击直接答对当前题"
           >
             {currentIndex + 1}/{questions.length}
           </button>
         ) : (
-          <div className="rounded-full border-2 border-[#6ca7d8] bg-gradient-to-b from-[#f8fdff] to-[#dff2ff] px-4 py-2 text-lg font-black text-[#24436a] shadow-[0_8px_0_rgba(108,167,216,0.28),0_12px_22px_rgba(71,131,188,0.12)]">
+          <div className="rounded-full border-2 border-[#6ca7d8] bg-gradient-to-b from-[#f8fdff] to-[#dff2ff] px-3 sm:px-4 py-1.5 sm:py-2 text-base sm:text-lg font-black text-[#24436a] shadow-[0_8px_0_rgba(108,167,216,0.28),0_12px_22px_rgba(71,131,188,0.12)]">
             {currentIndex + 1}/{questions.length}
           </div>
         )}
@@ -2369,7 +2377,7 @@ export default function QuizScreen({
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex-1 min-h-0 mb-0"
+          className="shrink-0 h-[38%] sm:h-auto sm:flex-1 min-h-0 mb-0"
         >
           <BattleStage
             selectedPet={selectedPet}
@@ -2386,20 +2394,21 @@ export default function QuizScreen({
             blockColumns={battleBlockConfig.columns}
             blockRows={battleBlockConfig.rows}
           />
+
         </motion.div>
 
-        <div className="shrink-0 bg-white/20 backdrop-blur-md rounded-t-[2rem] px-4 pt-4 pb-4">
+        <div className="flex-1 min-h-0 bg-white/20 backdrop-blur-md rounded-t-[2rem] px-4 pt-4 pb-4 flex flex-col">
           <motion.div
             key={currentIndex}
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
-            className="w-full max-w-3xl mx-auto bg-white/95 rounded-[2rem] px-6 py-5 shadow-2xl h-[170px] flex flex-col items-center justify-center relative border-4 border-white/50 mb-4"
+            className="w-full max-w-3xl mx-auto bg-white/95 rounded-[1.5rem] sm:rounded-[2rem] px-4 sm:px-6 py-4 sm:py-5 shadow-2xl flex-1 min-h-0 flex flex-col items-center justify-center relative border-4 border-white/50 mb-4"
           >
             {question.type === 'text_to_number' ? (
               <div className="text-center w-full">
-                <div className="text-2xl font-bold text-gray-500 mb-6 tracking-wider">{question.text}</div>
-                <div className="flex items-center justify-center gap-4">
-                  <span className="text-xl font-bold text-gray-600">{question.label}</span>
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-500 mb-4 sm:mb-6 tracking-wider break-all px-2">{question.text}</div>
+                <div className="flex items-center justify-center gap-2 sm:gap-4">
+                  <span className="text-base sm:text-lg md:text-xl font-bold text-gray-600 shrink-0">{question.label}</span>
                   <motion.div
                     animate={
                       feedback === 'wrong' && answers[0] !== question.answer
@@ -2415,7 +2424,7 @@ export default function QuizScreen({
                           ? { duration: 0.2 }
                           : { repeat: Infinity, duration: 1.2, ease: "easeInOut", repeatType: "reverse" }
                     }
-                    className={`min-w-[80px] px-4 h-16 rounded-xl flex items-center justify-center text-3xl font-bold transition-colors
+                    className={`min-w-[64px] sm:min-w-[80px] px-3 sm:px-4 h-12 sm:h-16 rounded-lg sm:rounded-xl flex items-center justify-center text-xl sm:text-2xl md:text-3xl font-bold shrink-0 transition-colors
                       ${answers[0] ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-400'}
                       ${feedback === 'wrong' && answers[0] !== question.answer ? 'bg-red-100 text-red-500' : ''}
                       ${!answers[0] || answers[0].length === 0 ? 'ring-4 ring-yellow-300 bg-yellow-50' : ''}
@@ -2454,32 +2463,32 @@ export default function QuizScreen({
             </motion.div>
 
           {question.type === 'number_comparison' ? (
-            <div className="grid grid-cols-3 gap-4 px-2 py-1 max-w-md mx-auto">
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 px-2 py-1 max-w-md mx-auto shrink-0 mt-auto">
               {['>', '=', '<'].map((sym) => (
                 <button
                   key={sym}
                   onClick={() => handleKeyPress(sym)}
-                  className="bg-white rounded-[1.5rem] h-20 flex items-center justify-center text-blue-500 shadow-[0_8px_0_#e5e7eb] active:shadow-none active:translate-y-2 transition-all"
+                  className="bg-white rounded-[1.5rem] h-[72px] sm:h-20 flex items-center justify-center text-blue-500 shadow-[0_8px_0_#e5e7eb] active:shadow-none active:translate-y-2 transition-all"
                 >
                   <span className="text-6xl font-bold">{sym}</span>
                 </button>
               ))}
             </div>
           ) : question.type === 'choice' ? (
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-3xl mx-auto shrink-0 mt-auto">
               {renderChoiceButtons()}
             </div>
           ) : (
-            <div className="w-full max-w-3xl mx-auto flex flex-col gap-4 items-center">
-              <div className="grid w-full grid-cols-5 gap-4">
+            <div className="w-full max-w-3xl mx-auto flex flex-col gap-3 sm:gap-4 items-center shrink-0 mt-auto">
+              <div className="grid w-full grid-cols-5 gap-3 sm:gap-4">
                 {[1, 2, 3, 4, 5].map((num) => renderTutorialKeypadButton(num))}
               </div>
-              <div className="grid w-full grid-cols-5 gap-4">
+              <div className="grid w-full grid-cols-5 gap-3 sm:gap-4">
                 {[6, 7, 8, 9, 0].map((num) => renderTutorialKeypadButton(num))}
               </div>
               <button
                 onClick={() => handleKeyPress('delete')}
-                className="bg-white rounded-2xl h-14 w-full flex items-center justify-center text-red-400 shadow-[0_5px_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all"
+                className="bg-white rounded-2xl h-16 sm:h-14 w-full flex items-center justify-center text-red-400 shadow-[0_5px_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all"
               >
                 <Delete size={32} />
               </button>
